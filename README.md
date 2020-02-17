@@ -1,29 +1,160 @@
-[![pipeline status](https://gitlab.com/meltano/meltano/badges/master/pipeline.svg)](https://gitlab.com/meltano/meltano/commits/master)
+# `meltano permissions`
 
-# Meltano
+::: info
+This is an optional tool for users who want to configure permissions if they're using Snowflake as the data warehouse and want to granularly set who has access to which data at the warehouse level.
 
-Meltano [(www.meltano.com)](https://meltano.com/) is an open source convention-over-configuration product for the whole data lifecycle, all the way from loading data to analyzing it. It is delivered as self-hosted software which can be [installed locally or to the cloud](http://meltano.com/docs/installation.html).
+Alpha-quality [Role Based Access Control (RBAC)](/docs/security-and-privacy.html#role-based-access-control-rbac-alpha) is also available.
+:::
 
-It does [data ops](https://en.wikipedia.org/wiki/DataOps), data engineering, analytics, business intelligence, and data science. It leverages open source software and software development best practices including version control, CI, CD, and review apps.
+Use this command to check and manage the permissions of a Snowflake account.
 
-Meltano stands for the [steps of the data science life-cycle](#data-science-lifecycle): Model, Extract, Load, Transform, Analyze, Notebook, and Orchestrate.
+```bash
+meltano permissions grant <spec_file> --db snowflake [--dry] [--diff]
+```
 
-## Documentation
+Given the parameters to connect to a Snowflake account and a YAML file (a "spec") representing the desired database configuration, this command makes sure that the configuration of that database matches the spec. If there are differences, it will return the sql grant and revoke commands required to make it match the spec. If there are additional permissions set in the database this command will create the necessary revoke commands with the exception of:
 
-You can find our documentation at [https://www.meltano.com/docs/](https://www.meltano.com/docs/).
+* Object Ownership
+* Warehouse Privileges
 
-For more information on the source code for the docs and running it locally, you can find them in the [docs directory on this project](https://gitlab.com/meltano/meltano/tree/master/docs).
+We currently support only Snowflake, as [pgbedrock](https://github.com/Squarespace/pgbedrock) can be used for managing the permissions in a Postgres database.
 
-## Contributing to Meltano
+## spec_file
 
-We welcome contributions and improvements, please see the [contribution guidelines](https://meltano.com/docs/contributing.html)
+The YAML specification file is used to define in a declarative way the databases, roles, users and warehouses in a Snowflake account, together with the permissions for databases, schemas and tables for the same account.
 
-## Responsible Disclosure Policy
+Its syntax is inspired by [pgbedrock](https://github.com/Squarespace/pgbedrock), with additional options for Snowflake.
 
-Please refer to the [responsible disclosure policy](https://meltano.com/docs/responsible-disclosure.html) on our website.
+All permissions are abbreviated as `read` or `write` permissions, with Meltano generating the proper grants for each type of object. This includes shared databases which have simpler and more limited permissions than non-shared databases.
 
-## License
+Tables and views are listed under `tables` and handled properly behind the scenes.
 
-This code is distributed under the MIT license, see the [LICENSE](LICENSE) file.
+If `*` is provided as the parameter for tables the grant statement will use the `ALL <object_type>s in SCHEMA` syntax. It will also grant to future tables and views. See Snowflake documenation for [`ON FUTURE`](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html#optional-parameters)
 
-[docker-compose]: https://docs.docker.com/compose/
+If a schema name includes an asterisk, such as `snowplow_*`, then all schemas that match this pattern will be included in grant statement. This can be coupled with the asterisk for table grants to grant permissions on all tables in all schemas that match the given pattern. This is useful for date-partitioned schemas.
+
+All entities must be explicitly referenced. For example, if a permission is granted to a schema or table then the database must be explicitly referenced for permissioning as well.
+
+A specification file has the following structure:
+
+```bash
+# Databases
+databases:
+    - db_name:
+        shared: boolean
+    - db_name:
+        shared: boolean
+    ... ... ...
+
+# Roles
+roles:
+    - role_name:
+        warehouses:
+            - warehouse_name
+            - warehouse_name
+            ...
+
+        member_of:
+            - role_name
+            - role_name
+            ...
+
+        privileges:
+            databases:
+                read:
+                    - database_name
+                    - database_name
+                    ...
+                write:
+                    - database_name
+                    - database_name
+                    ...
+            schemas:
+                read:
+                    - database_name.*
+                    - database_name.schema_name
+                    - database_name.schema_partial_*
+                    ...
+                write:
+                    - database_name.*
+                    - database_name.schema_name
+                    - database_name.schema_partial_*
+                    ...
+            tables:
+                read:
+                    - database_name.*.*
+                    - database_name.schema_name.*
+                    - database_name.schema_partial_*.*
+                    - database_name.schema_name.table_name
+                    ...
+                write:
+                    - database_name.*.*
+                    - database_name.schema_name.*
+                    - database_name.schema_partial_*.*
+                    - database_name.schema_name.table_name
+                    ...
+
+        owns:
+            databases:
+                - database_name
+                ...
+            schemas:
+                - database_name.*
+                - database_name.schema_name
+                - database_name.schema_partial_*
+                ...
+            tables:
+                - database_name.*.*
+                - database_name.schema_name.*
+                - database_name.schema_partial_*.*
+                - database_name.schema_name.table_name
+                ...
+
+    - role_name:
+    ... ... ...
+
+# Users
+users:
+    - user_name:
+        can_login: boolean
+        member_of:
+            - role_name
+            ...
+    - user_name:
+    ... ... ...
+
+# Warehouses
+warehouses:
+    - warehouse_name:
+        size: x-small
+    ... ... ...
+```
+
+For a working example, you can check [the Snowflake specification file](https://gitlab.com/meltano/meltano-permissions/blob/master/tests/meltano_permissions/core/permissions/specs/snowflake_spec.yml) that we are using for testing `meltano permissions`.
+
+## --db
+
+The database to be used, either `postgres` or `snowflake`. Postgres is still experimental and may be fully supported in the future.
+
+## --diff
+
+When this flag is set, a full diff with both new and already granted commands is returned. Otherwise, only required commands for matching the definitions on the spec are returned.
+
+## --dry
+
+When this flag is set, the permission queries generated are not actually sent to the server and run; They are just returned to the user for examining them and running them manually.
+
+When this flag is not set, the commands will be executed on Snowflake and their status will be returned and shown on the command line.
+
+## Connection Parameters
+
+The following environmental variables must be available to connect to Snowflake:
+
+```bash
+$PERMISSION_BOT_USER
+$PERMISSION_BOT_PASSWORD
+$PERMISSION_BOT_ACCOUNT
+$PERMISSION_BOT_DATABASE
+$PERMISSION_BOT_ROLE
+$PERMISSION_BOT_WAREHOUSE
+```

@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=meltano/meltano/base
+ARG BASE_IMAGE=meltano/meltano-permissions/base
 FROM $BASE_IMAGE as builder
 
 WORKDIR /meltano
@@ -13,19 +13,15 @@ RUN make sdist
 
 FROM $BASE_IMAGE as runtime
 # grab the built package
-COPY --from=builder /meltano/dist /meltano/dist
+COPY --from=builder /meltano_permissions/dist /meltano_permissions/dist
 
 # install the built artifact to make sure we are
 # installing the application the same way our user
 # do when using PyPI
-RUN pip install /meltano/dist/meltano-*.tar.gz
+RUN pip install /meltano_permissions/dist/meltano_permissions-*.tar.gz
 
 # meltano project directory, this is where you should
 # mount your Meltano project
 WORKDIR /project
 
-# meltano ui
-EXPOSE 5000
-
-ENTRYPOINT ["meltano"]
-CMD ["ui"]
+ENTRYPOINT ["meltano_permissions"]

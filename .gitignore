@@ -91,10 +91,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# VuePress Docs Build
-docs/public
-docs/src/.vuepress/public/discovery.yml
-
 # PyBuilder
 target/
 
@@ -134,16 +130,3 @@ venv.bak/
 .mypy_cache/
 
 meltano.log.*
-*.m5oc
-
-# webapp builds
-src/webapp/dist/
-
-# packaged webapp
-src/meltano/api/templates/webapp.html
-src/meltano/api/templates/embed.html
-src/meltano/api/static/css
-src/meltano/api/static/js
-
-# sqlite
-*.db

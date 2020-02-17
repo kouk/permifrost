@@ -13,7 +13,7 @@
       - dist
 
 # Manages:
-#  - meltano/meltano:<sha>
+#  - meltano/meltano-permissions:<sha>
 meltano_dev:
   extends: .build_prod
   except:
@@ -21,8 +21,8 @@ meltano_dev:
     - tags
 
 # Manages:
-#  - meltano/meltano:<sha>
-#  - meltano/meltano:edge
+#  - meltano/meltano-permissions:<sha>
+#  - meltano/meltano-permissions:edge
 meltano_edge:
   extends:
     - .build_prod
@@ -33,9 +33,9 @@ meltano_edge:
     - docker push $IMAGE_NAME:edge
 
 # Manages:
-#  - meltano/meltano:<sha>
-#  - meltano/meltano:<tag>
-#  - meltano/meltano:latest
+#  - meltano/meltano-permissions:<sha>
+#  - meltano/meltano-permissions:<tag>
+#  - meltano/meltano-permissions:latest
 meltano:
   extends:
     - .build_prod

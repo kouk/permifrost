@@ -3,7 +3,6 @@
 !/LICENSE
 !/README.md
 !/VERSION
-!/docs
 !/requirements.txt
 !/setup.py
 !/setup.cfg
@@ -12,8 +11,3 @@
 !/src
 !/scripts
 !/.pyre_configuration
-
-docs/build
-src/webapp/node_modules
-src/webapp/dist
-src/meltano/api/static

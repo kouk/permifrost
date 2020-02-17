@@ -13,7 +13,7 @@
 # variable
 
 # Manages:
-#  - meltano/meltano/base:<base_sha>
+#  - meltano/meltano-permissions/base:<base_sha>
 meltano_base:
   extends: .build_base
   only:
@@ -22,8 +22,8 @@ meltano_base:
       - requirements.txt
 
 # Manages:
-#  - meltano/meltano/base:<base_sha>
+#  - meltano/meltano-permissions/base:<base_sha>
 meltano_base_forks:
   extends: .build_base
   except:
-    - branches@meltano/meltano
+    - branches@meltano/meltano-permissions
