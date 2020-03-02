@@ -12,9 +12,9 @@ requires = [
     'click==7.0',
     'click-default-group==1.2.1',
     'pyyaml==3.13',
-    'snowflake-connector-python==1.6.10',
-    'snowflake-sqlalchemy==1.1.2',
-    'sqlalchemy==1.2.12',
+    'snowflake-connector-python==2.2.1',
+    'snowflake-sqlalchemy==1.2.1',
+    'sqlalchemy==1.3.13',
 ]
 
 dev_requires = [
