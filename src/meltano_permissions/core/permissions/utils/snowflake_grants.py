@@ -4,7 +4,9 @@ import re
 from typing import Dict, List, Tuple, Set, Any
 
 from meltano_permissions.core.permissions.utils.error import SpecLoadingError
-from meltano_permissions.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from meltano_permissions.core.permissions.utils.snowflake_connector import (
+    SnowflakeConnector,
+)
 
 
 GRANT_ROLE_TEMPLATE = "GRANT ROLE {role_name} TO {type} {entity_name}"
