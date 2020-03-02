@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=meltano/meltano-permissions/base
 FROM $BASE_IMAGE as builder
 
-WORKDIR /meltano
+WORKDIR /meltano_permissions
 
 # building the code
 COPY . .
