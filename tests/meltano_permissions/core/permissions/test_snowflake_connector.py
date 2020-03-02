@@ -1,6 +1,8 @@
 import pytest
 
-from meltano_permissions.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from meltano_permissions.core.permissions.utils.snowflake_connector import (
+    SnowflakeConnector,
+)
 
 
 class TestSnowflakeConnector:

@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=meltano/meltano-permissions/base
 FROM $BASE_IMAGE as builder
 
-WORKDIR /meltano
+WORKDIR /meltano_permissions
 
 # building the code
 COPY . .
@@ -18,7 +18,7 @@ COPY --from=builder /meltano_permissions/dist /meltano_permissions/dist
 # install the built artifact to make sure we are
 # installing the application the same way our user
 # do when using PyPI
-RUN pip install /meltano_permissions/dist/meltano_permissions-*.tar.gz
+RUN pip install /meltano_permissions/dist/meltano-permissions-*.tar.gz
 
 # meltano project directory, this is where you should
 # mount your Meltano project

@@ -7,9 +7,13 @@ import re
 from typing import Dict, List, Tuple
 
 from meltano_permissions.core.permissions.utils.error import SpecLoadingError
-from meltano_permissions.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from meltano_permissions.core.permissions.utils.snowflake_connector import (
+    SnowflakeConnector,
+)
 from meltano_permissions.core.permissions.spec_schemas.snowflake import *
-from meltano_permissions.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
+from meltano_permissions.core.permissions.utils.snowflake_grants import (
+    SnowflakeGrantsGenerator,
+)
 
 
 VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'

@@ -1,4 +1,5 @@
 appdirs==1.4.3
+asn1crypto==1.3.0
 atomicwrites==1.3.0
 attrs==19.3.0
 azure-common==1.1.24
@@ -40,9 +41,9 @@ PyYAML==3.13
 requests==2.22.0
 s3transfer==0.1.13
 six==1.14.0
-snowflake-connector-python==1.6.10
-snowflake-sqlalchemy==1.1.2
-SQLAlchemy==1.2.12
+snowflake-connector-python==2.2.1
+snowflake-sqlalchemy==1.2.1
+SQLAlchemy==1.3.13
 toml==0.10.0
 urllib3==1.23
 zipp==2.2.0

@@ -22,7 +22,9 @@ LEVELS = {
 @click.group(invoke_without_command=True, no_args_is_help=True)
 @click.option("--log-level", type=click.Choice(LEVELS.keys()), default="info")
 @click.option("-v", "--verbose", count=True)
-@click.version_option(version=meltano_permissions.__version__, prog_name="meltano")
+@click.version_option(
+    version=meltano_permissions.__version__, prog_name="meltano_permissions"
+)
 @click.pass_context
 def cli(ctx, log_level, verbose):
     """

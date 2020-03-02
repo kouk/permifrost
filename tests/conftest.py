@@ -4,10 +4,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-pytest_plugins = [
-    "fixtures.fs",
-    "fixtures.cli",
-]
+pytest_plugins = ["fixtures.fs", "fixtures.cli"]
 
 
 @pytest.fixture(scope="session")
