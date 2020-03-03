@@ -4,7 +4,7 @@
   variables:
     DOCKERFILE: docker/prod/Dockerfile
     IMAGE_NAME: $CI_REGISTRY_IMAGE
-    IMAGE_TAG: $$CI_COMMIT_REF_NAME
+    IMAGE_TAG: $CI_COMMIT_REF_NAME
   before_script:
     - export EXTRA_ARGS="--build-arg BASE_IMAGE=$CI_REGISTRY_IMAGE/base:$CI_COMMIT_REF_NAME"
   artifacts:
