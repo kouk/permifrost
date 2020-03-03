@@ -14,20 +14,14 @@ def permissions():
 
 @permissions.command()
 @click.argument("spec")
-@click.option(
-    "--db",
-    help="The type of the target DB the specifications file is for.",
-    type=click.Choice(["postgres", "snowflake"]),
-    required=True,
-)
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
 @click.option(
     "--diff", help="Show full diff, both new and existing permissions.", is_flag=True
 )
-def grant(db, spec, dry, diff):
+def grant(spec, dry, diff):
     """Grant the permissions provided in the provided specification file."""
     try:
-        sql_commands = grant_permissions(db, spec, dry_run=dry)
+        sql_commands = grant_permissions(spec, dry_run=dry)
         click.secho()
         if diff:
             click.secho(
