@@ -1,13 +1,8 @@
 from typing import List
 
-<<<<<<< HEAD:src/permifrost/core/permissions/spec_loader.py
-from permifrost.core.permissions.pg_spec_loader import PGSpecLoader
-from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
-=======
 from permifrost.core.permissions.snowflake_spec_loader import (
     SnowflakeSpecLoader,
 )
->>>>>>> remove postgres refs:src/meltano_permissions/core/permissions/spec_loader.py
 from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
