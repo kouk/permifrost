@@ -9,6 +9,8 @@ from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConne
 
 def grant_permissions(spec_path: str, dry_run: bool) -> List[str]:
 
+    spec_loader = SnowflakeSpecLoader(spec_path)
+
     sql_grant_queries = spec_loader.generate_permission_queries()
 
     run_queries = []
