@@ -5,7 +5,13 @@ import sys
 from permifrost.core.permissions import grant_permissions, SpecLoadingError
 from . import cli
 
-# @cli.group()
+@cli.group()
+def permissions():
+    """Database permission related commands."""
+    pass
+
+
+@permissions.command()
 @click.command()
 @click.argument("spec")
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
