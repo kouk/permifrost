@@ -2,7 +2,7 @@ import logging
 import click
 import sys
 
-from meltano_permissions.core.permissions import grant_permissions, SpecLoadingError
+from permifrost.core.permissions import grant_permissions, SpecLoadingError
 from . import cli
 
 

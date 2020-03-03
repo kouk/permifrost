@@ -3,8 +3,8 @@ import logging
 import yaml
 
 from typing import Dict, List
-from meltano_permissions.core.permissions.utils.error import SpecLoadingError
-from meltano_permissions.core.permissions.spec_schemas.postgres import *
+from permifrost.core.permissions.utils.error import SpecLoadingError
+from permifrost.core.permissions.spec_schemas.postgres import *
 
 
 VALIDATION_ERR_MSG = 'Spec error: Role "{}", field "{}": {}'

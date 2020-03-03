@@ -27,18 +27,18 @@ dev_requires = [
 ]
 
 setup(
-    name="meltano-permissions",
+    name="permifrost",
     version=version,
-    author='Meltano Team & Contributors',
-    author_email="meltano@gitlab.com",
-    description="Meltano Permissions",
+    author='GitLab Data Team, Meltano Team, & Contributors',
+    author_email="permifrost@gitlab.com",
+    description="Permifrost Permissions",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://gitlab.com/meltano/meltano-permissions",
+    url="https://gitlab.com/gitlab-data/permifrost",
     package_dir={'': 'src'},
     packages=find_packages(where="src"),
     include_package_data=True,
-    py_modules=['meltano_permissions'],
+    py_modules=['permifrost'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -53,7 +53,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            "meltano_permissions = meltano_permissions.cli:main"
+            "permifrost = permifrost.cli:main"
         ]
     }
 )

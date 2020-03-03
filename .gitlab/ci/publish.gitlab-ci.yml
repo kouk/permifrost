@@ -7,11 +7,11 @@ publish:
   before_script:
     - pip install twine
   script:
-    - twine upload /meltano/dist/*
+    - twine upload /gitlab-data/dist/*
 
-# registry.gitlab.com/meltano/meltano-permissions:<tag> → docker.io/meltano:<tag>
-# registry.gitlab.com/meltano/meltano-permissions:latest → docker.io/meltano:latest
-hub_meltano:
+# registry.gitlab.com/gitlab-data/permifrost:<tag> → docker.io/permifrost:<tag>
+# registry.gitlab.com/gitlab-data/permifrost:latest → docker.io/permifrost:latest
+hub_permifrost:
   extends: .only:version-tags
   image: docker:latest
   stage: publish
@@ -20,7 +20,7 @@ hub_meltano:
   variables:
     DOCKERFILE: .
     DOCKER_DRIVER: overlay2
-    IMAGE_NAME: meltano/meltano-permissions
+    IMAGE_NAME: gitlab-data/permifrost
     IMAGE_TAG: $CI_COMMIT_TAG
     SOURCE_IMAGE: $CI_REGISTRY_IMAGE
   script:

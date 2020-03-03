@@ -1,4 +1,4 @@
-# `meltano permissions`
+# `permifrost permissions`
 
 ::: info
 This is an optional tool for users who want to configure permissions if they're using Snowflake as the data warehouse and want to granularly set who has access to which data at the warehouse level.
@@ -9,7 +9,7 @@ Alpha-quality [Role Based Access Control (RBAC)](/docs/security-and-privacy.html
 Use this command to check and manage the permissions of a Snowflake account.
 
 ```bash
-meltano permissions grant <spec_file> --db snowflake [--dry] [--diff]
+permifrost permissions grant <spec_file> --db snowflake [--dry] [--diff]
 ```
 
 Given the parameters to connect to a Snowflake account and a YAML file (a "spec") representing the desired database configuration, this command makes sure that the configuration of that database matches the spec. If there are differences, it will return the sql grant and revoke commands required to make it match the spec. If there are additional permissions set in the database this command will create the necessary revoke commands with the exception of:
@@ -25,7 +25,7 @@ The YAML specification file is used to define in a declarative way the databases
 
 Its syntax is inspired by [pgbedrock](https://github.com/Squarespace/pgbedrock), with additional options for Snowflake.
 
-All permissions are abbreviated as `read` or `write` permissions, with Meltano generating the proper grants for each type of object. This includes shared databases which have simpler and more limited permissions than non-shared databases.
+All permissions are abbreviated as `read` or `write` permissions, with Permifrost generating the proper grants for each type of object. This includes shared databases which have simpler and more limited permissions than non-shared databases.
 
 Tables and views are listed under `tables` and handled properly behind the scenes.
 
@@ -130,7 +130,7 @@ warehouses:
     ... ... ...
 ```
 
-For a working example, you can check [the Snowflake specification file](https://gitlab.com/meltano/meltano-permissions/blob/master/tests/meltano_permissions/core/permissions/specs/snowflake_spec.yml) that we are using for testing `meltano permissions`.
+For a working example, you can check [the Snowflake specification file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/core/permissions/specs/snowflake_spec.yml) that we are using for testing `permifrost permissions`.
 
 ## --db
 

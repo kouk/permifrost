@@ -1,8 +1,6 @@
 import pytest
 
-from meltano_permissions.core.permissions.utils.snowflake_grants import (
-    SnowflakeGrantsGenerator,
-)
+from permifrost.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
 
 
 @pytest.fixture(scope="class")
