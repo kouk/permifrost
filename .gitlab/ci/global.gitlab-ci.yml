@@ -1,11 +1,11 @@
 .only:version-tags:
   only:
     refs:
-      - tags@meltano/meltano-permissions
+      - tags@gitlab-data/permifrost
     variables:
       - $CI_COMMIT_TAG =~ /^v*/
 
 .only:master:
   only:
     refs:
-      - master@meltano/meltano-permissions
+      - master@gitlab-data/permifrost

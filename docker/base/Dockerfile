@@ -8,7 +8,7 @@ RUN echo "Installing system deps" \
 
 WORKDIR /build
 
-# meltano core deps
+# permifrost core deps
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 

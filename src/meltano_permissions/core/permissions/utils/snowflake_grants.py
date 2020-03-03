@@ -3,8 +3,8 @@ import re
 
 from typing import Dict, List, Tuple, Set, Any
 
-from meltano_permissions.core.permissions.utils.error import SpecLoadingError
-from meltano_permissions.core.permissions.utils.snowflake_connector import (
+from permifrost.core.permissions.utils.error import SpecLoadingError
+from permifrost.core.permissions.utils.snowflake_connector import (
     SnowflakeConnector,
 )
 

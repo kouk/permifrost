@@ -2,7 +2,7 @@ include *.py
 include LICENSE
 include VERSION
 
-graft src/meltano_permissions
+graft src/permifrost
 graft tests
 
 global-exclude __pycache__

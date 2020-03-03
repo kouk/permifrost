@@ -7,11 +7,11 @@
 #   image
 
 ifdef DOCKER_REGISTRY
-base_image_tag = ${DOCKER_REGISTRY}/meltano/meltano-permissions/base
-prod_image_tag = ${DOCKER_REGISTRY}/meltano/meltano-permissions
+base_image_tag = ${DOCKER_REGISTRY}/gitlab-data/permifrost/base
+prod_image_tag = ${DOCKER_REGISTRY}/gitlab-data/permifrost
 else
-base_image_tag = meltano/meltano-permissions/base
-prod_image_tag = meltano/meltano-permissions
+base_image_tag = gitlab-data/permifrost/base
+prod_image_tag = gitlab-data/permifrost
 endif
 
 DOCKER_RUN=docker run -it --rm -v $(shell pwd):/app -w /app
@@ -35,8 +35,8 @@ docker_images: base_image prod_image
 # Docker Image Related
 # ====================
 #
-# - `make base_image` builds meltano/base
-# - `make prod_image` builds meltano/meltano-permissions which is an all-in-one production
+# - `make base_image` builds gitlab-data/base
+# - `make prod_image` builds gitlab-data/permifrost which is an all-in-one production
 #   image that includes the static ui artifacts in the image.
 
 .PHONY: base_image prod_image
@@ -67,7 +67,7 @@ sdist:
 	python setup.py sdist
 
 docker_sdist: base_image
-	docker run --rm -v `pwd`:/meltano_permissions ${base_image_tag} \
+	docker run --rm -v `pwd`:/permifrost ${base_image_tag} \
 	bash -c "make sdist" && \
 	bash -c "chmod 777 dist/*"
 
@@ -77,7 +77,7 @@ docker_sdist: base_image
 
 .PHONY: lint show_lint
 
-BLACK_RUN = black src/meltano_permissions tests/
+BLACK_RUN = black src/permifrost tests/
 
 lint_black:
 	${BLACK_RUN}

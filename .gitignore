@@ -129,4 +129,4 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-meltano.log.*
+permifrost.log.*

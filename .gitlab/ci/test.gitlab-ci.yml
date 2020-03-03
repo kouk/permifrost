@@ -16,7 +16,7 @@ lint:
 pytest:
   extends: .test
   script:
-    - pytest -v --cov-report= --cov meltano_permissions -m "$PYTEST_MARKERS"
+    - pytest -v --cov-report= --cov permifrost -m "$PYTEST_MARKERS"
     - coverage combine .coverage
     - coverage report
     - coverage html

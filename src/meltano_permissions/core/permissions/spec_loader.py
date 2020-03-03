@@ -1,11 +1,11 @@
 from typing import List
 
-from meltano_permissions.core.permissions.pg_spec_loader import PGSpecLoader
-from meltano_permissions.core.permissions.snowflake_spec_loader import (
+from permifrost.core.permissions.pg_spec_loader import PGSpecLoader
+from permifrost.core.permissions.snowflake_spec_loader import (
     SnowflakeSpecLoader,
 )
-from meltano_permissions.core.permissions.utils.error import SpecLoadingError
-from meltano_permissions.core.permissions.utils.snowflake_connector import (
+from permifrost.core.permissions.utils.error import SpecLoadingError
+from permifrost.core.permissions.utils.snowflake_connector import (
     SnowflakeConnector,
 )
 

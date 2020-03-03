@@ -2,8 +2,8 @@ import pytest
 import os
 import shutil
 
-import meltano_permissions
-from meltano_permissions.cli import cli
+import permifrost
+from permifrost.cli import cli
 
 
 def test_version(cli_runner):
@@ -11,5 +11,5 @@ def test_version(cli_runner):
 
     assert (
         cli_version.output
-        == f"meltano_permissions, version {meltano_permissions.__version__}\n"
+        == f"permifrost, version {permifrost.__version__}\n"
     )

@@ -1,6 +1,6 @@
 .build_prod:
   extends: .docker_build
-  stage: build-meltano
+  stage: build-permifrost
   variables:
     DOCKERFILE: docker/prod/Dockerfile
     IMAGE_NAME: $CI_REGISTRY_IMAGE
@@ -13,17 +13,17 @@
       - dist
 
 # Manages:
-#  - meltano/meltano-permissions:<sha>
-meltano_dev:
+#  - gitlab-data/permifrost:<sha>
+permifrost_dev:
   extends: .build_prod
   except:
     - master
     - tags
 
 # Manages:
-#  - meltano/meltano-permissions:<sha>
-#  - meltano/meltano-permissions:edge
-meltano_edge:
+#  - gitlab-data/permifrost:<sha>
+#  - gitlab-data/permifrost:edge
+permifrost_edge:
   extends:
     - .build_prod
     - .only:master
@@ -33,10 +33,10 @@ meltano_edge:
     - docker push $IMAGE_NAME:edge
 
 # Manages:
-#  - meltano/meltano-permissions:<sha>
-#  - meltano/meltano-permissions:<tag>
-#  - meltano/meltano-permissions:latest
-meltano:
+#  - gitlab-data/permifrost:<sha>
+#  - gitlab-data/permifrost:<tag>
+#  - gitlab-data/permifrost:latest
+permifrost:
   extends:
     - .build_prod
     - .only:version-tags

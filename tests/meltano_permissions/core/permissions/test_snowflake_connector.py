@@ -1,6 +1,6 @@
 import pytest
 
-from meltano_permissions.core.permissions.utils.snowflake_connector import (
+from permifrost.core.permissions.utils.snowflake_connector import (
     SnowflakeConnector,
 )
 
