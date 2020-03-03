@@ -12,7 +12,6 @@ def permissions():
 
 
 @permissions.command()
-@click.command()
 @click.argument("spec")
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
 @click.option(
