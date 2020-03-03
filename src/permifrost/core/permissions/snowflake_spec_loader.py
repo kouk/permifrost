@@ -7,13 +7,9 @@ import re
 from typing import Dict, List, Tuple
 
 from permifrost.core.permissions.utils.error import SpecLoadingError
-from permifrost.core.permissions.utils.snowflake_connector import (
-    SnowflakeConnector,
-)
+from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 from permifrost.core.permissions.spec_schemas.snowflake import *
-from permifrost.core.permissions.utils.snowflake_grants import (
-    SnowflakeGrantsGenerator,
-)
+from permifrost.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
 
 
 VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'

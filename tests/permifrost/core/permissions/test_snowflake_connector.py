@@ -1,8 +1,6 @@
 import pytest
 
-from permifrost.core.permissions.utils.snowflake_connector import (
-    SnowflakeConnector,
-)
+from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
 
 class TestSnowflakeConnector:

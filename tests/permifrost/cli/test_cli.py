@@ -9,7 +9,4 @@ from permifrost.cli import cli
 def test_version(cli_runner):
     cli_version = cli_runner.invoke(cli, ["--version"])
 
-    assert (
-        cli_version.output
-        == f"permifrost, version {permifrost.__version__}\n"
-    )
+    assert cli_version.output == f"permifrost, version {permifrost.__version__}\n"
