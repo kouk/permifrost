@@ -7,7 +7,7 @@ publish:
   before_script:
     - pip install twine
   script:
-    - twine upload /gitlab-data/dist/*
+    - twine upload /permifrost/dist/*
 
 # registry.gitlab.com/gitlab-data/permifrost:<tag> → docker.io/permifrost:<tag>
 # registry.gitlab.com/gitlab-data/permifrost:latest → docker.io/permifrost:latest
