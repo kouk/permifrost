@@ -5,8 +5,7 @@
     DOCKERFILE: docker/base/Dockerfile
     IMAGE_NAME: $CI_REGISTRY_IMAGE/base
   before_script:
-    - source .gitlab/ci/scripts/docker_build_before_script.sh
-    - export IMAGE_TAG=$BASE_SHA
+    - export IMAGE_TAG=$CI_COMMIT_REF_NAME
 
 # the permifrost base should only be rebuild when the `requirements.txt` file
 # has a change, and should be inferable from the `BASE_SHA` environment

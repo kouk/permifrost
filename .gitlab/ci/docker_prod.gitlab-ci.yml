@@ -4,10 +4,9 @@
   variables:
     DOCKERFILE: docker/prod/Dockerfile
     IMAGE_NAME: $CI_REGISTRY_IMAGE
-    IMAGE_TAG: $CI_COMMIT_SHA
+    IMAGE_TAG: $$CI_COMMIT_REF_NAME
   before_script:
-    - source .gitlab/ci/scripts/docker_build_before_script.sh
-    - export EXTRA_ARGS="--build-arg BASE_IMAGE=$CI_REGISTRY_IMAGE/base:$BASE_SHA"
+    - export EXTRA_ARGS="--build-arg BASE_IMAGE=$CI_REGISTRY_IMAGE/base:$CI_COMMIT_REF_NAME"
   artifacts:
     paths:
       - dist

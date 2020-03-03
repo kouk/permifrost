@@ -1,5 +1,4 @@
-FROM python:3.6
-ENV NODE_VERSION 10
+FROM python:3.8
 
 RUN echo "Installing system deps" \
     && apt-get update \
