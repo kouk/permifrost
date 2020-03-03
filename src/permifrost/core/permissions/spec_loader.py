@@ -1,18 +1,18 @@
 from typing import List
 
+<<<<<<< HEAD:src/permifrost/core/permissions/spec_loader.py
 from permifrost.core.permissions.pg_spec_loader import PGSpecLoader
 from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
+=======
+from permifrost.core.permissions.snowflake_spec_loader import (
+    SnowflakeSpecLoader,
+)
+>>>>>>> remove postgres refs:src/meltano_permissions/core/permissions/spec_loader.py
 from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
 
-def grant_permissions(db: str, spec_path: str, dry_run: bool) -> List[str]:
-    if db == "postgres":
-        spec_loader = PGSpecLoader(spec_path)
-    elif db == "snowflake":
-        spec_loader = SnowflakeSpecLoader(spec_path)
-    else:
-        raise SpecLoadingError(f"Permissions Spec File for {db} is not supported.")
+def grant_permissions(spec_path: str, dry_run: bool) -> List[str]:
 
     sql_grant_queries = spec_loader.generate_permission_queries()
 

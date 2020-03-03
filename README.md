@@ -17,13 +17,11 @@ Given the parameters to connect to a Snowflake account and a YAML file (a "spec"
 * Object Ownership
 * Warehouse Privileges
 
-We currently support only Snowflake, as [pgbedrock](https://github.com/Squarespace/pgbedrock) can be used for managing the permissions in a Postgres database.
+Permifrost is heavily inspired by [pgbedrock](https://github.com/Squarespace/pgbedrock) which can be used for managing the permissions in a Postgres database.
 
 ## spec_file
 
 The YAML specification file is used to define in a declarative way the databases, roles, users and warehouses in a Snowflake account, together with the permissions for databases, schemas and tables for the same account.
-
-Its syntax is inspired by [pgbedrock](https://github.com/Squarespace/pgbedrock), with additional options for Snowflake.
 
 All permissions are abbreviated as `read` or `write` permissions, with Permifrost generating the proper grants for each type of object. This includes shared databases which have simpler and more limited permissions than non-shared databases.
 
@@ -131,10 +129,6 @@ warehouses:
 ```
 
 For a working example, you can check [the Snowflake specification file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/core/permissions/specs/snowflake_spec.yml) that we are using for testing `permifrost permissions`.
-
-## --db
-
-The database to be used, either `postgres` or `snowflake`. Postgres is still experimental and may be fully supported in the future.
 
 ## --diff
 
