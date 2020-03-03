@@ -11,10 +11,17 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### New
 
 ### Changes
-- Initial release
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.0.1 - (2020-03-03)
+---
+
+### Changes
+- Initial release
+
 
 ---
