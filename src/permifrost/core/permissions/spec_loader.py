@@ -1,8 +1,6 @@
 from typing import List
 
-from permifrost.core.permissions.snowflake_spec_loader import (
-    SnowflakeSpecLoader,
-)
+from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
 from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
