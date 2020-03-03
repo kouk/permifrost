@@ -5,6 +5,7 @@ import sys
 from permifrost.core.permissions import grant_permissions, SpecLoadingError
 from . import cli
 
+
 @cli.group()
 def permissions():
     """Database permission related commands."""
