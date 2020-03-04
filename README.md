@@ -1,15 +1,9 @@
-# `permifrost permissions`
-
-::: info
-This is an optional tool for users who want to configure permissions if they're using Snowflake as the data warehouse and want to granularly set who has access to which data at the warehouse level.
-
-Alpha-quality [Role Based Access Control (RBAC)](/docs/security-and-privacy.html#role-based-access-control-rbac-alpha) is also available.
-:::
+# `permifrost`
 
 Use this command to check and manage the permissions of a Snowflake account.
 
 ```bash
-permifrost permissions grant <spec_file> --db snowflake [--dry] [--diff]
+permifrost grant <spec_file> --db snowflake [--dry] [--diff]
 ```
 
 Given the parameters to connect to a Snowflake account and a YAML file (a "spec") representing the desired database configuration, this command makes sure that the configuration of that database matches the spec. If there are differences, it will return the sql grant and revoke commands required to make it match the spec. If there are additional permissions set in the database this command will create the necessary revoke commands with the exception of:
