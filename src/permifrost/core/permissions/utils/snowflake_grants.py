@@ -772,11 +772,11 @@ class SnowflakeGrantsGenerator:
         ):
             database_name = granted_schema.split(".")[0]
             future_schema_name = f"{database_name}.<schema>"
-            if (
-                granted_schema not in write_grant_schemas
-                and database_name in shared_dbs
+            if granted_schema not in write_grant_schemas and (
+                database_name in shared_dbs or database_name not in spec_dbs
             ):
-                # No privileges to revoke on imported db
+                # No privileges to revoke on imported db. Done at database level
+                # Don't revoke on privileges on databases not defined in spec.
                 continue
             elif (  # If future privilege is granted but not in grant list
                 granted_schema == future_schema_name
