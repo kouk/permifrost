@@ -1,7 +1,7 @@
 .test:
   stage: test
   image:
-    name: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    name: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
     entrypoint: [""]
   before_script:
     - pip install '.[dev]'
