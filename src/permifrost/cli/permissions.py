@@ -72,6 +72,8 @@ def grant(spec, dry, diff):
                     ran_query = query
                     ran_query["run_status"] = status
                     print_command(ran_query, diff)
+                else:
+                    print_command(query, diff)
 
             else:
                 print_command(query, diff)
