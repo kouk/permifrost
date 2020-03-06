@@ -11,11 +11,17 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### New
 
 ### Changes
-- [#5](https://gitlab.com/gitlab-data/permifrost/issues/5) Updates to print commands as they run instead of in a batch at the end of a run
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.1.0 - (2020-03-06)
+---
+
+### Changes
+- [#5](https://gitlab.com/gitlab-data/permifrost/issues/5) Updates to print commands as they run instead of in a batch at the end of a run
 
 
 ## 0.0.2 - (2020-03-04)
