@@ -72,9 +72,10 @@ def grant(spec, dry, diff):
                     ran_query = query
                     ran_query["run_status"] = status
                     print_command(ran_query, diff)
+                # If already granted, print command
                 else:
                     print_command(query, diff)
-
+            # If dry, print commands
             else:
                 print_command(query, diff)
 
