@@ -19,9 +19,7 @@ REVOKE_PRIVILEGES_TEMPLATE = (
     "REVOKE {privileges} ON {resource_type} {resource_name} FROM ROLE {role}"
 )
 
-GRANT_FUTURE_SCHEMAS_PRIVILEGES_TEMPLATE = (
-    "GRANT {privileges} ON FUTURE SCHEMAS IN DATABASE {resource_name} TO ROLE {role}"
-)
+GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN DATABASE {database_name} TO ROLE {role}"
 
 GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN SCHEMA {schema_name} TO ROLE {role}"
 
@@ -606,9 +604,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": schema_already_granted,
-                        "sql": GRANT_FUTURE_SCHEMAS_PRIVILEGES_TEMPLATE.format(
+                        "sql": GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
                             privileges=read_privileges,
-                            resource_name=SnowflakeConnector.snowflaky(database),
+                            resource_type="schema",
+                            database_name=SnowflakeConnector.snowflaky(database),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -665,9 +664,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": already_granted,
-                        "sql": GRANT_FUTURE_SCHEMAS_PRIVILEGES_TEMPLATE.format(
+                        "sql": GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
                             privileges=write_privileges,
-                            resource_name=SnowflakeConnector.snowflaky(database),
+                            resource_type="schema",
+                            database_name=SnowflakeConnector.snowflaky(database),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
