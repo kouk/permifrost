@@ -1140,9 +1140,18 @@ class SnowflakeGrantsGenerator:
             all_grant_tables = read_grant_tables_full + write_grant_tables_full
             table_split = granted_table.split(".")
             database_name = table_split[0]
-            schema_name = table_split[1]
-            table_name = table_split[2]
-            future_table = f"{database_name}.{schema_name}.<table>"
+            table_name = table_split[-1]
+
+            if len(table_split) == 2:
+                future_table = f"{database_name}.<table>"
+                grouping_type = "database"
+                grouping_name = database_name
+            else:
+                schema_name = table_split[1]
+                future_table = f"{database_name}.{schema_name}.<table>"
+                grouping_type = "schema"
+                grouping_name = f"{database_name}.{schema_name}"
+
             if granted_table not in all_grant_tables and (
                 database_name in shared_dbs or database_name not in spec_dbs
             ):
@@ -1158,10 +1167,8 @@ class SnowflakeGrantsGenerator:
                         "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="table",
-                            grouping_type="schema",
-                            grouping_name=SnowflakeConnector.snowflaky(
-                                f"{database_name}.{schema_name}"
-                            ),
+                            grouping_type=grouping_type,
+                            grouping_name=SnowflakeConnector.snowflaky(grouping_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
