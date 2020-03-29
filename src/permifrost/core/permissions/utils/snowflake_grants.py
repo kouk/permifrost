@@ -716,7 +716,7 @@ class SnowflakeGrantsGenerator:
                         "already_granted": False,
                         "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
-                            resource_type="schemas",
+                            resource_type="schema",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
@@ -785,7 +785,7 @@ class SnowflakeGrantsGenerator:
                         "already_granted": False,
                         "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=partial_write_privileges,
-                            resource_type="schemas",
+                            resource_type="schema",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
