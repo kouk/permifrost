@@ -21,9 +21,7 @@ REVOKE_PRIVILEGES_TEMPLATE = (
 
 GRANT_FUTURE_PRIVILEGES_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN {grouping_type} {grouping_name} TO ROLE {role}"
 
-REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN DATABASE {database_name} FROM ROLE {role}"
-
-REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN SCHEMA {schema_name} FROM ROLE {role}"
+REVOKE_FUTURE_PRIVILEGES_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN {grouping_type} {grouping_name} FROM ROLE {role}"
 
 ALTER_USER_TEMPLATE = "ALTER USER {user_name} SET {privileges}"
 
@@ -716,10 +714,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="schemas",
-                            database_name=SnowflakeConnector.snowflaky(database_name),
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -784,10 +783,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=partial_write_privileges,
                             resource_type="schemas",
-                            database_name=SnowflakeConnector.snowflaky(database_name),
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -1155,10 +1155,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="table",
-                            schema_name=SnowflakeConnector.snowflaky(
+                            grouping_type="schema",
+                            grouping_name=SnowflakeConnector.snowflaky(
                                 f"{database_name}.{schema_name}"
                             ),
                             role=SnowflakeConnector.snowflaky(role),
@@ -1205,10 +1206,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="view",
-                            schema_name=SnowflakeConnector.snowflaky(
+                            grouping_type="schema",
+                            grouping_name=SnowflakeConnector.snowflaky(
                                 f"{database_name}.{schema_name}"
                             ),
                             role=SnowflakeConnector.snowflaky(role),
@@ -1266,10 +1268,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=write_partial_privileges,
                             resource_type="table",
-                            schema_name=SnowflakeConnector.snowflaky(
+                            grouping_type="schema",
+                            grouping_name=SnowflakeConnector.snowflaky(
                                 f"{database_name}.{schema_name}"
                             ),
                             role=SnowflakeConnector.snowflaky(role),
