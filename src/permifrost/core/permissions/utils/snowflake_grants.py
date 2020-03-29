@@ -23,9 +23,7 @@ GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "GRANT {privileges} ON FUTURE {re
 
 GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN SCHEMA {schema_name} TO ROLE {role}"
 
-REVOKE_FUTURE_DB_OBJECT_PRIVILEGES_TEMPLATE = (
-    "REVOKE {privileges} ON FUTURE SCHEMAS IN DATABASE {resource_name} FROM ROLE {role}"
-)
+REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN DATABASE {database_name} FROM ROLE {role}"
 
 REVOKE_FUTURE_SCHEMA_OBJECT_PRIVILEGES_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN SCHEMA {resource_name} FROM ROLE {role}"
 
@@ -718,9 +716,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_DB_OBJECT_PRIVILEGES_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
                             privileges=read_privileges,
-                            resource_name=SnowflakeConnector.snowflaky(database_name),
+                            resource_type="schemas",
+                            database_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -785,9 +784,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_DB_OBJECT_PRIVILEGES_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
                             privileges=partial_write_privileges,
-                            resource_name=SnowflakeConnector.snowflaky(database_name),
+                            resource_type="schemas",
+                            database_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
