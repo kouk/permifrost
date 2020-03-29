@@ -1199,9 +1199,17 @@ class SnowflakeGrantsGenerator:
             all_grant_views = read_grant_views_full + write_grant_views_full
             view_split = granted_view.split(".")
             database_name = view_split[0]
-            schema_name = view_split[1]
-            view_name = view_split[2]
-            future_view = f"{database_name}.{schema_name}.<view>"
+            view_name = view_split[-1]
+            if len(view_split) == 2:
+                future_view = f"{database_name}.<view>"
+                grouping_type = "database"
+                grouping_name = database_name
+            else:
+                schema_name = view_split[1]
+                future_view = f"{database_name}.{schema_name}.<view>"
+                grouping_type = "schema"
+                grouping_name = f"{database_name}.{schema_name}"
+
             if granted_view not in all_grant_views and (
                 database_name in shared_dbs or database_name not in spec_dbs
             ):
@@ -1216,10 +1224,8 @@ class SnowflakeGrantsGenerator:
                         "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="view",
-                            grouping_type="schema",
-                            grouping_name=SnowflakeConnector.snowflaky(
-                                f"{database_name}.{schema_name}"
-                            ),
+                            grouping_type=grouping_type,
+                            grouping_name=SnowflakeConnector.snowflaky(grouping_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
