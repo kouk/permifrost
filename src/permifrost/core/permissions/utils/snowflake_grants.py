@@ -25,7 +25,7 @@ GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE = "GRANT {privileges} ON FUTURE {reso
 
 REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN DATABASE {database_name} FROM ROLE {role}"
 
-REVOKE_FUTURE_SCHEMA_OBJECT_PRIVILEGES_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN SCHEMA {resource_name} FROM ROLE {role}"
+REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN SCHEMA {schema_name} FROM ROLE {role}"
 
 ALTER_USER_TEMPLATE = "ALTER USER {user_name} SET {privileges}"
 
@@ -1151,10 +1151,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_SCHEMA_OBJECT_PRIVILEGES_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="table",
-                            resource_name=SnowflakeConnector.snowflaky(
+                            schema_name=SnowflakeConnector.snowflaky(
                                 f"{database_name}.{schema_name}"
                             ),
                             role=SnowflakeConnector.snowflaky(role),
@@ -1201,10 +1201,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_SCHEMA_OBJECT_PRIVILEGES_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="view",
-                            resource_name=SnowflakeConnector.snowflaky(
+                            schema_name=SnowflakeConnector.snowflaky(
                                 f"{database_name}.{schema_name}"
                             ),
                             role=SnowflakeConnector.snowflaky(role),
@@ -1262,10 +1262,10 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": False,
-                        "sql": REVOKE_FUTURE_SCHEMA_OBJECT_PRIVILEGES_TEMPLATE.format(
+                        "sql": REVOKE_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
                             privileges=write_partial_privileges,
                             resource_type="table",
-                            resource_name=SnowflakeConnector.snowflaky(
+                            schema_name=SnowflakeConnector.snowflaky(
                                 f"{database_name}.{schema_name}"
                             ),
                             role=SnowflakeConnector.snowflaky(role),
