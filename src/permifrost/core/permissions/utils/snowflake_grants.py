@@ -19,9 +19,7 @@ REVOKE_PRIVILEGES_TEMPLATE = (
     "REVOKE {privileges} ON {resource_type} {resource_name} FROM ROLE {role}"
 )
 
-GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN DATABASE {database_name} TO ROLE {role}"
-
-GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN SCHEMA {schema_name} TO ROLE {role}"
+GRANT_FUTURE_PRIVILEGES_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN {grouping_type} {grouping_name} TO ROLE {role}"
 
 REVOKE_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_type}s IN DATABASE {database_name} FROM ROLE {role}"
 
@@ -602,10 +600,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": schema_already_granted,
-                        "sql": GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
+                        "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="schema",
-                            database_name=SnowflakeConnector.snowflaky(database),
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -662,10 +661,11 @@ class SnowflakeGrantsGenerator:
                 sql_commands.append(
                     {
                         "already_granted": already_granted,
-                        "sql": GRANT_FUTURE_PRIVILEGES_IN_DATABASE_TEMPLATE.format(
+                        "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
                             privileges=write_privileges,
                             resource_type="schema",
-                            database_name=SnowflakeConnector.snowflaky(database),
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -903,10 +903,11 @@ class SnowflakeGrantsGenerator:
                     sql_commands.append(
                         {
                             "already_granted": table_already_granted,
-                            "sql": GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                            "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
                                 privileges=read_privileges,
                                 resource_type="table",
-                                schema_name=SnowflakeConnector.snowflaky(schema),
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
                                 role=SnowflakeConnector.snowflaky(role),
                             ),
                         }
@@ -923,10 +924,11 @@ class SnowflakeGrantsGenerator:
                     sql_commands.append(
                         {
                             "already_granted": view_already_granted,
-                            "sql": GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                            "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
                                 privileges=read_privileges,
                                 resource_type="view",
-                                schema_name=SnowflakeConnector.snowflaky(schema),
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
                                 role=SnowflakeConnector.snowflaky(role),
                             ),
                         }
@@ -1042,10 +1044,11 @@ class SnowflakeGrantsGenerator:
                     sql_commands.append(
                         {
                             "already_granted": table_already_granted,
-                            "sql": GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                            "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
                                 privileges=write_privileges,
                                 resource_type="table",
-                                schema_name=SnowflakeConnector.snowflaky(schema),
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
                                 role=SnowflakeConnector.snowflaky(role),
                             ),
                         }
@@ -1062,10 +1065,11 @@ class SnowflakeGrantsGenerator:
                     sql_commands.append(
                         {
                             "already_granted": view_already_granted,
-                            "sql": GRANT_FUTURE_PRIVILEGES_IN_SCHEMA_TEMPLATE.format(
+                            "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
                                 privileges="select",
                                 resource_type="view",
-                                schema_name=SnowflakeConnector.snowflaky(schema),
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
                                 role=SnowflakeConnector.snowflaky(role),
                             ),
                         }
