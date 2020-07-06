@@ -13,9 +13,15 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### Changes
 
 ### Fixes
-- [#8](https://gitlab.com/gitlab-data/permifrost/-/issues/8) Existing future grants on a database cause an error
 
 ### Breaks
+
+
+## 0.1.1 - (2020-07-06)
+---
+
+### Fixes
+- [#8](https://gitlab.com/gitlab-data/permifrost/-/issues/8) Existing future grants on a database cause an error
 
 
 ## 0.1.0 - (2020-03-06)
