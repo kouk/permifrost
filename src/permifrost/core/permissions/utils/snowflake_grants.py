@@ -1201,6 +1201,8 @@ class SnowflakeGrantsGenerator:
             view_split = granted_view.split(".")
             database_name = view_split[0]
             view_name = view_split[-1]
+
+            # For future grants at the database level
             if len(view_split) == 2:
                 future_view = f"{database_name}.<view>"
                 grouping_type = "database"
