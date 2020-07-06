@@ -1142,6 +1142,7 @@ class SnowflakeGrantsGenerator:
             database_name = table_split[0]
             table_name = table_split[-1]
 
+            # For future grants at the database level
             if len(table_split) == 2:
                 future_table = f"{database_name}.<table>"
                 grouping_type = "database"
