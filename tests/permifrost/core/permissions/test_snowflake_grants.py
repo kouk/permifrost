@@ -156,7 +156,10 @@ class TestSnowflakeGrants:
 
         role_lower_list = [cmd.get("sql", "").lower() for cmd in role_command_list]
 
-        assert "revoke role object_role_1 from role functional_role" in role_lower_list
+        assert (
+            "revoke role object_role_1 from role role_without_member_of"
+            in role_lower_list
+        )
 
     def test_generate_warehouse_grants(
         self,
