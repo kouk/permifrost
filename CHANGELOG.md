@@ -6,7 +6,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 
 
 ## Unreleased
----
+
+All roles are revoked from roles and users that do not have a `member_of` entry.
 
 ### New
 
