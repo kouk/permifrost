@@ -46,7 +46,16 @@ def test_role_config():
                     "write": ["database_3"],
                 }
             },
-        }
+        },
+        "role_without_member_of": {
+            "warehouses": ["warehouse_2", "warehouse_3"],
+            "privileges": {
+                "databases": {
+                    "read": ["database_2", "shared_database_2"],
+                    "write": ["database_3"],
+                }
+            },
+        },
     }
 
     return config
@@ -73,7 +82,17 @@ def test_grants_to_role():
             "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
             "monitor": {"database": ["database_1", "database_2"]},
             "create schema": {"database": ["database_1", "database_2"]},
-        }
+        },
+        "role_without_member_of": {
+            "usage": {
+                "database": ["database_1", "database_2", "shared_database_1"],
+                "role": ["object_role_1", "object_role_2"],
+                "warehouse": ["warehouse_1", "warehouse_2"],
+            },
+            "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
+            "monitor": {"database": ["database_1", "database_2"]},
+            "create schema": {"database": ["database_1", "database_2"]},
+        },
     }
 
     return roles
@@ -117,6 +136,27 @@ class TestSnowflakeGrants:
         assert "grant role object_role to user user_name" in user_lower_list
         assert "grant role user_role to user user_name" in user_lower_list
         assert "revoke role function_role from user user_name" in user_lower_list
+
+    def test_revoke_with_no_member_of(
+        self,
+        test_grants_to_role,
+        test_roles_granted_to_user,
+        test_role_config,
+        test_user_config,
+    ):
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user
+        )
+
+        role_command_list = generator.generate_grant_roles(
+            "roles",
+            "role_without_member_of",
+            test_role_config["role_without_member_of"],
+        )
+
+        role_lower_list = [cmd.get("sql", "").lower() for cmd in role_command_list]
+
+        assert "revoke role object_role_1 from role functional_role" in role_lower_list
 
     def test_generate_warehouse_grants(
         self,
