@@ -509,7 +509,9 @@ class SnowflakeSpecLoader:
 
         return error_messages
 
-    def check_entities_on_snowflake_server(self, conn: SnowflakeConnector = None) -> None:
+    def check_entities_on_snowflake_server(
+        self, conn: SnowflakeConnector = None
+    ) -> None:
         """
         Make sure that all [warehouses, dbs, schemas, tables, users, roles]
         referenced in the spec are defined in Snowflake.
@@ -580,7 +582,9 @@ class SnowflakeSpecLoader:
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
 
-    def get_privileges_from_snowflake_server(self, conn: SnowflakeConnector = None) -> None:
+    def get_privileges_from_snowflake_server(
+        self, conn: SnowflakeConnector = None
+    ) -> None:
         """
         Get the privileges granted to users and roles in the Snowflake account
         Gets the future privileges granted in all database and schema objects

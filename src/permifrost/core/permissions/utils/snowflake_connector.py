@@ -32,7 +32,7 @@ class SnowflakeConnector:
                     account=os.getenv("PERMISSION_BOT_ACCOUNT"),
                     authenticator="oauth",
                     token=os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
-                    warehouse=os.getenv("PERMISSION_BOT_WAREHOUSE")
+                    warehouse=os.getenv("PERMISSION_BOT_WAREHOUSE"),
                 )
             )
         else:

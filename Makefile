@@ -90,6 +90,11 @@ show_lint_black:
 	${BLACK_RUN} --check --diff
 
 lint: lint_black
+
+docker_lint:
+	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
+	bash -c "make lint"
+
 show_lint: show_lint_black
 
 # Makefile Related Tasks
