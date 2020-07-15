@@ -25,7 +25,8 @@ If `*` is provided as the parameter for tables the grant statement will use the 
 
 If a schema name includes an asterisk, such as `snowplow_*`, then all schemas that match this pattern will be included in grant statement. This can be coupled with the asterisk for table grants to grant permissions on all tables in all schemas that match the given pattern. This is useful for date-partitioned schemas.
 
-All entities must be explicitly referenced. For example, if a permission is granted to a schema or table then the database must be explicitly referenced for permissioning as well.
+All entities must be explicitly referenced. For example, if a permission is granted to a schema or table then the database must be explicitly referenced for permissioning as well.  Additionally, role membership must be explicit in the config file.  If a role does not have a `member_of` list, it will have all roles it currently has revoked.
+
 
 A specification file has the following structure:
 

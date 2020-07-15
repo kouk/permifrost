@@ -83,71 +83,61 @@ class SnowflakeGrantsGenerator:
         if entity_type == "roles":
             grant_type = "role"
 
-        try:
-            for member_role in config["member_of"]:
-                granted_role = SnowflakeConnector.snowflaky(member_role)
-                already_granted = False
-                if (
-                    entity_type == "users"
-                    and granted_role in self.roles_granted_to_user[entity]
-                ) or (
-                    entity_type == "roles"
-                    and self.check_grant_to_role(entity, "usage", "role", member_role)
-                ):
-                    already_granted = True
+        member_of_list = config.get("member_of", [])
 
-                sql_commands.append(
-                    {
-                        "already_granted": already_granted,
-                        "sql": GRANT_ROLE_TEMPLATE.format(
-                            role_name=SnowflakeConnector.snowflaky(member_role),
-                            type=grant_type,
-                            entity_name=SnowflakeConnector.snowflaky(entity),
-                        ),
-                    }
-                )
+        for member_role in member_of_list:
+            granted_role = SnowflakeConnector.snowflaky(member_role)
+            already_granted = False
+            if (
+                entity_type == "users"
+                and granted_role in self.roles_granted_to_user[entity]
+            ) or (
+                entity_type == "roles"
+                and self.check_grant_to_role(entity, "usage", "role", member_role)
+            ):
+                already_granted = True
 
-            # Iterate through current state
-            if entity_type == "users":
-                for granted_role in self.roles_granted_to_user[entity]:
-                    if granted_role not in config["member_of"]:
-                        sql_commands.append(
-                            {
-                                "already_granted": False,
-                                "sql": REVOKE_ROLE_TEMPLATE.format(
-                                    role_name=SnowflakeConnector.snowflaky(
-                                        granted_role
-                                    ),
-                                    type=grant_type,
-                                    entity_name=SnowflakeConnector.snowflaky(entity),
-                                ),
-                            }
-                        )
-
-            if entity_type == "roles":
-                for granted_role in (
-                    self.grants_to_role.get(entity, {}).get("usage", {}).get("role", [])
-                ):
-                    if granted_role not in config["member_of"]:
-                        sql_commands.append(
-                            {
-                                "already_granted": False,
-                                "sql": REVOKE_ROLE_TEMPLATE.format(
-                                    role_name=SnowflakeConnector.snowflaky(
-                                        granted_role
-                                    ),
-                                    type=grant_type,
-                                    entity_name=SnowflakeConnector.snowflaky(entity),
-                                ),
-                            }
-                        )
-
-        except KeyError:
-            logging.debug(
-                "`member_of` not found for {}, skipping generation of GRANT ROLE statements.".format(
-                    entity
-                )
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_ROLE_TEMPLATE.format(
+                        role_name=SnowflakeConnector.snowflaky(member_role),
+                        type=grant_type,
+                        entity_name=SnowflakeConnector.snowflaky(entity),
+                    ),
+                }
             )
+
+        # Iterate through current state
+        if entity_type == "users":
+            for granted_role in self.roles_granted_to_user[entity]:
+                if granted_role not in member_of_list:
+                    sql_commands.append(
+                        {
+                            "already_granted": False,
+                            "sql": REVOKE_ROLE_TEMPLATE.format(
+                                role_name=SnowflakeConnector.snowflaky(granted_role),
+                                type=grant_type,
+                                entity_name=SnowflakeConnector.snowflaky(entity),
+                            ),
+                        }
+                    )
+
+        if entity_type == "roles":
+            for granted_role in (
+                self.grants_to_role.get(entity, {}).get("usage", {}).get("role", [])
+            ):
+                if granted_role not in member_of_list:
+                    sql_commands.append(
+                        {
+                            "already_granted": False,
+                            "sql": REVOKE_ROLE_TEMPLATE.format(
+                                role_name=SnowflakeConnector.snowflaky(granted_role),
+                                type=grant_type,
+                                entity_name=SnowflakeConnector.snowflaky(entity),
+                            ),
+                        }
+                    )
 
         return sql_commands
 
