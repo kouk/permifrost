@@ -83,7 +83,9 @@ class SnowflakeGrantsGenerator:
         if entity_type == "roles":
             grant_type = "role"
 
-        for member_role in config.get("member_of", []):
+        member_of_list = config.get("member_of", [])
+
+        for member_role in member_of_list:
             granted_role = SnowflakeConnector.snowflaky(member_role)
             already_granted = False
             if (
@@ -109,7 +111,7 @@ class SnowflakeGrantsGenerator:
         # Iterate through current state
         if entity_type == "users":
             for granted_role in self.roles_granted_to_user[entity]:
-                if granted_role not in config.get("member_of", []):
+                if granted_role not in member_of_list:
                     sql_commands.append(
                         {
                             "already_granted": False,
@@ -125,7 +127,7 @@ class SnowflakeGrantsGenerator:
             for granted_role in (
                 self.grants_to_role.get(entity, {}).get("usage", {}).get("role", [])
             ):
-                if granted_role not in config.get("member_of", []):
+                if granted_role not in member_of_list:
                     sql_commands.append(
                         {
                             "already_granted": False,
