@@ -521,54 +521,60 @@ class SnowflakeSpecLoader:
 
         conn = SnowflakeConnector()
 
-        warehouses = conn.show_warehouses()
-        for warehouse in self.entities["warehouses"]:
-            if warehouse not in warehouses:
-                error_messages.append(
-                    f"Missing Entity Error: Warehouse {warehouse} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["warehouses"]) > 0:
+            warehouses = conn.show_warehouses()
+            for warehouse in self.entities["warehouses"]:
+                if warehouse not in warehouses:
+                    error_messages.append(
+                        f"Missing Entity Error: Warehouse {warehouse} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
 
-        databases = conn.show_databases()
-        for db in self.entities["databases"]:
-            if db not in databases:
-                error_messages.append(
-                    f"Missing Entity Error: Database {db} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["databases"]) > 0:
+            databases = conn.show_databases()
+            for db in self.entities["databases"]:
+                if db not in databases:
+                    error_messages.append(
+                        f"Missing Entity Error: Database {db} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
 
-        schemas = conn.show_schemas()
-        for schema in self.entities["schema_refs"]:
-            if "*" not in schema and schema not in schemas:
-                error_messages.append(
-                    f"Missing Entity Error: Schema {schema} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["schema_refs"]) > 0:
+            schemas = conn.show_schemas()
+            for schema in self.entities["schema_refs"]:
+                if "*" not in schema and schema not in schemas:
+                    error_messages.append(
+                        f"Missing Entity Error: Schema {schema} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
 
-        tables = conn.show_tables()
-        views = conn.show_views()
-        for table in self.entities["table_refs"]:
-            if "*" not in table and table not in tables and table not in views:
-                error_messages.append(
-                    f"Missing Entity Error: Table/View {table} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["table_refs"]) > 0:
+            tables = conn.show_tables()
+            views = conn.show_views()
+            for table in self.entities["table_refs"]:
+                if "*" not in table and table not in tables and table not in views:
+                    error_messages.append(
+                        f"Missing Entity Error: Table/View {table} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
 
-        roles = conn.show_roles()
-        for role in self.entities["roles"]:
-            if role not in roles:
-                error_messages.append(
-                    f"Missing Entity Error: Role {role} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["roles"]) > 0:
+            roles = conn.show_roles()
+            for role in self.entities["roles"]:
+                if role not in roles:
+                    error_messages.append(
+                        f"Missing Entity Error: Role {role} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
 
-        users = conn.show_users()
-        for user in self.entities["users"]:
-            if user not in users:
-                error_messages.append(
-                    f"Missing Entity Error: User {user} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["users"]) > 0:
+            users = conn.show_users()
+            for user in self.entities["users"]:
+                if user not in users:
+                    error_messages.append(
+                        f"Missing Entity Error: User {user} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
 
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
