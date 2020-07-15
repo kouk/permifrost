@@ -25,18 +25,29 @@ class SnowflakeConnector:
                 "warehouse": os.getenv("PERMISSION_BOT_WAREHOUSE"),
             }
 
-        self.engine = create_engine(
-            URL(
-                user=config["user"],
-                password=config["password"],
-                account=config["account"],
-                database=config["database"],
-                role=config["role"],
-                warehouse=config["warehouse"],
-                # Enable the insecure_mode if you get OCSP errors while testing
-                # insecure_mode=True,
+        if os.getenv("PERMISSION_BOT_OAUTH_TOKEN") is not None:
+            self.engine = create_engine(
+                URL(
+                    user=os.getenv("PERMISSION_BOT_USER"),
+                    account=os.getenv("PERMISSION_BOT_ACCOUNT"),
+                    authenticator="oauth",
+                    token=os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
+                    warehouse=os.getenv("PERMISSION_BOT_WAREHOUSE")
+                )
             )
-        )
+        else:
+            self.engine = create_engine(
+                URL(
+                    user=config["user"],
+                    password=config["password"],
+                    account=config["account"],
+                    database=config["database"],
+                    role=config["role"],
+                    warehouse=config["warehouse"],
+                    # Enable the insecure_mode if you get OCSP errors while testing
+                    # insecure_mode=True,
+                )
+            )
 
     def show_query(self, entity) -> List[str]:
         names = []
