@@ -7,8 +7,6 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 
 ## Unreleased
 
-All roles are revoked from roles and users that do not have a `member_of` entry.
-
 ### New
 
 ### Changes
@@ -30,6 +28,7 @@ All roles are revoked from roles and users that do not have a `member_of` entry.
 
 ### Changes
 - [#5](https://gitlab.com/gitlab-data/permifrost/issues/5) Updates to print commands as they run instead of in a batch at the end of a run
+- [#15](https://gitlab.com/gitlab-data/permifrost/-/issues/15) Roles are revoked from roles and users that do not have a `member_of` config entry
 
 
 ## 0.0.2 - (2020-03-04)
