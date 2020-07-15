@@ -135,14 +135,26 @@ When this flag is set, the permission queries generated are not actually sent to
 When this flag is not set, the commands will be executed on Snowflake and their status will be returned and shown on the command line.
 
 ## Connection Parameters
-
 The following environmental variables must be available to connect to Snowflake:
 
 ```bash
 $PERMISSION_BOT_USER
-$PERMISSION_BOT_PASSWORD
 $PERMISSION_BOT_ACCOUNT
+$PERMISSION_BOT_WAREHOUSE
+```
+
+### Username and Password
+To connect using a username and password, also include the following:
+
+```bash
+$PERMISSION_BOT_PASSWORD
 $PERMISSION_BOT_DATABASE
 $PERMISSION_BOT_ROLE
-$PERMISSION_BOT_WAREHOUSE
+```
+
+### OAuth
+To connect using an OAuth token, also include the following:
+
+```bash
+$PERMISSION_BOT_OAUTH_TOKEN
 ```

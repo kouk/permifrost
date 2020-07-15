@@ -9,8 +9,11 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* Added support for using oauth tokens to authenticate with snowflake.
 
 ### Changes
+* Permifrost will now only query the snowflake server for a given resource type if there is one defined in the spec.  
+For example, if there are no users defined in the spec, permifrost will no longer issue the `SHOW USERS;` command.
 
 ### Fixes
 
