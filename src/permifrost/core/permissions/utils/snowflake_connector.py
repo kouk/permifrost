@@ -1,9 +1,9 @@
 import logging
 import os
 import re
+import sqlalchemy
 
 from typing import Dict, List, Any
-from sqlalchemy import create_engine
 from snowflake.sqlalchemy import URL
 
 
@@ -26,7 +26,7 @@ class SnowflakeConnector:
             }
 
         if os.getenv("PERMISSION_BOT_OAUTH_TOKEN") is not None:
-            self.engine = create_engine(
+            self.engine = sqlalchemy.create_engine(
                 URL(
                     user=os.getenv("PERMISSION_BOT_USER"),
                     account=os.getenv("PERMISSION_BOT_ACCOUNT"),
@@ -36,7 +36,7 @@ class SnowflakeConnector:
                 )
             )
         else:
-            self.engine = create_engine(
+            self.engine = sqlalchemy.create_engine(
                 URL(
                     user=config["user"],
                     password=config["password"],

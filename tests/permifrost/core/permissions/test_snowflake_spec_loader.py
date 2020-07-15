@@ -36,7 +36,7 @@ class MockSnowflakeConnector():
         return []
 
 @pytest.fixture
-def mock_connector(test_dir):
+def mock_connector():
     return MockSnowflakeConnector()
 
 @pytest.fixture
