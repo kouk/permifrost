@@ -22,7 +22,7 @@ DCRN=${DCR} --no-deps
 .PHONY: test clean docker_images release
 
 test:
-	${DCRN} ./setup.py test
+	docker run -it --rm -v $(shell pwd):/project --entrypoint pytest gitlab-data/permifrost:latest -v
 
 # pip related
 TO_CLEAN  = ./build ./dist

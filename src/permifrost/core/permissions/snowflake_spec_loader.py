@@ -16,7 +16,7 @@ VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 
 
 class SnowflakeSpecLoader:
-    def __init__(self, spec_path: str) -> None:
+    def __init__(self, spec_path: str, conn: SnowflakeConnector = None) -> None:
         # Load the specification file and check for (syntactical) errors
         click.secho("Loading spec file", fg="green")
         self.spec = self.load_spec(spec_path)
@@ -33,7 +33,7 @@ class SnowflakeSpecLoader:
             "Checking that all entities in the spec file are defined in Snowflake",
             fg="green",
         )
-        self.check_entities_on_snowflake_server()
+        self.check_entities_on_snowflake_server(conn)
 
         # Get the privileges granted to users and roles in the Snowflake account
         # Used in order to figure out which permissions in the spec file are
@@ -41,7 +41,7 @@ class SnowflakeSpecLoader:
         click.secho("Fetching granted privileges from Snowflake", fg="green")
         self.grants_to_role = {}
         self.roles_granted_to_user = {}
-        self.get_privileges_from_snowflake_server()
+        self.get_privileges_from_snowflake_server(conn)
 
     def load_spec(self, spec_path: str) -> Dict:
         """
@@ -509,7 +509,7 @@ class SnowflakeSpecLoader:
 
         return error_messages
 
-    def check_entities_on_snowflake_server(self) -> None:
+    def check_entities_on_snowflake_server(self, conn: SnowflakeConnector = None) -> None:
         """
         Make sure that all [warehouses, dbs, schemas, tables, users, roles]
         referenced in the spec are defined in Snowflake.
@@ -519,7 +519,8 @@ class SnowflakeSpecLoader:
         """
         error_messages = []
 
-        conn = SnowflakeConnector()
+        if conn is None:
+            conn = SnowflakeConnector()
 
         if len(self.entities["warehouses"]) > 0:
             warehouses = conn.show_warehouses()
@@ -579,13 +580,14 @@ class SnowflakeSpecLoader:
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
 
-    def get_privileges_from_snowflake_server(self) -> None:
+    def get_privileges_from_snowflake_server(self, conn: SnowflakeConnector = None) -> None:
         """
         Get the privileges granted to users and roles in the Snowflake account
         Gets the future privileges granted in all database and schema objects
         Consolidates role and future privileges into a single object for self.grants_to_role
         """
-        conn = SnowflakeConnector()
+        if conn is None:
+            conn = SnowflakeConnector()
 
         future_grants = {}
         for database in self.entities["database_refs"]:
