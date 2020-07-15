@@ -27,6 +27,10 @@ test:
 # pip related
 TO_CLEAN  = ./build ./dist
 
+docker_clean:
+	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
+	bash -c "make clean"
+
 clean:
 	rm -rf ${TO_CLEAN}
 
@@ -67,9 +71,9 @@ sdist:
 	python setup.py sdist
 
 docker_sdist: base_image
-	docker run --rm -v `pwd`:/permifrost ${base_image_tag} \
-	bash -c "make sdist" && \
-	bash -c "chmod 777 dist/*"
+	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
+	bash -c "make sdist && chmod 777 dist/*"
+
 
 # Lint Related Tasks
 # ==================
