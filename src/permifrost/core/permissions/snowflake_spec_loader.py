@@ -532,6 +532,10 @@ class SnowflakeSpecLoader:
                         f"Missing Entity Error: Warehouse {warehouse} was not found on"
                         " Snowflake Server. Please create it before continuing."
                     )
+        else:
+            logging.debug(
+                "`warehouses` not found in spec, skipping SHOW WAREHOUSES call."
+            )
 
         if len(self.entities["databases"]) > 0:
             databases = conn.show_databases()
@@ -541,6 +545,10 @@ class SnowflakeSpecLoader:
                         f"Missing Entity Error: Database {db} was not found on"
                         " Snowflake Server. Please create it before continuing."
                     )
+        else:
+            logging.debug(
+                "`databases` not found in spec, skipping SHOW DATABASES call."
+            )
 
         if len(self.entities["schema_refs"]) > 0:
             schemas = conn.show_schemas()
@@ -550,6 +558,10 @@ class SnowflakeSpecLoader:
                         f"Missing Entity Error: Schema {schema} was not found on"
                         " Snowflake Server. Please create it before continuing."
                     )
+        else:
+            logging.debug(
+                "`schemas` not found in spec, skipping SHOW SCHEMAS call."
+            )
 
         if len(self.entities["table_refs"]) > 0:
             tables = conn.show_tables()
@@ -560,6 +572,10 @@ class SnowflakeSpecLoader:
                         f"Missing Entity Error: Table/View {table} was not found on"
                         " Snowflake Server. Please create it before continuing."
                     )
+        else:
+            logging.debug(
+                "`tables` not found in spec, skipping SHOW TABLES/VIEWS call."
+            )            
 
         if len(self.entities["roles"]) > 0:
             roles = conn.show_roles()
@@ -569,6 +585,10 @@ class SnowflakeSpecLoader:
                         f"Missing Entity Error: Role {role} was not found on"
                         " Snowflake Server. Please create it before continuing."
                     )
+        else:
+            logging.debug(
+                "`roles` not found in spec, skipping SHOW ROLES call."
+            )
 
         if len(self.entities["users"]) > 0:
             users = conn.show_users()
@@ -578,6 +598,10 @@ class SnowflakeSpecLoader:
                         f"Missing Entity Error: User {user} was not found on"
                         " Snowflake Server. Please create it before continuing."
                     )
+        else:
+            logging.debug(
+                "`users` not found in spec, skipping SHOW USERS call."
+            )
 
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
