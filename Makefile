@@ -16,16 +16,18 @@ endif
 
 DOCKER_RUN=docker run -it --rm -v $(shell pwd):/app -w /app
 PYTHON_RUN=${DOCKER_RUN} --name python-$(shell uuidgen) python
-DCR=docker-compose run --rm
-DCRN=${DCR} --no-deps
 
 .PHONY: test clean docker_images release
 
 test:
-	${DCRN} ./setup.py test
+	docker run -it --rm -v $(shell pwd):/project --entrypoint pytest gitlab-data/permifrost:latest -v
 
 # pip related
 TO_CLEAN  = ./build ./dist
+
+docker_clean:
+	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
+	bash -c "make clean"
 
 clean:
 	rm -rf ${TO_CLEAN}
@@ -67,9 +69,9 @@ sdist:
 	python setup.py sdist
 
 docker_sdist: base_image
-	docker run --rm -v `pwd`:/permifrost ${base_image_tag} \
-	bash -c "make sdist" && \
-	bash -c "chmod 777 dist/*"
+	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
+	bash -c "make sdist && chmod 777 dist/*"
+
 
 # Lint Related Tasks
 # ==================
@@ -86,6 +88,11 @@ show_lint_black:
 	${BLACK_RUN} --check --diff
 
 lint: lint_black
+
+docker_lint:
+	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
+	bash -c "make lint"
+
 show_lint: show_lint_black
 
 # Makefile Related Tasks

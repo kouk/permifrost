@@ -1,9 +1,9 @@
 import logging
 import os
 import re
+import sqlalchemy
 
 from typing import Dict, List, Any
-from sqlalchemy import create_engine
 from snowflake.sqlalchemy import URL
 
 
@@ -23,20 +23,32 @@ class SnowflakeConnector:
                 "database": os.getenv("PERMISSION_BOT_DATABASE"),
                 "role": os.getenv("PERMISSION_BOT_ROLE"),
                 "warehouse": os.getenv("PERMISSION_BOT_WAREHOUSE"),
+                "oauth_token": os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
             }
 
-        self.engine = create_engine(
-            URL(
-                user=config["user"],
-                password=config["password"],
-                account=config["account"],
-                database=config["database"],
-                role=config["role"],
-                warehouse=config["warehouse"],
-                # Enable the insecure_mode if you get OCSP errors while testing
-                # insecure_mode=True,
+        if config["oauth_token"] is not None:
+            self.engine = sqlalchemy.create_engine(
+                URL(
+                    user=config["user"],
+                    account=config["account"],
+                    authenticator="oauth",
+                    token=config["oauth_token"],
+                    warehouse=config["warehouse"],
+                )
             )
-        )
+        else:
+            self.engine = sqlalchemy.create_engine(
+                URL(
+                    user=config["user"],
+                    password=config["password"],
+                    account=config["account"],
+                    database=config["database"],
+                    role=config["role"],
+                    warehouse=config["warehouse"],
+                    # Enable the insecure_mode if you get OCSP errors while testing
+                    # insecure_mode=True,
+                )
+            )
 
     def show_query(self, entity) -> List[str]:
         names = []

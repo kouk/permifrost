@@ -9,8 +9,10 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* [#21](https://gitlab.com/gitlab-data/permifrost/-/issues/21) Add support for OAuth token authentication.
 
 ### Changes
+* [#26](https://gitlab.com/gitlab-data/permifrost/-/issues/26) Only query the Snowflake server for a given resource type if defined in the spec.  
 
 ### Fixes
 - [#15](https://gitlab.com/gitlab-data/permifrost/issues/15) Roles are revoked from roles and users that do not have a `member_of` config entry

@@ -16,7 +16,7 @@ VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 
 
 class SnowflakeSpecLoader:
-    def __init__(self, spec_path: str) -> None:
+    def __init__(self, spec_path: str, conn: SnowflakeConnector = None) -> None:
         # Load the specification file and check for (syntactical) errors
         click.secho("Loading spec file", fg="green")
         self.spec = self.load_spec(spec_path)
@@ -33,7 +33,7 @@ class SnowflakeSpecLoader:
             "Checking that all entities in the spec file are defined in Snowflake",
             fg="green",
         )
-        self.check_entities_on_snowflake_server()
+        self.check_entities_on_snowflake_server(conn)
 
         # Get the privileges granted to users and roles in the Snowflake account
         # Used in order to figure out which permissions in the spec file are
@@ -41,7 +41,7 @@ class SnowflakeSpecLoader:
         click.secho("Fetching granted privileges from Snowflake", fg="green")
         self.grants_to_role = {}
         self.roles_granted_to_user = {}
-        self.get_privileges_from_snowflake_server()
+        self.get_privileges_from_snowflake_server(conn)
 
     def load_spec(self, spec_path: str) -> Dict:
         """
@@ -509,7 +509,9 @@ class SnowflakeSpecLoader:
 
         return error_messages
 
-    def check_entities_on_snowflake_server(self) -> None:
+    def check_entities_on_snowflake_server(
+        self, conn: SnowflakeConnector = None
+    ) -> None:
         """
         Make sure that all [warehouses, dbs, schemas, tables, users, roles]
         referenced in the spec are defined in Snowflake.
@@ -519,67 +521,95 @@ class SnowflakeSpecLoader:
         """
         error_messages = []
 
-        conn = SnowflakeConnector()
+        if conn is None:
+            conn = SnowflakeConnector()
 
-        warehouses = conn.show_warehouses()
-        for warehouse in self.entities["warehouses"]:
-            if warehouse not in warehouses:
-                error_messages.append(
-                    f"Missing Entity Error: Warehouse {warehouse} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["warehouses"]) > 0:
+            warehouses = conn.show_warehouses()
+            for warehouse in self.entities["warehouses"]:
+                if warehouse not in warehouses:
+                    error_messages.append(
+                        f"Missing Entity Error: Warehouse {warehouse} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logging.debug(
+                "`warehouses` not found in spec, skipping SHOW WAREHOUSES call."
+            )
 
-        databases = conn.show_databases()
-        for db in self.entities["databases"]:
-            if db not in databases:
-                error_messages.append(
-                    f"Missing Entity Error: Database {db} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["databases"]) > 0:
+            databases = conn.show_databases()
+            for db in self.entities["databases"]:
+                if db not in databases:
+                    error_messages.append(
+                        f"Missing Entity Error: Database {db} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logging.debug(
+                "`databases` not found in spec, skipping SHOW DATABASES call."
+            )
 
-        schemas = conn.show_schemas()
-        for schema in self.entities["schema_refs"]:
-            if "*" not in schema and schema not in schemas:
-                error_messages.append(
-                    f"Missing Entity Error: Schema {schema} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["schema_refs"]) > 0:
+            schemas = conn.show_schemas()
+            for schema in self.entities["schema_refs"]:
+                if "*" not in schema and schema not in schemas:
+                    error_messages.append(
+                        f"Missing Entity Error: Schema {schema} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logging.debug("`schemas` not found in spec, skipping SHOW SCHEMAS call.")
 
-        tables = conn.show_tables()
-        views = conn.show_views()
-        for table in self.entities["table_refs"]:
-            if "*" not in table and table not in tables and table not in views:
-                error_messages.append(
-                    f"Missing Entity Error: Table/View {table} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["table_refs"]) > 0:
+            tables = conn.show_tables()
+            views = conn.show_views()
+            for table in self.entities["table_refs"]:
+                if "*" not in table and table not in tables and table not in views:
+                    error_messages.append(
+                        f"Missing Entity Error: Table/View {table} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logging.debug(
+                "`tables` not found in spec, skipping SHOW TABLES/VIEWS call."
+            )
 
-        roles = conn.show_roles()
-        for role in self.entities["roles"]:
-            if role not in roles:
-                error_messages.append(
-                    f"Missing Entity Error: Role {role} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["roles"]) > 0:
+            roles = conn.show_roles()
+            for role in self.entities["roles"]:
+                if role not in roles:
+                    error_messages.append(
+                        f"Missing Entity Error: Role {role} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logging.debug("`roles` not found in spec, skipping SHOW ROLES call.")
 
-        users = conn.show_users()
-        for user in self.entities["users"]:
-            if user not in users:
-                error_messages.append(
-                    f"Missing Entity Error: User {user} was not found on"
-                    " Snowflake Server. Please create it before continuing."
-                )
+        if len(self.entities["users"]) > 0:
+            users = conn.show_users()
+            for user in self.entities["users"]:
+                if user not in users:
+                    error_messages.append(
+                        f"Missing Entity Error: User {user} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logging.debug("`users` not found in spec, skipping SHOW USERS call.")
 
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
 
-    def get_privileges_from_snowflake_server(self) -> None:
+    def get_privileges_from_snowflake_server(
+        self, conn: SnowflakeConnector = None
+    ) -> None:
         """
         Get the privileges granted to users and roles in the Snowflake account
         Gets the future privileges granted in all database and schema objects
         Consolidates role and future privileges into a single object for self.grants_to_role
         """
-        conn = SnowflakeConnector()
+        if conn is None:
+            conn = SnowflakeConnector()
 
         future_grants = {}
         for database in self.entities["database_refs"]:
