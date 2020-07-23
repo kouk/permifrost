@@ -16,8 +16,6 @@ endif
 
 DOCKER_RUN=docker run -it --rm -v $(shell pwd):/app -w /app
 PYTHON_RUN=${DOCKER_RUN} --name python-$(shell uuidgen) python
-DCR=docker-compose run --rm
-DCRN=${DCR} --no-deps
 
 .PHONY: test clean docker_images release
 
