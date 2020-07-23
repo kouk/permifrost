@@ -559,9 +559,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug(
-                "`schemas` not found in spec, skipping SHOW SCHEMAS call."
-            )
+            logging.debug("`schemas` not found in spec, skipping SHOW SCHEMAS call.")
 
         if len(self.entities["table_refs"]) > 0:
             tables = conn.show_tables()
@@ -575,7 +573,7 @@ class SnowflakeSpecLoader:
         else:
             logging.debug(
                 "`tables` not found in spec, skipping SHOW TABLES/VIEWS call."
-            )            
+            )
 
         if len(self.entities["roles"]) > 0:
             roles = conn.show_roles()
@@ -586,9 +584,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug(
-                "`roles` not found in spec, skipping SHOW ROLES call."
-            )
+            logging.debug("`roles` not found in spec, skipping SHOW ROLES call.")
 
         if len(self.entities["users"]) > 0:
             users = conn.show_users()
@@ -599,9 +595,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug(
-                "`users` not found in spec, skipping SHOW USERS call."
-            )
+            logging.debug("`users` not found in spec, skipping SHOW USERS call.")
 
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
