@@ -23,16 +23,17 @@ class SnowflakeConnector:
                 "database": os.getenv("PERMISSION_BOT_DATABASE"),
                 "role": os.getenv("PERMISSION_BOT_ROLE"),
                 "warehouse": os.getenv("PERMISSION_BOT_WAREHOUSE"),
+                "oauth_token": os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
             }
 
-        if os.getenv("PERMISSION_BOT_OAUTH_TOKEN") is not None:
+        if config["oauth_token"] is not None:
             self.engine = sqlalchemy.create_engine(
                 URL(
-                    user=os.getenv("PERMISSION_BOT_USER"),
-                    account=os.getenv("PERMISSION_BOT_ACCOUNT"),
+                    user=config["PERMISSION_BOT_USER"],
+                    account=config["PERMISSION_BOT_ACCOUNT"],
                     authenticator="oauth",
-                    token=os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
-                    warehouse=os.getenv("PERMISSION_BOT_WAREHOUSE"),
+                    token=config["PERMISSION_BOT_OAUTH_TOKEN"],
+                    warehouse=config["PERMISSION_BOT_WAREHOUSE"],
                 )
             )
         else:
