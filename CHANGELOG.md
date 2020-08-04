@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 * [#26](https://gitlab.com/gitlab-data/permifrost/-/issues/26) Only query the Snowflake server for a given resource type if defined in the spec.  
 
 ### Fixes
+- [#13](https://gitlab.com/gitlab-data/permifrost/-/issues/13) Database level table and view grants are properly handled in lists
 - [#15](https://gitlab.com/gitlab-data/permifrost/issues/15) Roles are revoked from roles and users that do not have a `member_of` config entry
 
 ### Breaks
