@@ -193,6 +193,18 @@ class SnowflakeConnector:
 
         return roles
 
+    def get_current_user(self) -> str:
+        query = f"SELECT CURRENT_USER() AS USER"
+        with self.engine.connect() as connection:
+            result = self.run_query(query).fetchone()
+            return result["user"].lower()
+
+    def get_current_role(self) -> str:
+        query = f"SELECT CURRENT_ROLE() as role"
+        with self.engine.connect() as connection:
+            result = self.run_query(query).fetchone()
+            return result["role"].lower()
+
     def run_query(self, query: str):
 
         with self.engine.connect() as connection:

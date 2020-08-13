@@ -36,6 +36,11 @@ class MockSnowflakeConnector:
     def show_roles_granted_to_user(self, user) -> List[str]:
         return []
 
+    def get_current_user(self) -> str:
+        return ""
+
+    def get_current_role(self) -> str:
+        return "securityadmin"
 
 @pytest.fixture
 def mock_connector():

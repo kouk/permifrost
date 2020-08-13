@@ -27,6 +27,11 @@ class SnowflakeSpecLoader:
         click.secho("Checking spec file for errors", fg="green")
         self.entities = self.inspect_spec()
 
+        # Connect to Snowflake to make sure that the current user has correct
+        # permissions
+        click.secho("Checking permissions on current snowflake connection", fg="green")
+        self.check_permissions_on_snowflake_server(conn)
+
         # Connect to Snowflake to make sure that all entities defined in the
         #  spec file are also defined in Snowflake (no missing databases, etc)
         click.secho(
@@ -508,6 +513,26 @@ class SnowflakeSpecLoader:
                 )
 
         return error_messages
+
+    def check_permissions_on_snowflake_server(
+        self, conn: SnowflakeConnector = None
+    ) -> None:
+        if conn is None:
+            conn = SnowflakeConnector()
+        error_messages = []
+
+        click.secho(f"Current user is: {conn.get_current_user()}.", fg="green")
+
+        current_role = conn.get_current_role()
+        if "securityadmin" != current_role:
+            error_messages.append(
+                f"Current role is not securityadmin! "
+                "Permifrost expects to run as securityadmin, please update your connection settings."
+            )
+        click.secho(f"Current role is: {current_role}.", fg="green")
+
+        if error_messages:
+            raise SpecLoadingError("\n".join(error_messages))
 
     def check_entities_on_snowflake_server(
         self, conn: SnowflakeConnector = None
