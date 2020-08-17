@@ -59,9 +59,11 @@ class TestSnowflakeConnector:
         mocker.patch("sqlalchemy.create_engine")
         conn = SnowflakeConnector()
         expectedResult = "MY DATABASE RESULT"
-        mocker.patch.object(conn.engine.connect().__enter__(), 'execute', return_value=expectedResult)
+        mocker.patch.object(
+            conn.engine.connect().__enter__(), "execute", return_value=expectedResult
+        )
 
-        result = conn.run_query('query')
+        result = conn.run_query("query")
 
         assert result is expectedResult
 
@@ -69,20 +71,24 @@ class TestSnowflakeConnector:
         mocker.patch("sqlalchemy.create_engine")
         conn = SnowflakeConnector()
         conn.run_query = mocker.MagicMock()
-        mocker.patch.object(conn.run_query(), 'fetchone', return_value={'user': 'TEST_USER'})
+        mocker.patch.object(
+            conn.run_query(), "fetchone", return_value={"user": "TEST_USER"}
+        )
 
         user = conn.get_current_user()
 
-        conn.run_query.assert_has_calls([mocker.call('SELECT CURRENT_USER() AS USER')])
+        conn.run_query.assert_has_calls([mocker.call("SELECT CURRENT_USER() AS USER")])
         assert user == "test_user"
 
     def test_get_current_role(self, mocker):
         mocker.patch("sqlalchemy.create_engine")
         conn = SnowflakeConnector()
         conn.run_query = mocker.MagicMock()
-        mocker.patch.object(conn.run_query(), 'fetchone', return_value={'role': 'TEST_ROLE'})
+        mocker.patch.object(
+            conn.run_query(), "fetchone", return_value={"role": "TEST_ROLE"}
+        )
 
         role = conn.get_current_role()
 
-        conn.run_query.assert_has_calls([mocker.call('SELECT CURRENT_ROLE() AS ROLE')])
+        conn.run_query.assert_has_calls([mocker.call("SELECT CURRENT_ROLE() AS ROLE")])
         assert role == "test_role"

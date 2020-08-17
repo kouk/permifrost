@@ -42,6 +42,7 @@ class MockSnowflakeConnector:
     def get_current_role(self) -> str:
         return "securityadmin"
 
+
 @pytest.fixture
 def mock_connector():
     return MockSnowflakeConnector()
