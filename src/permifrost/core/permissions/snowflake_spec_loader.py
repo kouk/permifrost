@@ -521,7 +521,7 @@ class SnowflakeSpecLoader:
             conn = SnowflakeConnector()
         error_messages = []
 
-        click.secho(f"Current user is: {conn.get_current_user()}.", fg="green")
+        click.secho(f"  Current user is: {conn.get_current_user()}.", fg="green")
 
         current_role = conn.get_current_role()
         if "securityadmin" != current_role:
