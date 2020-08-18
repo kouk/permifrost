@@ -112,27 +112,32 @@ class TestSnowflakeSpecLoader:
         mock_connector.show_users.assert_not_called()
 
     def test_check_permissions_on_snowflake_server_as_securityadmin(
-            self, test_dir, mocker, mock_connector
+        self, test_dir, mocker, mock_connector
     ):
-        mocker.patch.object(MockSnowflakeConnector, "get_current_role", return_value="securityadmin")
+        mocker.patch.object(
+            MockSnowflakeConnector, "get_current_role", return_value="securityadmin"
+        )
         SnowflakeSpecLoader(
             os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
         )
         mock_connector.get_current_role.assert_called()
 
     def test_check_permissions_on_snowflake_server_not_as_securityadmin(
-                self, test_dir, mocker, mock_connector
-        ):
-        mocker.patch.object(MockSnowflakeConnector, "get_current_role", return_value="notsecurityadmin")
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(
+            MockSnowflakeConnector, "get_current_role", return_value="notsecurityadmin"
+        )
         with pytest.raises(SpecLoadingError) as context:
             SnowflakeSpecLoader(
-                os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+                os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"),
+                mock_connector,
             )
             mock_connector.get_current_role.assert_called()
 
     def test_check_permissions_on_snowflake_server_gets_current_user_info(
-                self, test_dir, mocker, mock_connector
-        ):
+        self, test_dir, mocker, mock_connector
+    ):
         mocker.patch.object(MockSnowflakeConnector, "get_current_user")
         SnowflakeSpecLoader(
             os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
