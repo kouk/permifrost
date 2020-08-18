@@ -9,13 +9,19 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#27](https://gitlab.com/gitlab-data/permifrost/-/issues/27) Add validation to make sure current user's role is securityadmin.
 
 ### Changes
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.2.1 - (2020-08-18)
+---
+
+### New
+* [#27](https://gitlab.com/gitlab-data/permifrost/-/issues/27) Add validation to make sure current user's role is securityadmin.
 
 
 ## 0.2.0 - (2020-08-04)
