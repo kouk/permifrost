@@ -153,7 +153,7 @@ $PERMISSION_BOT_DATABASE
 $PERMISSION_BOT_ROLE
 ```
 
-Currently, Permifrost assumes you are using the SECURITYADMIN role.
+Currently, Permifrost assumes you are using the SECURITYADMIN role and will fail validation if you are not.
 
 ### OAuth
 To connect using an OAuth token, also include the following:
