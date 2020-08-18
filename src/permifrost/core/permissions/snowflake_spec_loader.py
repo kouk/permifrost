@@ -529,7 +529,7 @@ class SnowflakeSpecLoader:
                 f"Current role is not securityadmin! "
                 "Permifrost expects to run as securityadmin, please update your connection settings."
             )
-        click.secho(f"Current role is: {current_role}.", fg="green")
+        click.secho(f"  Current role is: {current_role}.", fg="green")
 
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
