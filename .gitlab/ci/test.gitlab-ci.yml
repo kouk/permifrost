@@ -11,7 +11,7 @@ lint:
   before_script:
     - pip install black
   script:
-    - make show_lint
+    - make local-show-lint
 
 pytest:
   extends: .test

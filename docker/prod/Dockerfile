@@ -9,7 +9,7 @@ COPY . .
 # this enables the build process to have access to local
 # `permifrost` module
 ENV PYTHONPATH=src/
-RUN make sdist
+RUN python setup.py sdist
 
 FROM $BASE_IMAGE as runtime
 # grab the built package

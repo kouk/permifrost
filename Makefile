@@ -1,10 +1,37 @@
-# General
-# =======
-#
-# - `make test` runs pytest
-# - `make clean` deletes all the build artifacts
-# - `make docker_images` builds all the docker images including the production
-#   image
+#########################################################
+##################### Globals ###########################
+#########################################################
+
+.DEFAULT_GOAL := dev-help
+COMMIT_HASH = $(shell git log -1 --pretty=%H)
+
+dev-help:
+	@echo "base-image -> builds gitlab-data/base"
+	@echo "docker-clean -> deletes all the build artifacts"
+	@echo "docker-images -> builds the base and prod images"
+	@echo "permifrost -> starts a shell in a container with the local Permifrost installed"
+	@echo "requirements.txt -> pins dependency versions in `requirements.txt`"
+	@echo "prod-image -> builds gitlab-data/permifrost which is an all-in-one production image"
+	@echo "test -> runs pytest"
+
+#########################################################
+################### Development #########################
+#########################################################
+.PHONY: compose-down permifrost
+
+compose-build:
+	@docker-compose build
+
+compose-down:
+	@docker-compose down
+
+permifrost: compose-down compose-build
+	@docker-compose run permifrost /bin/bash -c "pip install -e . && clear && /bin/bash"
+
+#########################################################
+#################### CI Tests ###########################
+#########################################################
+.PHONY: base_image prod_image lint show_lint test clean docker_images release
 
 ifdef DOCKER_REGISTRY
 base_image_tag = ${DOCKER_REGISTRY}/gitlab-data/permifrost/base
@@ -14,97 +41,56 @@ base_image_tag = gitlab-data/permifrost/base
 prod_image_tag = gitlab-data/permifrost
 endif
 
-DOCKER_RUN=docker run -it --rm -v $(shell pwd):/app -w /app
-PYTHON_RUN=${DOCKER_RUN} --name python-$(shell uuidgen) python
+# Testing
+test: compose-build
+	@docker-compose run permifrost /bin/bash \
+		-c "pip install -e . && pytest -v --disable-pytest-warnings"
 
-.PHONY: test clean docker_images release
+typecheck: compose-build
+	@docker-compose run permifrost /bin/bash \
+		-c "pip install -e . && mypy src/permifrost/ --ignore-missing-imports"
 
-test:
-	docker run -it --rm -v $(shell pwd):/project --entrypoint pytest gitlab-data/permifrost:latest -v
+# Docker
+docker-images: prod-image
 
-# pip related
-TO_CLEAN  = ./build ./dist
-
-docker_clean:
-	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
-	bash -c "make clean"
-
-clean:
-	rm -rf ${TO_CLEAN}
-
-docker_images: base_image prod_image
-
-# Docker Image Related
-# ====================
-#
-# - `make base_image` builds gitlab-data/base
-# - `make prod_image` builds gitlab-data/permifrost which is an all-in-one production
-#   image that includes the static ui artifacts in the image.
-
-.PHONY: base_image prod_image
-
-base_image:
-	docker build \
+base-image:
+	@docker build \
 		--file docker/base/Dockerfile \
 		-t $(base_image_tag) \
 		.
 
-prod_image: base_image
-	docker build \
+prod-image: base_image
+	@docker build \
 		--file docker/prod/Dockerfile \
 		-t $(prod_image_tag) \
 		--build-arg BASE_IMAGE=$(base_image_tag) \
 		.
 
-# Packaging Related
-# ===========
-#
-# - `make requirements.txt` pins dependency versions. We use requirements.txt
-#   as a lockfile essentially.
 
+# Linting
+BLACK_RUN = black src/permifrost tests/
+
+lint: compose-build
+	@docker-compose run permifrost /bin/bash -c "make local-lint"
+
+show-lint: compose-build
+	@docker-compose run permifrost /bin/bash -c "make local-show-lint"
+
+local-lint:
+	${BLACK_RUN}
+
+local-show-lint:
+	${BLACK_RUN} --check --diff
+
+#########################################################
+#################### Deployment #########################
+#########################################################
+
+# Packaging Related
 requirements.txt: setup.py
 	pip freeze --exclude-editable > $@
 
-sdist:
-	python setup.py sdist
-
-docker_sdist: base_image
-	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
-	bash -c "make sdist && chmod 777 dist/*"
-
-
-# Lint Related Tasks
-# ==================
-#
-
-.PHONY: lint show_lint
-
-BLACK_RUN = black src/permifrost tests/
-
-lint_black:
-	${BLACK_RUN}
-
-show_lint_black:
-	${BLACK_RUN} --check --diff
-
-lint: lint_black
-
-docker_lint:
-	docker run --rm -v `pwd`:/permifrost -w /permifrost ${base_image_tag} \
-	bash -c "make lint"
-
-show_lint: show_lint_black
-
-# Makefile Related Tasks
-# ======================
-#
-# - `make explain_makefile` will bring up a web server with this makefile annotated.
-explain_makefile:
-	docker stop explain_makefile || echo 'booting server'
-	${DOCKER_RUN} --name explain_makefile -p 8081:8081 node ./Makefile_explain.sh
-
 # Release
-# =====================
 ifdef type
   override type := --$(type)
 endif

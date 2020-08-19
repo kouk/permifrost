@@ -1,0 +1,14 @@
+version: "3.7"
+services:
+  permifrost:
+    image: permifrost_base
+    container_name: composed_permifrost
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+    working_dir: /permifrost
+    volumes:
+      - type: bind
+        source: .
+        target: /permifrost
+        read_only: False
