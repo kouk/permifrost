@@ -27,7 +27,6 @@ If a schema name includes an asterisk, such as `snowplow_*`, then all schemas th
 
 All entities must be explicitly referenced. For example, if a permission is granted to a schema or table then the database must be explicitly referenced for permissioning as well.  Additionally, role membership must be explicit in the config file.  If a role does not have a `member_of` list, it will have all roles it currently has revoked.
 
-
 A specification file has the following structure:
 
 ```bash
@@ -136,6 +135,7 @@ When this flag is set, the permission queries generated are not actually sent to
 When this flag is not set, the commands will be executed on Snowflake and their status will be returned and shown on the command line.
 
 ## Connection Parameters
+
 The following environmental variables must be available to connect to Snowflake:
 
 ```bash
@@ -145,6 +145,7 @@ $PERMISSION_BOT_WAREHOUSE
 ```
 
 ### Username and Password
+
 To connect using a username and password, also include the following:
 
 ```bash
@@ -156,8 +157,18 @@ $PERMISSION_BOT_ROLE
 Currently, Permifrost assumes you are using the SECURITYADMIN role and will fail validation if you are not.
 
 ### OAuth
+
 To connect using an OAuth token, also include the following:
 
 ```bash
 $PERMISSION_BOT_OAUTH_TOKEN
 ```
+
+## Contributing
+
+Contributing to Permifrost is easy, and most commands to do so are available within the Makefile.
+
+The easiest way to start developing is to run `make permifrost`, this will open a shell in a docker container with the local version of Permifrost installed.
+You can now make changes to the files in your editor and it will be reflected in the commands that you run from the docker shell.
+
+For code checking, you can use `make test`, `make lint`,and `make typecheck`. See the Makefile for more details.
