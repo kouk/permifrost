@@ -125,7 +125,7 @@ class SnowflakeSpecLoader:
         entities_by_type = [
             (entity_type, entities)
             for entity_type, entities in spec.items()
-            if entities and entity_type != "version"
+            if entities and entity_type in ["databases", "roles", "users", "warehouses"]
         ]
 
         for entity_type, entities in entities_by_type:
@@ -163,6 +163,8 @@ class SnowflakeSpecLoader:
 
         error_messages.extend(self.ensure_valid_entity_names(entities))
 
+        error_messages.extend(self.ensure_valid_spec_for_conditional_settings(entities))
+
         error_messages.extend(self.ensure_valid_references(entities))
 
         if error_messages:
@@ -198,6 +200,7 @@ class SnowflakeSpecLoader:
             "users": set(),
             "warehouses": set(),
             "warehouse_refs": set(),
+            "require-owner": False,
         }
 
         entities_by_type = [
@@ -207,6 +210,10 @@ class SnowflakeSpecLoader:
         ]
 
         for entity_type, entry in entities_by_type:
+            if entity_type == "require-owner":
+                entities["require-owner"] = entry
+                continue
+
             for entity_dict in entry:
                 for entity_name, config in entity_dict.items():
                     if entity_type == "databases":
@@ -511,6 +518,36 @@ class SnowflakeSpecLoader:
                     f"Reference error: Warehouse {warehouse} is referenced "
                     "in the spec but not defined"
                 )
+
+        return error_messages
+
+    def ensure_valid_spec_for_conditional_settings(self, entities: Dict) -> List[str]:
+        """
+        Make sure that the spec is valid based on conditional settings such as require-owner
+        """
+        error_messages = []
+
+        if entities["require-owner"]:
+            error_messages.extend(self.check_entities_define_owner())
+
+        return error_messages
+
+    def check_entities_define_owner(self) -> List[str]:
+        error_messages = []
+
+        entities_by_type = [
+            (entity_type, entry)
+            for entity_type, entry in self.spec.items()
+            if entry and entity_type in ["databases", "roles", "users", "warehouses"]
+        ]
+
+        for entity_type, entry in entities_by_type:
+            for entity_dict in entry:
+                for entity_name, config in entity_dict.items():
+                    if "owner" not in config.keys():
+                        error_messages.append(
+                            f"Spec Error: Owner not defined for {entity_type} {entity_name} and require-owner is set!"
+                        )
 
         return error_messages
 

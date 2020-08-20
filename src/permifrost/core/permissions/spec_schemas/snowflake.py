@@ -2,6 +2,11 @@ SNOWFLAKE_SPEC_SCHEMA = """
     version:
         type: string
         required: False
+    
+    require-owner:
+        type: boolean
+        required: False
+        default: False
 
     databases:
         type: list
@@ -41,10 +46,16 @@ SNOWFLAKE_SPEC_DATABASE_SCHEMA = """
     shared:
         type: boolean
         required: True
+    owner:
+        type: string
+        required: False
     """
 
 
 SNOWFLAKE_SPEC_ROLE_SCHEMA = """
+    owner:
+        type: string
+        required: False
     warehouses:
         type: list
         schema:
@@ -81,6 +92,9 @@ SNOWFLAKE_SPEC_ROLE_SCHEMA = """
     """
 
 SNOWFLAKE_SPEC_USER_SCHEMA = """
+    owner:
+        type: string
+        required: False
     can_login:
         type: boolean
         required: True
@@ -91,6 +105,9 @@ SNOWFLAKE_SPEC_USER_SCHEMA = """
     """
 
 SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA = """
+    owner:
+        type: string
+        required: False
     size:
         type: string
         required: True
