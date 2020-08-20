@@ -6,9 +6,11 @@ from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoade
 from permifrost_test_utils.snowflake_schema_builder import SnowflakeSchemaBuilder
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 
+
 @pytest.fixture
 def test_dir(request):
     return request.fspath.dirname
+
 
 @pytest.fixture
 def mock_connector():

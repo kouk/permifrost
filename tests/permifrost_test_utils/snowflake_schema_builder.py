@@ -3,6 +3,7 @@ class SnowflakeSchemaBuilder:
     Basic builder class for creating spec_files.  Useful for small, focused tests to generate
     a spec on the fly, for example in a parameterized test.
     """
+
     def __init__(self):
         self.version = ""
         self.warehouses = []

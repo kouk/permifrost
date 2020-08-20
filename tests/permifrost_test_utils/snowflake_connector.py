@@ -1,6 +1,7 @@
 import pytest
 from typing import Dict, List, Any
 
+
 class MockSnowflakeConnector:
     def show_databases(self) -> List[str]:
         return []
