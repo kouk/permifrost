@@ -131,7 +131,7 @@ warehouses:
 
 For a working example, you can check [the Snowflake specification file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/core/permissions/specs/snowflake_spec.yml) that we are using for testing `permifrost permissions`.
 
-### settings
+### Settings
 All settings are declared here with their default values and are described below.  These can be added to your spec.yaml file.
 
 ```yaml
