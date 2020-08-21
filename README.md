@@ -36,6 +36,7 @@ databases:
         shared: boolean
     - db_name:
         shared: boolean
+        owner: role_name
     ... ... ...
 
 # Roles
@@ -103,6 +104,7 @@ roles:
                 ...
 
     - role_name:
+        owner: role_name
     ... ... ...
 
 # Users
@@ -113,16 +115,29 @@ users:
             - role_name
             ...
     - user_name:
+        owner: role_name
     ... ... ...
 
 # Warehouses
 warehouses:
     - warehouse_name:
         size: x-small
+    - warehouse_name:
+        size: x-small
+        owner: role_name
     ... ... ...
 ```
 
 For a working example, you can check [the Snowflake specification file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/core/permissions/specs/snowflake_spec.yml) that we are using for testing `permifrost permissions`.
+
+### Settings
+All settings are declared here with their default values and are described below.  These can be added to your spec.yaml file.
+
+```yaml
+require-owner: false
+```
+
+`require-owner`: Set to true to force having to set the `owner` property on all objects defined.
 
 ## --diff
 

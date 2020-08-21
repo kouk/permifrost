@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* [#28](https://gitlab.com/gitlab-data/permifrost/-/issues/28) Add owner field to all objects and also a 
+require-owner optional property
 
 ### Changes
 
