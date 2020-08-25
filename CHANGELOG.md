@@ -9,15 +9,23 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+
+### Changes
+
+### Fixes
+
+### Breaks
+
+
+## 0.3.0 - (2020-08-25)
+---
+
+### New
 * [#28](https://gitlab.com/gitlab-data/permifrost/-/issues/28) Add owner field to all objects and also a 
 require-owner optional property
 
 ### Changes
 * [#39](https://gitlab.com/gitlab-data/permifrost/-/issues/39) Improve performance of runs by reusing snowflake connection when applying grants
-
-### Fixes
-
-### Breaks
 
 
 ## 0.2.1 - (2020-08-18)
