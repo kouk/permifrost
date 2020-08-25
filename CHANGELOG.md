@@ -13,6 +13,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 require-owner optional property
 
 ### Changes
+* [#39](https://gitlab.com/gitlab-data/permifrost/-/issues/39) Improve performance of runs by reusing snowflake connection when applying grants
 
 ### Fixes
 
