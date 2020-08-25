@@ -57,9 +57,9 @@ def grant(spec, dry, diff):
             click.secho("SQL Commands generated for given spec file:")
         click.secho()
 
+        conn = SnowflakeConnector()
         for query in sql_grant_queries:
             if not dry:
-                conn = SnowflakeConnector()
                 status = None
                 if not query.get("already_granted"):
                     try:
