@@ -21,7 +21,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#28](https://gitlab.com/gitlab-data/permifrost/-/issues/28) Add owner field to all objects and also a 
+* [#28](https://gitlab.com/gitlab-data/permifrost/-/issues/28) Add owner field to all objects and the `require-owner` property
 
 ### Changes
 * [#39](https://gitlab.com/gitlab-data/permifrost/-/issues/39) Improve performance of runs by reusing snowflake connection when applying grants
