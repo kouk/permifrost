@@ -9,12 +9,12 @@ with open("VERSION") as version_file:
 
 requires = [
     "cerberus==1.2",
-    "click==7.0",
+    "click>=7.0,<=7.1.2",
     "click-default-group==1.2.1",
-    "pyyaml==3.13",
-    "snowflake-connector-python==2.2.1",
+    "pyyaml>=3.13,<=5.3.1",
+    "snowflake-connector-python>=2.2.1,<=2.3.1",
     "snowflake-sqlalchemy==1.2.1",
-    "sqlalchemy==1.3.13",
+    "sqlalchemy>=1.3.13,<=1.3.19",
 ]
 
 dev_requires = [
