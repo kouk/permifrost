@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### New
 
 ### Changes
-* [#40](https://gitlab.com/gitlab-data/permifrost/-/issues/40) Bump requirements to allow for newer versions of PyYaml, Clicke, and SQLAlchemy
+* [#40](https://gitlab.com/gitlab-data/permifrost/-/issues/40) Bump requirements to allow for newer versions of PyYaml, Click, and SQLAlchemy
 
 ### Fixes
 
