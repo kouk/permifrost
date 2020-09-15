@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* [#41](https://gitlab.com/gitlab-data/permifrost/-/issues/41) Grant monitor privileges on warehouses by default
 
 ### Changes
 
@@ -48,7 +49,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 * [#21](https://gitlab.com/gitlab-data/permifrost/-/issues/21) Add support for OAuth token authentication.
 
 ### Changes
-* [#26](https://gitlab.com/gitlab-data/permifrost/-/issues/26) Only query the Snowflake server for a given resource type if defined in the spec.  
+* [#26](https://gitlab.com/gitlab-data/permifrost/-/issues/26) Only query the Snowflake server for a given resource type if defined in the spec.
 
 ### Fixes
 - [#13](https://gitlab.com/gitlab-data/permifrost/-/issues/13) Database level table and view grants are properly handled in lists
