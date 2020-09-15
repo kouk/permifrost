@@ -9,13 +9,19 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#41](https://gitlab.com/gitlab-data/permifrost/-/issues/41) Grant monitor privileges on warehouses by default
 
 ### Changes
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.4.0 - (2020-09-15)
+---
+
+### New
+* [#41](https://gitlab.com/gitlab-data/permifrost/-/issues/41) Grant monitor privileges on warehouses by default
 
 
 ## 0.3.1 - (2020-09-03)
