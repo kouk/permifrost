@@ -301,6 +301,23 @@ class SnowflakeGrantsGenerator:
                 }
             )
 
+            if self.check_grant_to_role(role, "monitor", "warehouse", warehouse):
+                already_granted = True
+            else:
+                already_granted = False
+
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
+                        privileges="monitor",
+                        resource_type="warehouse",
+                        resource_name=SnowflakeConnector.snowflaky(warehouse),
+                        role=SnowflakeConnector.snowflaky(role),
+                    ),
+                }
+            )
+
         for granted_warehouse in (
             self.grants_to_role.get(role, {}).get("usage", {}).get("warehouse", [])
         ):
@@ -328,6 +345,24 @@ class SnowflakeGrantsGenerator:
                         "already_granted": False,
                         "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
                             privileges="operate",
+                            resource_type="warehouse",
+                            resource_name=SnowflakeConnector.snowflaky(
+                                granted_warehouse
+                            ),
+                            role=SnowflakeConnector.snowflaky(role),
+                        ),
+                    }
+                )
+
+        for granted_warehouse in (
+            self.grants_to_role.get(role, {}).get("monitor", {}).get("warehouse", [])
+        ):
+            if granted_warehouse not in warehouses:
+                sql_commands.append(
+                    {
+                        "already_granted": False,
+                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
+                            privileges="monitor",
                             resource_type="warehouse",
                             resource_name=SnowflakeConnector.snowflaky(
                                 granted_warehouse
