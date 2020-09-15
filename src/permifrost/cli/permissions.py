@@ -44,7 +44,7 @@ def print_command(command, diff):
 @click.option(
     "--diff", help="Show full diff, both new and existing permissions.", is_flag=True
 )
-def grant(spec, dry, diff):
+def grant(spec, dry, diff, role):
     """Grant the permissions provided in the provided specification file."""
     try:
         spec_loader = SnowflakeSpecLoader(spec)

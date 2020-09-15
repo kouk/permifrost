@@ -16,10 +16,14 @@ VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 
 
 class SnowflakeSpecLoader:
-    def __init__(self, spec_path: str, conn: SnowflakeConnector = None) -> None:
+    def __init__(
+        self, spec_path: str, conn: SnowflakeConnector = None, debug: bool = False
+    ) -> None:
         # Load the specification file and check for (syntactical) errors
         click.secho("Loading spec file", fg="green")
         self.spec = self.load_spec(spec_path)
+        self.grants_to_role = {}
+        self.roles_granted_to_user = {}
 
         # Generate the entities (e.g databases, schemas, users, etc) referenced
         #  by the spec file and make sure that no syntatical or reference errors
@@ -27,26 +31,27 @@ class SnowflakeSpecLoader:
         click.secho("Checking spec file for errors", fg="green")
         self.entities = self.inspect_spec()
 
-        # Connect to Snowflake to make sure that the current user has correct
-        # permissions
-        click.secho("Checking permissions on current snowflake connection", fg="green")
-        self.check_permissions_on_snowflake_server(conn)
+        if not debug:
+            # Connect to Snowflake to make sure that the current user has correct
+            # permissions
+            click.secho(
+                "Checking permissions on current snowflake connection", fg="green"
+            )
+            self.check_permissions_on_snowflake_server(conn)
 
-        # Connect to Snowflake to make sure that all entities defined in the
-        #  spec file are also defined in Snowflake (no missing databases, etc)
-        click.secho(
-            "Checking that all entities in the spec file are defined in Snowflake",
-            fg="green",
-        )
-        self.check_entities_on_snowflake_server(conn)
+            # Connect to Snowflake to make sure that all entities defined in the
+            #  spec file are also defined in Snowflake (no missing databases, etc)
+            click.secho(
+                "Checking that all entities in the spec file are defined in Snowflake",
+                fg="green",
+            )
+            self.check_entities_on_snowflake_server(conn)
 
-        # Get the privileges granted to users and roles in the Snowflake account
-        # Used in order to figure out which permissions in the spec file are
-        #  new ones and which already exist (and there is no need to re-grant them)
-        click.secho("Fetching granted privileges from Snowflake", fg="green")
-        self.grants_to_role = {}
-        self.roles_granted_to_user = {}
-        self.get_privileges_from_snowflake_server(conn)
+            # Get the privileges granted to users and roles in the Snowflake account
+            # Used in order to figure out which permissions in the spec file are
+            #  new ones and which already exist (and there is no need to re-grant them)
+            click.secho("Fetching granted privileges from Snowflake", fg="green")
+            self.get_privileges_from_snowflake_server(conn)
 
     def load_spec(self, spec_path: str) -> Dict:
         """

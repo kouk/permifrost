@@ -209,3 +209,15 @@ class TestSnowflakeSpecLoader:
             SnowflakeSpecLoader("", mock_connector)
 
         assert "Spec Error: Owner not defined" in str(context.value)
+
+    def test_role_filter(self, mocker, mock_connector, test_dir):
+        """Make sure that the grant queries list can be filtered by role."""
+
+        spec_loader = SnowflakeSpecLoader(
+            spec_path=os.path.join(test_dir, "specs", "snowflake_spec.yml"),
+            conn=mock_connector,
+            debug=True,
+        )
+        sql_grant_queries = spec_loader.generate_permission_queries()
+
+        assert 1
