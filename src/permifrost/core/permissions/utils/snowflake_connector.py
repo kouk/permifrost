@@ -203,6 +203,16 @@ class SnowflakeConnector:
         result = self.run_query(query).fetchone()
         return result["role"].lower()
 
+    def show_roles(self) -> Dict[str, str]:
+        roles = {}
+
+        query = f"SHOW ROLES;"
+        results = self.run_query(query).fetchall()
+
+        for result in results:
+            roles[result["name"].lower()] = result["owner"].lower()
+        return roles
+
     def run_query(self, query: str):
 
         with self.engine.connect() as connection:

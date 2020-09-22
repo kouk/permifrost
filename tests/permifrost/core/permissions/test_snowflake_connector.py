@@ -92,3 +92,18 @@ class TestSnowflakeConnector:
 
         conn.run_query.assert_has_calls([mocker.call("SELECT CURRENT_ROLE() AS ROLE")])
         assert role == "test_role"
+
+    def test_show_roles(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(conn.run_query(), "fetchall", return_value=[
+            {"name": "TEST_ROLE", "owner": "SUPERADMIN"},
+            {"name": "SUPERADMIN", "owner": "SUPERADMIN"}
+        ])
+
+        roles = conn.show_roles()
+
+        conn.run_query.assert_has_calls([mocker.call("SHOW ROLES;")])
+        assert roles["test_role"] == "superadmin"
+        assert roles["superadmin"] == "superadmin"
