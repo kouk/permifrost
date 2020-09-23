@@ -97,10 +97,14 @@ class TestSnowflakeConnector:
         mocker.patch("sqlalchemy.create_engine")
         conn = SnowflakeConnector()
         conn.run_query = mocker.MagicMock()
-        mocker.patch.object(conn.run_query(), "fetchall", return_value=[
-            {"name": "TEST_ROLE", "owner": "SUPERADMIN"},
-            {"name": "SUPERADMIN", "owner": "SUPERADMIN"}
-        ])
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {"name": "TEST_ROLE", "owner": "SUPERADMIN"},
+                {"name": "SUPERADMIN", "owner": "SUPERADMIN"},
+            ],
+        )
 
         roles = conn.show_roles()
 

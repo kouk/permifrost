@@ -31,7 +31,7 @@ permifrost: compose-down compose-build
 #########################################################
 #################### CI Tests ###########################
 #########################################################
-.PHONY: base_image prod_image lint show_lint test clean docker_images release
+.PHONY: base-image prod-image lint show_lint test clean docker-images release
 
 ifdef DOCKER_REGISTRY
 base_image_tag = ${DOCKER_REGISTRY}/gitlab-data/permifrost/base
@@ -59,7 +59,7 @@ base-image:
 		-t $(base_image_tag) \
 		.
 
-prod-image: base_image
+prod-image: base-image
 	@docker build \
 		--file docker/prod/Dockerfile \
 		-t $(prod_image_tag) \
@@ -100,3 +100,11 @@ release:
 	yes | changelog release $(type)
 	git add CHANGELOG.md
 	bumpversion --tag --allow-dirty --new-version `changelog current` minor
+
+dist: compose-build
+	@docker-compose run permifrost /bin/bash \
+		-c "python setup.py sdist"
+
+docker-clean:
+	@docker-compose run permifrost /bin/bash \
+		-c "rm -rf dist"
