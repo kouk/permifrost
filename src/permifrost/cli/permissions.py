@@ -66,7 +66,7 @@ def grant(spec, dry, diff, role):
                 status = None
                 if not query.get("already_granted"):
                     try:
-                        result = conn.run_query(query.get("sql"))
+                        conn.run_query(query.get("sql"))
                         status = True
                     except:
                         status = False
