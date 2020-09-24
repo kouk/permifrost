@@ -16,9 +16,7 @@ VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 
 
 class SnowflakeSpecLoader:
-    def __init__(
-        self, spec_path: str, conn: SnowflakeConnector = None, debug: bool = False
-    ) -> None:
+    def __init__(self, spec_path: str, conn: SnowflakeConnector = None) -> None:
         # Load the specification file and check for (syntactical) errors
         click.secho("Loading spec file", fg="green")
         self.spec = self.load_spec(spec_path)
@@ -31,9 +29,7 @@ class SnowflakeSpecLoader:
 
         # Connect to Snowflake to make sure that the current user has correct
         # permissions
-        click.secho(
-            "Checking permissions on current snowflake connection", fg="green"
-        )
+        click.secho("Checking permissions on current snowflake connection", fg="green")
         self.check_permissions_on_snowflake_server(conn)
 
         # Connect to Snowflake to make sure that all entities defined in the

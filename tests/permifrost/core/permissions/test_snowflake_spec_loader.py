@@ -295,9 +295,11 @@ class TestSnowflakeSpecLoader:
 
         assert [] == queries
 
-    @pytest.mark.parametrize(
-        "spec_file_data",
-        (
+    def test_role_filter(self, mocker, mock_connector):
+        """Make sure that the grant queries list can be filtered by role."""
+
+        # Generate the Spec File
+        spec_file_data = (
             SnowflakeSchemaBuilder()
             .add_user()
             .add_user(name="testuser")
@@ -309,14 +311,13 @@ class TestSnowflakeSpecLoader:
             .add_role(name="securityadmin")
             .add_role(name="primary")
             .add_role(name="secondary")
-            .build(),
-        ),
-    )
-    def test_role_filter(self, spec_file_data, mocker, mock_connector):
-        """Make sure that the grant queries list can be filtered by role."""
-
+            .build()
+        )
         print(f"Spec File Data is:\n{spec_file_data}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+
+        # Connector Mock Madness
+        mocker.patch("sqlalchemy.create_engine")
         mocker.patch.object(
             MockSnowflakeConnector, "get_current_role", return_value="securityadmin"
         )
@@ -344,7 +345,8 @@ class TestSnowflakeSpecLoader:
             return_value=["testuser", "testusername"],
         )
 
-        spec_loader = SnowflakeSpecLoader(
-            spec_path="",
-            conn=mock_connector,
-            debug=True,
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=mock_connector)
+        sql_grant_queries = spec_loader.generate_permission_queries()
+        print(sql_grant_queries)
+
+        assert 0
