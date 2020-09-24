@@ -49,7 +49,7 @@ def grant(spec, dry, diff, role):
     try:
         spec_loader = SnowflakeSpecLoader(spec)
 
-        sql_grant_queries = spec_loader.generate_permission_queries()
+        sql_grant_queries = spec_loader.generate_permission_queries(role)
 
         click.secho()
         if diff:
@@ -67,7 +67,6 @@ def grant(spec, dry, diff, role):
                 if not query.get("already_granted"):
                     try:
                         result = conn.run_query(query.get("sql"))
-                        outcome = result.fetchall()
                         status = True
                     except:
                         status = False
