@@ -294,3 +294,57 @@ class TestSnowflakeSpecLoader:
         queries = loader.generate_permission_queries()
 
         assert [] == queries
+
+    @pytest.mark.parametrize(
+        "spec_file_data",
+        (
+            SnowflakeSchemaBuilder()
+            .add_user()
+            .add_user(name="testuser")
+            .add_db(owner="primary", name="primarydb")
+            .add_db(owner="secondary", name="secondarydb")
+            .add_warehouse(owner="primary", name="primarywarehouse")
+            .add_warehouse(owner="secondary", name="secondarywarehouse")
+            .add_role()
+            .add_role(name="securityadmin")
+            .add_role(name="primary")
+            .add_role(name="secondary")
+            .build(),
+        ),
+    )
+    def test_role_filter(self, spec_file_data, mocker, mock_connector):
+        """Make sure that the grant queries list can be filtered by role."""
+
+        print(f"Spec File Data is:\n{spec_file_data}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        mocker.patch.object(
+            MockSnowflakeConnector, "get_current_role", return_value="securityadmin"
+        )
+        mocker.patch.object(
+            MockSnowflakeConnector, "get_current_user", return_value="testuser"
+        )
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_warehouses",
+            return_value=["primarywarehouse", "secondarywarehouse"],
+        )
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_databases",
+            return_value=["primarydb", "secondarydb"],
+        )
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_roles",
+            return_value=["primary", "secondary", "testrole", "securityadmin"],
+        )
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_users",
+            return_value=["testuser", "testusername"],
+        )
+
+        spec_loader = SnowflakeSpecLoader(
+            spec_path="",
+            conn=mock_connector,
+            debug=True,
