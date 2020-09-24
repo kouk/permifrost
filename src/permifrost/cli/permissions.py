@@ -37,10 +37,8 @@ def print_command(command, diff):
 
 @cli.command()
 @click.argument("spec")
+@click.option("--role")
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
-@click.option(
-    "--role", help="Only run commands pertaining to a specific role.", is_flag=True
-)
 @click.option(
     "--diff", help="Show full diff, both new and existing permissions.", is_flag=True
 )
