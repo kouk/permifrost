@@ -4,7 +4,7 @@ import logging
 import yaml
 import re
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
@@ -718,7 +718,7 @@ class SnowflakeSpecLoader:
         for user in self.entities["users"]:
             self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
 
-    def generate_permission_queries(self) -> List[Dict]:
+    def generate_permission_queries(self, role: Optional[str] = None) -> List[Dict]:
         """
         Starting point to generate all the permission queries.
 
@@ -750,7 +750,7 @@ class SnowflakeSpecLoader:
                 ]
 
                 for entity_name, config in entity_configs:
-                    if entity_type == "roles":
+                    if entity_type == "roles" and (not role or role == entity_name):
                         click.secho(f"     Processing role {entity_name}", fg="green")
                         sql_commands.extend(
                             generator.generate_grant_roles(
@@ -770,7 +770,7 @@ class SnowflakeSpecLoader:
                                 self.entities["databases"],
                             )
                         )
-                    elif entity_type == "users":
+                    elif entity_type == "users" and not role:
                         click.secho(f"     Processing user {entity_name}", fg="green")
                         sql_commands.extend(
                             generator.generate_alter_user(entity_name, config)
