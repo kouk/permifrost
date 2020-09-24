@@ -261,8 +261,25 @@ class TestSnowflakeSpecLoader:
         )
 
         spec_loader = SnowflakeSpecLoader(spec_path="", conn=mock_connector)
-        sql_grant_queries = spec_loader.generate_permission_queries(role="primary")
 
-        assert sql_grant_queries == [
+        assert spec_loader.generate_permission_queries(role="primary") == [
             {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}
+        ]
+
+        assert spec_loader.generate_permission_queries() == [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role testrole"},
+            {
+                "already_granted": False,
+                "sql": "GRANT ROLE testrole TO role securityadmin",
+            },
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role secondary"},
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testuser SET DISABLED = FALSE",
+            },
         ]
