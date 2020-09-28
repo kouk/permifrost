@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 
 ### New
 
+[#29](https://gitlab.com/gitlab-data/permifrost/-/issues/29) The owner field in the spec file for roles is now verified against what is in the database.  If there is a mismatch, Permifrost will present an error to the user describing that the role does not have the correct owner in the spec.
+
 ### Changes
 
 ### Fixes

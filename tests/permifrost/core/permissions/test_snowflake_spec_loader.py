@@ -107,6 +107,77 @@ class TestSnowflakeSpecLoader:
         )
         mock_connector.get_current_user.assert_called()
 
+    @pytest.mark.parametrize(
+        "spec_file_data,method,return_value",
+        [
+            (
+                SnowflakeSchemaBuilder().add_role(owner="user").build(),
+                "show_roles",
+                {"testrole": "user"},
+            ),
+            (
+                SnowflakeSchemaBuilder().set_version("1.0").build(),
+                "show_roles",
+                {"testrole": "none"},
+            ),
+        ],
+    )
+    def test_check_entities_on_snowflake_server_checks_role_owner(
+        self, spec_file_data, method, return_value, mocker, mock_connector
+    ):
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        mocker.patch.object(mock_connector, method, return_value=return_value)
+        SnowflakeSpecLoader("", mock_connector)
+
+    @pytest.mark.parametrize(
+        "spec_file_data,method,return_value,expected_error",
+        [
+            (
+                SnowflakeSchemaBuilder().add_role(owner="user").build(),
+                "show_roles",
+                {"testrole": "testuser"},
+                "Role testrole has owner testuser on snowflake, but has owner user defined in the spec file",
+            ),
+            (
+                SnowflakeSchemaBuilder().add_role(owner="user").build(),
+                "show_roles",
+                {"some-other-role": "none"},
+                "Missing Entity Error: Role testrole was not found on Snowflake Server",
+            ),
+            (
+                SnowflakeSchemaBuilder().add_role().build(),
+                "show_roles",
+                {},
+                "Missing Entity Error: Role testrole was not found on Snowflake Server",
+            ),
+            (
+                SnowflakeSchemaBuilder().add_role(owner="user").build(),
+                "show_roles",
+                {},
+                "Missing Entity Error: Role testrole was not found on Snowflake Server",
+            ),
+        ],
+    )
+    def test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match(
+        self,
+        spec_file_data,
+        method,
+        return_value,
+        mocker,
+        mock_connector,
+        expected_error,
+    ):
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        mocker.patch.object(mock_connector, method, return_value=return_value)
+        with pytest.raises(SpecLoadingError) as context:
+            SnowflakeSpecLoader("", mock_connector)
+
+        assert expected_error in str(context.value)
+
     def test_load_spec_loads_file(self, mocker, mock_connector):
         mock_open = mocker.patch(
             "builtins.open", mocker.mock_open(read_data="""version: "1.0" """)
@@ -127,7 +198,7 @@ class TestSnowflakeSpecLoader:
             (
                 SnowflakeSchemaBuilder().add_role(owner="user").build(),
                 "show_roles",
-                ["testrole"],
+                {"testrole": "user"},
             ),
             (
                 SnowflakeSchemaBuilder().add_user(owner="user").build(),
@@ -147,7 +218,7 @@ class TestSnowflakeSpecLoader:
             (
                 SnowflakeSchemaBuilder().require_owner().add_role(owner="user").build(),
                 "show_roles",
-                ["testrole"],
+                {"testrole": "user"},
             ),
             (
                 SnowflakeSchemaBuilder().require_owner().add_user(owner="user").build(),
@@ -209,3 +280,17 @@ class TestSnowflakeSpecLoader:
             SnowflakeSpecLoader("", mock_connector)
 
         assert "Spec Error: Owner not defined" in str(context.value)
+
+    def test_generate_permission_queries_with_requires_owner(
+        self, mocker, mock_connector
+    ):
+        spec_file_data = (
+            SnowflakeSchemaBuilder().set_version("1.0").require_owner().build()
+        )
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        loader = SnowflakeSpecLoader("", mock_connector)
+        queries = loader.generate_permission_queries()
+
+        assert [] == queries
