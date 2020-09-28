@@ -108,6 +108,6 @@ class TestSnowflakeConnector:
 
         roles = conn.show_roles()
 
-        conn.run_query.assert_has_calls([mocker.call("SHOW ROLES;")])
+        conn.run_query.assert_has_calls([mocker.call("SHOW ROLES")])
         assert roles["test_role"] == "superadmin"
         assert roles["superadmin"] == "superadmin"

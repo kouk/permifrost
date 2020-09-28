@@ -77,7 +77,7 @@ class SnowflakeConnector:
         if database:
             query = f"SHOW TERSE SCHEMAS IN DATABASE {database}"
         else:
-            query = f"SHOW TERSE SCHEMAS IN ACCOUNT"
+            query = "SHOW TERSE SCHEMAS IN ACCOUNT"
 
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
@@ -97,7 +97,7 @@ class SnowflakeConnector:
         elif database:
             query = f"SHOW TERSE TABLES IN DATABASE {database}"
         else:
-            query = f"SHOW TERSE TABLES IN ACCOUNT"
+            query = "SHOW TERSE TABLES IN ACCOUNT"
 
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
@@ -119,7 +119,7 @@ class SnowflakeConnector:
         elif database:
             query = f"SHOW TERSE VIEWS IN DATABASE {database}"
         else:
-            query = f"SHOW TERSE VIEWS IN ACCOUNT"
+            query = "SHOW TERSE VIEWS IN ACCOUNT"
 
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
@@ -191,19 +191,19 @@ class SnowflakeConnector:
         return roles
 
     def get_current_user(self) -> str:
-        query = f"SELECT CURRENT_USER() AS USER"
+        query = "SELECT CURRENT_USER() AS USER"
         result = self.run_query(query).fetchone()
         return result["user"].lower()
 
     def get_current_role(self) -> str:
-        query = f"SELECT CURRENT_ROLE() AS ROLE"
+        query = "SELECT CURRENT_ROLE() AS ROLE"
         result = self.run_query(query).fetchone()
         return result["role"].lower()
 
     def show_roles(self) -> Dict[str, str]:
         roles = {}
 
-        query = f"SHOW ROLES;"
+        query = "SHOW ROLES"
         results = self.run_query(query).fetchall()
 
         for result in results:
