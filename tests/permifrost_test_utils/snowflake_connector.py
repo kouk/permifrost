@@ -9,8 +9,8 @@ class MockSnowflakeConnector:
     def show_warehouses(self) -> List[str]:
         return []
 
-    def show_roles(self) -> List[str]:
-        return []
+    def show_roles(self) -> Dict[str, str]:
+        return {}
 
     def show_users(self) -> List[str]:
         return []

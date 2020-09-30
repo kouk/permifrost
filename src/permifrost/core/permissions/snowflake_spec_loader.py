@@ -22,7 +22,7 @@ class SnowflakeSpecLoader:
         self.spec = self.load_spec(spec_path)
 
         # Generate the entities (e.g databases, schemas, users, etc) referenced
-        #  by the spec file and make sure that no syntatical or reference errors
+        #  by the spec file and make sure that no syntactical or reference errors
         #  exist (all referenced entities are also defined by the spec)
         click.secho("Checking spec file for errors", fg="green")
         self.entities = self.inspect_spec()
@@ -146,7 +146,7 @@ class SnowflakeSpecLoader:
         Inspect a valid spec and make sure that no logic errors exist.
 
         e.g. a role granted to a user not defined in roles
-             or a user given acces to a database not defined in databases
+             or a user given access to a database not defined in databases
 
         If at least an error is found during inspection, raise a
         SpecLoadingError with the appropriate error messages.
@@ -579,7 +579,7 @@ class SnowflakeSpecLoader:
         referenced in the spec are defined in Snowflake.
 
         Raises a SpecLoadingError with all the errors found while checking
-        Snowflake for missinf entities.
+        Snowflake for missing entities.
         """
         error_messages = []
 
@@ -639,12 +639,21 @@ class SnowflakeSpecLoader:
 
         if len(self.entities["roles"]) > 0:
             roles = conn.show_roles()
-            for role in self.entities["roles"]:
-                if role not in roles:
-                    error_messages.append(
-                        f"Missing Entity Error: Role {role} was not found on"
-                        " Snowflake Server. Please create it before continuing."
-                    )
+            for role in self.spec["roles"]:
+                for role_name, config in role.items():
+                    if role_name not in roles:
+                        error_messages.append(
+                            f"Missing Entity Error: Role {role_name} was not found on"
+                            " Snowflake Server. Please create it before continuing."
+                        )
+                    elif "owner" in config.keys():
+                        owner_on_snowflake = roles[role_name]
+                        owner_in_spec = config["owner"]
+                        if owner_on_snowflake != owner_in_spec:
+                            error_messages.append(
+                                f"Role {role_name} has owner {owner_on_snowflake} on snowflake, "
+                                f"but has owner {owner_in_spec} defined in the spec file."
+                            )
         else:
             logging.debug("`roles` not found in spec, skipping SHOW ROLES call.")
 
@@ -739,7 +748,7 @@ class SnowflakeSpecLoader:
         #  SQL command granting that permission
 
         for entity_type, entry in self.spec.items():
-            if entity_type in ["databases", "warehouses", "version"]:
+            if entity_type in ["require-owner", "databases", "warehouses", "version"]:
                 continue
 
             for entity_dict in entry:

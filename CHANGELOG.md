@@ -18,6 +18,20 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### Breaks
 
 
+## 0.5.0 - (2020-09-28)
+---
+
+### New
+* [#29](https://gitlab.com/gitlab-data/permifrost/-/issues/29) The owner field in the spec file for roles is now verified against what is in the database.  If there is a mismatch, Permifrost will present an error to the user describing that the role does not have the correct owner in the spec.
+
+
+## 0.4.0 - (2020-09-15)
+---
+
+### New
+* [#41](https://gitlab.com/gitlab-data/permifrost/-/issues/41) Grant monitor privileges on warehouses by default
+
+
 ## 0.3.1 - (2020-09-03)
 ---
 
@@ -49,7 +63,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 * [#21](https://gitlab.com/gitlab-data/permifrost/-/issues/21) Add support for OAuth token authentication.
 
 ### Changes
-* [#26](https://gitlab.com/gitlab-data/permifrost/-/issues/26) Only query the Snowflake server for a given resource type if defined in the spec.  
+* [#26](https://gitlab.com/gitlab-data/permifrost/-/issues/26) Only query the Snowflake server for a given resource type if defined in the spec.
 
 ### Fixes
 - [#13](https://gitlab.com/gitlab-data/permifrost/-/issues/13) Database level table and view grants are properly handled in lists

@@ -80,7 +80,10 @@ def test_grants_to_role():
                 "warehouse": ["warehouse_1", "warehouse_2"],
             },
             "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
-            "monitor": {"database": ["database_1", "database_2"]},
+            "monitor": {
+                "database": ["database_1", "database_2"],
+                "warehouse": ["warehouse_1", "warehouse_2"],
+            },
             "create schema": {"database": ["database_1", "database_2"]},
         },
         "role_without_member_of": {
@@ -203,6 +206,19 @@ class TestSnowflakeGrants:
         )
         assert (
             "revoke operate on warehouse warehouse_1 from role functional_role"
+            in warehouse_lower_list
+        )
+
+        assert (
+            "grant monitor on warehouse warehouse_2 to role functional_role"
+            in warehouse_lower_list
+        )
+        assert (
+            "grant monitor on warehouse warehouse_3 to role functional_role"
+            in warehouse_lower_list
+        )
+        assert (
+            "revoke monitor on warehouse warehouse_1 from role functional_role"
             in warehouse_lower_list
         )
 
