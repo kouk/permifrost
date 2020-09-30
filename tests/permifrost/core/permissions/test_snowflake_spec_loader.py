@@ -264,6 +264,20 @@ class TestSnowflakeSpecLoader:
 
         assert "Spec Error: Owner not defined" in str(context.value)
 
+    def test_generate_permission_queries_with_requires_owner(
+        self, mocker, mock_connector
+    ):
+        spec_file_data = (
+            SnowflakeSchemaBuilder().set_version("1.0").require_owner().build()
+        )
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        loader = SnowflakeSpecLoader("", mock_connector)
+        queries = loader.generate_permission_queries()
+
+        assert [] == queries
+
     def test_role_filter(self, mocker, test_roles_mock_connector, test_roles_spec_file):
         """Make sure that the grant queries list can be filtered by role."""
 
@@ -304,17 +318,3 @@ class TestSnowflakeSpecLoader:
         ]
 
         assert spec_loader.generate_permission_queries() == expected_sql_queries
-
-    def test_generate_permission_queries_with_requires_owner(
-        self, mocker, mock_connector
-    ):
-        spec_file_data = (
-            SnowflakeSchemaBuilder().set_version("1.0").require_owner().build()
-        )
-        print("Spec file is: ")
-        print(spec_file_data)
-        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
-        loader = SnowflakeSpecLoader("", mock_connector)
-        queries = loader.generate_permission_queries()
-
-        assert [] == queries
