@@ -54,9 +54,7 @@ def test_roles_mock_connector(mocker):
         return_value=["primarywarehouse", "secondarywarehouse"],
     )
     mocker.patch.object(
-        mock_connector,
-        "show_databases",
-        return_value=["primarydb", "secondarydb"],
+        mock_connector, "show_databases", return_value=["primarydb", "secondarydb"]
     )
     mocker.patch.object(
         mock_connector,
@@ -64,9 +62,7 @@ def test_roles_mock_connector(mocker):
         return_value=["primary", "secondary", "testrole", "securityadmin"],
     )
     mocker.patch.object(
-        mock_connector,
-        "show_users",
-        return_value=["testuser", "testusername"],
+        mock_connector, "show_users", return_value=["testuser", "testusername"]
     )
     yield mock_connector
 
