@@ -389,3 +389,17 @@ class TestSnowflakeSpecLoader:
         ]
 
         assert spec_loader.generate_permission_queries() == expected_sql_queries
+
+    def test_generate_permission_queries_with_requires_owner(
+        self, mocker, mock_connector
+    ):
+        spec_file_data = (
+            SnowflakeSchemaBuilder().set_version("1.0").require_owner().build()
+        )
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        loader = SnowflakeSpecLoader("", mock_connector)
+        queries = loader.generate_permission_queries()
+
+        assert [] == queries
