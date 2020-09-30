@@ -349,11 +349,7 @@ class TestSnowflakeSpecLoader:
 
         assert [] == queries
 
-<<<<<<< HEAD
-    def test_role_filter(self, mocker, mock_connector):
-=======
     def test_role_filter(self, mocker, test_roles_mock_connector, test_roles_spec_file):
->>>>>>> move the conflicted test up
         """Make sure that the grant queries list can be filtered by role."""
 
         print(f"Spec File Data is:\n{test_roles_spec_file}")
