@@ -23,30 +23,31 @@ def print_command(command, diff):
             diff_prefix = "+ "
 
     if command.get("run_status"):
-        fg = "green"
+        foreground_color = "green"
         run_prefix = "[SUCCESS] "
     elif command.get("run_status") is None:
-        fg = "cyan"
+        foreground_color = "cyan"
         run_prefix = "[SKIPPED] "
     else:
-        fg = "red"
+        foreground_color = "red"
         run_prefix = "[ERROR] "
 
-    click.secho(f"{diff_prefix}{run_prefix}{command['sql']};", fg=fg)
+    click.secho(f"{diff_prefix}{run_prefix}{command['sql']};", fg=foreground_color)
 
 
 @cli.command()
 @click.argument("spec")
+@click.option("--role", default=None)
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
 @click.option(
     "--diff", help="Show full diff, both new and existing permissions.", is_flag=True
 )
-def grant(spec, dry, diff):
+def grant(spec, dry, diff, role):
     """Grant the permissions provided in the provided specification file."""
     try:
         spec_loader = SnowflakeSpecLoader(spec)
 
-        sql_grant_queries = spec_loader.generate_permission_queries()
+        sql_grant_queries = spec_loader.generate_permission_queries(role)
 
         click.secho()
         if diff:
@@ -63,8 +64,7 @@ def grant(spec, dry, diff):
                 status = None
                 if not query.get("already_granted"):
                     try:
-                        result = conn.run_query(query.get("sql"))
-                        outcome = result.fetchall()
+                        conn.run_query(query.get("sql"))
                         status = True
                     except:
                         status = False

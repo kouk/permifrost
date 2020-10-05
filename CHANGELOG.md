@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* [#31](https://gitlab.com/gitlab-data/permifrost/-/issues/31) Add `--role` option to run permissions for a given role 
 
 ### Changes
 
