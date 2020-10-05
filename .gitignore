@@ -8,7 +8,6 @@ logs/
 tmp_log.txt
 .vscode/
 /build/
-test_spec_file.yml
 
 .DS_Store
 node_modules/
