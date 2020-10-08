@@ -6,6 +6,7 @@ class SnowflakeSchemaBuilder:
 
     def __init__(self):
         self.version = ""
+        self.columns = []
         self.warehouses = []
         self.roles = []
         self.dbs = []
@@ -25,6 +26,14 @@ class SnowflakeSchemaBuilder:
             spec_yaml.extend([f"  - {warehouse['name']}:", "      size: x-small"])
             if warehouse["owner"] is not None:
                 spec_yaml.append(f"      owner: {warehouse['owner']}")
+
+        if len(self.columns) > 0:
+            spec_yaml.append("columns:")
+        for column in self.columns:
+            spec_yaml.extend([f"  - {column['name']}:", "      visible_to:"])
+            spec_yaml.extend([f"        - {member}" for member in column["visible_to"]])
+            if column["owner"] is not None:
+                spec_yaml.append(f"      owner: {column['owner']}")
 
         if len(self.roles) > 0:
             spec_yaml.append("roles:")
@@ -57,6 +66,12 @@ class SnowflakeSchemaBuilder:
 
     def add_warehouse(self, name="testwarehouse", owner=None):
         self.warehouses.append({"name": name, "owner": owner})
+        return self
+
+    def add_column(
+        self, name="testdb.testschema.testcolumn", owner=None, visible_to=["testrole"]
+    ):
+        self.columns.append({"name": name, "owner": owner, "visible_to": visible_to})
         return self
 
     def add_role(self, name="testrole", owner=None, member_of=["testrole"]):

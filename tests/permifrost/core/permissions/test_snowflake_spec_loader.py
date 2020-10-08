@@ -335,3 +335,17 @@ class TestSnowflakeSpecLoader:
         ]
 
         assert spec_loader.generate_permission_queries() == expected_sql_queries
+
+    def test_column_masking(
+        self, mocker, test_column_masking_mock_connector, test_column_masking_spec_file
+    ):
+        """Test that column masking works."""
+        print(f"Spec File Data is:\n{test_column_masking_spec_file}")
+        mocker.patch(
+            "builtins.open", mocker.mock_open(read_data=test_column_masking_spec_file)
+        )
+        spec_loader = SnowflakeSpecLoader(
+            spec_path="", conn=test_column_masking_mock_connector
+        )
+
+        assert spec_loader
