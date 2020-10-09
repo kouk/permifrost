@@ -16,6 +16,14 @@ SNOWFLAKE_SPEC_SCHEMA = """
                 type: string
             valueschema:
                 type: dict
+    masking_policies:
+        type: list
+        schema: 
+            type: dict
+            keyschema:
+                type: string
+            valueschema:
+                type: string
     roles:
         type: list
         schema:
@@ -51,6 +59,14 @@ SNOWFLAKE_SPEC_DATABASE_SCHEMA = """
         required: False
     """
 
+SNOWFLAKE_SPEC_MASKING_POLICY_SCHEMA = """
+    input:
+        type: string
+        required: False
+    return:
+        type: string
+        required: False
+    """
 
 SNOWFLAKE_SPEC_ROLE_SCHEMA = """
     owner:

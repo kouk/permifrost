@@ -31,9 +31,9 @@ class SnowflakeSchemaBuilder:
         if len(self.masking_policies) > 0:
             spec_yaml.append("masking_policies:")
         for policy in self.masking_policies:
-            spec_yaml.extend([f"      {policy['name']}:"])
-            spec_yaml.extend([f"        input_type: {policy['input_type']}"])
-            spec_yaml.extend([f"        return_value: {policy['return_value']}"])
+            spec_yaml.extend([f"      - {policy['name']}:"])
+            spec_yaml.extend([f"          input_type: {policy['input_type']}"])
+            spec_yaml.extend([f"          return_value: {policy['return_value']}"])
             if policy["owner"] is not None:
                 spec_yaml.append(f"      owner: {policy['owner']}")
 

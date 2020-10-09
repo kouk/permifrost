@@ -113,11 +113,13 @@ class SnowflakeSpecLoader:
             "roles": yaml.safe_load(SNOWFLAKE_SPEC_ROLE_SCHEMA),
             "users": yaml.safe_load(SNOWFLAKE_SPEC_USER_SCHEMA),
             "warehouses": yaml.safe_load(SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA),
+            "masking_policies": yaml.safe_load(SNOWFLAKE_SPEC_MASKING_POLICY_SCHEMA),
         }
 
         validators = {
             "databases": cerberus.Validator(schema["databases"]),
             "roles": cerberus.Validator(schema["roles"]),
+            "masking_policies": cerberus.Validator(schema["masking_policies"]),
             "users": cerberus.Validator(schema["users"]),
             "warehouses": cerberus.Validator(schema["warehouses"]),
         }
@@ -125,7 +127,9 @@ class SnowflakeSpecLoader:
         entities_by_type = [
             (entity_type, entities)
             for entity_type, entities in spec.items()
-            if entities and entity_type in ["databases", "roles", "users", "warehouses"]
+            if entities
+            and entity_type
+            in ["databases", "roles", "users", "warehouses", "masking_policies"]
         ]
 
         for entity_type, entities in entities_by_type:
