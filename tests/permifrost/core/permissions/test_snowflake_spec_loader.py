@@ -348,4 +348,5 @@ class TestSnowflakeSpecLoader:
             spec_path="", conn=test_column_masking_mock_connector
         )
 
-        assert spec_loader
+        expected_sql_queries = {}
+        assert spec_loader.generate_permission_queries() == expected_sql_queries

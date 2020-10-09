@@ -76,6 +76,10 @@ SNOWFLAKE_SPEC_ROLE_SCHEMA = """
         type: list
         schema:
             type: string
+    masking_policies:
+        type: list
+        schema:
+            type: string
     member_of:
         type: list
         schema:
