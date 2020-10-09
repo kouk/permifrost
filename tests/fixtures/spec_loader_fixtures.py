@@ -64,6 +64,10 @@ def test_column_masking_spec_file():
         .add_db()
         .add_column()
         .add_warehouse()
+        .add_masking_policy()
+        .add_masking_policy(
+            name="half_mask", input_type="string", return_value="sha2(value)"
+        )
         .add_role()
         .add_role(name="securityadmin")
         .add_role(name="secondary")
