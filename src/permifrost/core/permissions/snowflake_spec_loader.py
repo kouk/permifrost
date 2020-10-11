@@ -109,17 +109,19 @@ class SnowflakeSpecLoader:
             return error_messages
 
         schema = {
+            "columns": yaml.safe_load(SNOWFLAKE_SPEC_COLUMN_SCHEMA),
             "databases": yaml.safe_load(SNOWFLAKE_SPEC_DATABASE_SCHEMA),
+            "masking_policies": yaml.safe_load(SNOWFLAKE_SPEC_MASKING_POLICY_SCHEMA),
             "roles": yaml.safe_load(SNOWFLAKE_SPEC_ROLE_SCHEMA),
             "users": yaml.safe_load(SNOWFLAKE_SPEC_USER_SCHEMA),
             "warehouses": yaml.safe_load(SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA),
-            "masking_policies": yaml.safe_load(SNOWFLAKE_SPEC_MASKING_POLICY_SCHEMA),
         }
 
         validators = {
+            "columns": cerberus.Validator(schema["columns"]),
             "databases": cerberus.Validator(schema["databases"]),
-            "roles": cerberus.Validator(schema["roles"]),
             "masking_policies": cerberus.Validator(schema["masking_policies"]),
+            "roles": cerberus.Validator(schema["roles"]),
             "users": cerberus.Validator(schema["users"]),
             "warehouses": cerberus.Validator(schema["warehouses"]),
         }
@@ -752,7 +754,14 @@ class SnowflakeSpecLoader:
         #  SQL command granting that permission
 
         for entity_type, entry in self.spec.items():
-            if entity_type in ["require-owner", "databases", "warehouses", "version"]:
+            if entity_type in [
+                "require-owner",
+                "databases",
+                "warehouses",
+                "version",
+                "columns",
+                "masking_policies",
+            ]:
                 continue
 
             for entity_dict in entry:

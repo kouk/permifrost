@@ -90,15 +90,17 @@ def test_column_masking_mock_connector(mocker):
     mocker.patch.object(
         mock_connector,
         "show_warehouses",
-        return_value=["primarywarehouse", "secondarywarehouse"],
+        return_value=["testwarehouse"],
     )
     mocker.patch.object(
-        mock_connector, "show_databases", return_value=["primarydb", "secondarydb"]
+        mock_connector,
+        "show_databases",
+        return_value=["testdb"],
     )
     mocker.patch.object(
         mock_connector,
         "show_roles",
-        return_value=["primary", "secondary", "testrole", "securityadmin"],
+        return_value=["secondary", "testrole", "securityadmin"],
     )
     mocker.patch.object(
         mock_connector, "show_users", return_value=["testuser", "testusername"]

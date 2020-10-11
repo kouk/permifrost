@@ -2,12 +2,18 @@ SNOWFLAKE_SPEC_SCHEMA = """
     version:
         type: string
         required: False
-    
     require-owner:
         type: boolean
         required: False
         default: False
-
+    columns:
+        type: list
+        schema:
+            type: dict
+            keyschema:
+                type: string
+            valueschema:
+                type: dict
     databases:
         type: list
         schema:
@@ -23,7 +29,7 @@ SNOWFLAKE_SPEC_SCHEMA = """
             keyschema:
                 type: string
             valueschema:
-                type: string
+                type: dict
     roles:
         type: list
         schema:
@@ -50,6 +56,12 @@ SNOWFLAKE_SPEC_SCHEMA = """
                 type: dict
     """
 
+SNOWFLAKE_SPEC_COLUMN_SCHEMA = """
+    masking_policies:
+        type: list
+        required: True
+"""
+
 SNOWFLAKE_SPEC_DATABASE_SCHEMA = """
     shared:
         type: boolean
@@ -60,10 +72,10 @@ SNOWFLAKE_SPEC_DATABASE_SCHEMA = """
     """
 
 SNOWFLAKE_SPEC_MASKING_POLICY_SCHEMA = """
-    input:
+    input_type:
         type: string
         required: False
-    return:
+    return_value:
         type: string
         required: False
     """

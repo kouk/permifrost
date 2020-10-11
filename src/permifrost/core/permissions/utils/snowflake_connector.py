@@ -71,6 +71,9 @@ class SnowflakeConnector:
     def show_users(self) -> List[str]:
         return self.show_query("USERS")
 
+    def show_masking_policies(self) -> List[str]:
+        return self.show_query("MASKING POLICIES")
+
     def show_schemas(self, database: str = None) -> List[str]:
         names = []
 
@@ -221,13 +224,13 @@ class SnowflakeConnector:
         """
         For a given schema name, get all schemas it may be referencing.
 
-        For example, if <db>.* is given then all schemas in the database 
-        will be returned. If <db>.<schema_partial>_* is given, then all 
-        schemas that match the schema partial pattern will be returned. 
+        For example, if <db>.* is given then all schemas in the database
+        will be returned. If <db>.<schema_partial>_* is given, then all
+        schemas that match the schema partial pattern will be returned.
         If a full schema name is given, it will return that single schema
         as a list.
 
-        This function can be enhanced in the future to handle more 
+        This function can be enhanced in the future to handle more
         complicated schema names if necessary.
 
         Returns a list of schema names.
