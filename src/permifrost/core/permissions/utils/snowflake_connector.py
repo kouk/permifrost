@@ -6,6 +6,11 @@ import sqlalchemy
 from typing import Dict, List, Any
 from snowflake.sqlalchemy import URL
 
+# To support key pair authentication
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import dsa
+from cryptography.hazmat.primitives import serialization
 
 # Don't show all the info log messages from Snowflake
 for logger_name in ["snowflake.connector", "botocore", "boto3"]:
@@ -24,6 +29,8 @@ class SnowflakeConnector:
                 "role": os.getenv("PERMISSION_BOT_ROLE"),
                 "warehouse": os.getenv("PERMISSION_BOT_WAREHOUSE"),
                 "oauth_token": os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
+                "key_path": os.getenv("PERMISSION_BOT_KEY_PATH"),
+                "key_passphrase": os.getenv("PERMISSION_BOT_KEY_PASSPHRASE"),
             }
 
         if config["oauth_token"] is not None:
@@ -35,6 +42,20 @@ class SnowflakeConnector:
                     token=config["oauth_token"],
                     warehouse=config["warehouse"],
                 )
+            )
+        elif config["key_path"] is not None and config["key_passphrase"] is not None:
+            pkb = self.generate_private_key(
+                config["key_path"], config["key_passphrase"]
+            )
+            self.engine = sqlalchemy.create_engine(
+                URL(
+                    user=config["user"],
+                    account=config["account"],
+                    database=config["database"],
+                    role=config["role"],
+                    warehouse=config["warehouse"],
+                ),
+                connect_args={"private_key": pkb},
             )
         else:
             self.engine = sqlalchemy.create_engine(
@@ -49,6 +70,18 @@ class SnowflakeConnector:
                     # insecure_mode=True,
                 )
             )
+
+    def generate_private_key(self, key_path: str, key_passphrase: str) -> str:
+        with open(key_path, "rb") as key:
+            p_key = serialization.load_pem_private_key(
+                key.read(), password=key_passphrase.encode(), backend=default_backend()
+            )
+
+        return p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
 
     def show_query(self, entity) -> List[str]:
         names = []
@@ -221,13 +254,13 @@ class SnowflakeConnector:
         """
         For a given schema name, get all schemas it may be referencing.
 
-        For example, if <db>.* is given then all schemas in the database 
-        will be returned. If <db>.<schema_partial>_* is given, then all 
-        schemas that match the schema partial pattern will be returned. 
+        For example, if <db>.* is given then all schemas in the database
+        will be returned. If <db>.<schema_partial>_* is given, then all
+        schemas that match the schema partial pattern will be returned.
         If a full schema name is given, it will return that single schema
         as a list.
 
-        This function can be enhanced in the future to handle more 
+        This function can be enhanced in the future to handle more
         complicated schema names if necessary.
 
         Returns a list of schema names.

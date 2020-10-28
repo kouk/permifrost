@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 
 ### New
 
+* Added support for using a key pair to authenticate with snowflake.
+
 ### Changes
 
 ### Fixes
