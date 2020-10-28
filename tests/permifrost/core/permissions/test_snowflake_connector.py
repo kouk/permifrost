@@ -37,6 +37,27 @@ class TestSnowflakeConnector:
             "snowflake://TEST:@TEST/?authenticator=oauth&token=TEST&warehouse=TEST"
         )
 
+    def test_uses_key_pair_if_available(selfself, mocker, snowflake_connector_env):
+        mocker.patch("sqlalchemy.create_engine")
+
+        test_private_key = "TEST_PK"
+        mocker.patch.object(
+            SnowflakeConnector, "generate_private_key", return_value=test_private_key
+        )
+
+        os.environ["PERMISSION_BOT_KEY_PATH"] = "TEST"
+        os.environ["PERMISSION_BOT_KEY_PASSPHRASE"] = "TEST"
+
+        SnowflakeConnector()
+
+        del os.environ["PERMISSION_BOT_KEY_PATH"]
+        del os.environ["PERMISSION_BOT_KEY_PASSPHRASE"]
+
+        sqlalchemy.create_engine.assert_called_with(
+            "snowflake://TEST:@TEST/TEST?role=TEST&warehouse=TEST",
+            connect_args={"private_key": test_private_key},
+        )
+
     def test_uses_username_password_by_default(
         selfself, mocker, snowflake_connector_env
     ):

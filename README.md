@@ -179,6 +179,17 @@ To connect using an OAuth token, also include the following:
 $PERMISSION_BOT_OAUTH_TOKEN
 ```
 
+### Key Pair Authentication
+
+Rather than supplying a password or an oauth token, it's possible to connect via Snowflake's Key Pair authentication by setting the following:
+
+```bash
+$PERMISSION_BOT_PRIVATE_KEY_PATH
+$PERMISSION_BOT_PRIVATE_KEY_PASSPHRASE
+```
+
+See [Snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy#key-pair-authentication-support) for more info.
+
 ## Contributing
 
 Contributing to Permifrost is easy, and most commands to do so are available within the Makefile.
