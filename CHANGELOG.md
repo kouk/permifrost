@@ -9,13 +9,19 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#44](https://gitlab.com/gitlab-data/permifrost/-/issues/44) Add support for using a key pair to authenticate with Snowflake
 
 ### Changes
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.6.1 - (2020-10-28)
+---
+
+### New
+* [#44](https://gitlab.com/gitlab-data/permifrost/-/issues/44) Add support for using a key pair to authenticate with Snowflake
 
 
 ## 0.6.0 - (2020-10-05)
