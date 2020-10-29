@@ -85,6 +85,10 @@ class SnowflakeGrantsGenerator:
 
         member_of_list = config.get("member_of", [])
 
+        if len(member_of_list) == 1 and member_of_list[0] == "*":
+            conn = SnowflakeConnector()
+            member_of_list = conn.show_roles()
+
         for member_role in member_of_list:
             granted_role = SnowflakeConnector.snowflaky(member_role)
             already_granted = False

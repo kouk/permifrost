@@ -506,7 +506,7 @@ class SnowflakeSpecLoader:
                 )
 
         for role in entities["role_refs"]:
-            if role not in entities["roles"]:
+            if role not in entities["roles"] and role != "*":
                 error_messages.append(
                     f"Reference error: Role {role} is referenced in the "
                     "spec but not defined"
