@@ -31,6 +31,8 @@ roles:
             - sysadmin
 
     - sysadmin:
+        member_of:
+            - "*"
         warehouses:
             - loading
         privileges:
