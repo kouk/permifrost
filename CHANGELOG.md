@@ -9,13 +9,19 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#49](https://gitlab.com/gitlab-data/permifrost/-/issues/49) Add support for using "*" as a member_of parameter
 
 ### Changes
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.7.0 - (2020-10-29)
+---
+
+### New
+* [#49](https://gitlab.com/gitlab-data/permifrost/-/issues/49) Add support for using "*" as a member_of parameter
 
 
 ## 0.6.1 - (2020-10-28)
