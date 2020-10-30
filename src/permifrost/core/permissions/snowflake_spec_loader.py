@@ -234,8 +234,19 @@ class SnowflakeSpecLoader:
                         entities["roles"].add(entity_name)
 
                         try:
-                            for member_role in config["member_of"]:
-                                entities["role_refs"].add(member_role)
+                            if isinstance(config["member_of"], dict):
+                                for member_role in config["member_of"].get(
+                                    "include", []
+                                ):
+                                    entities["role_refs"].add(member_role)
+                                for member_role in config["member_of"].get(
+                                    "exclude", []
+                                ):
+                                    entities["role_refs"].add(member_role)
+
+                            if isinstance(config["member_of"], list):
+                                for member_role in config["member_of"]:
+                                    entities["role_refs"].add(member_role)
                         except KeyError:
                             logging.debug(
                                 "`member_of` not found for role {}, skipping Role Reference generation.".format(
@@ -751,19 +762,21 @@ class SnowflakeSpecLoader:
             if entity_type in ["require-owner", "databases", "warehouses", "version"]:
                 continue
 
+            # Generate list of all entities (used for roles currently)
+            all_entities = [list(entity.keys())[0] for entity in entry]
+
             for entity_dict in entry:
                 entity_configs = [
                     (entity_name, config)
                     for entity_name, config in entity_dict.items()
                     if config
                 ]
-
                 for entity_name, config in entity_configs:
                     if entity_type == "roles" and (not role or role == entity_name):
                         click.secho(f"     Processing role {entity_name}", fg="green")
                         sql_commands.extend(
                             generator.generate_grant_roles(
-                                entity_type, entity_name, config
+                                entity_type, entity_name, config, all_entities
                             )
                         )
 
