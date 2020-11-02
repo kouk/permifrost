@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-
+* [#50](https://gitlab.com/gitlab-data/permifrost/-/issues/50) Add support for include / exclude spec on `member_of` parameter
 ### Changes
 
 ### Fixes
@@ -21,7 +21,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#49](https://gitlab.com/gitlab-data/permifrost/-/issues/49) Add support for using "*" as a member_of parameter
+* [#49](https://gitlab.com/gitlab-data/permifrost/-/issues/49) Add support for using "*" as a `member_of` parameter
 
 
 ## 0.6.1 - (2020-10-28)

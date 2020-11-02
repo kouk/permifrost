@@ -1,7 +1,7 @@
 import logging
 import re
 
-from typing import Dict, List, Tuple, Set, Any
+from typing import Dict, List, Tuple, Set, Any, Optional
 
 from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
@@ -65,7 +65,11 @@ class SnowflakeGrantsGenerator:
             return False
 
     def generate_grant_roles(
-        self, entity_type: str, entity: str, config: str
+        self,
+        entity_type: str,
+        entity: str,
+        config: str,
+        all_entities: Optional[list] = None,
     ) -> List[Dict]:
         """
         Generate the GRANT statements for both roles and users.
@@ -73,6 +77,7 @@ class SnowflakeGrantsGenerator:
         entity_type: "users" or "roles"
         entity: the name of the entity (e.g. "yannis" or "reporter")
         config: the subtree for the entity as specified in the spec
+        all_entities: all roles defined in spec
 
         Returns the SQL commands generated as a list
         """
@@ -83,11 +88,23 @@ class SnowflakeGrantsGenerator:
         if entity_type == "roles":
             grant_type = "role"
 
-        member_of_list = config.get("member_of", [])
+        if isinstance(config.get("member_of", []), dict):
+            member_include_list = config.get("member_of", {}).get("include", [])
+            member_exclude_list = config.get("member_of", {}).get("exclude", [])
+        elif isinstance(config.get("member_of", []), list):
+            member_include_list = config.get("member_of", [])
+            member_exclude_list = []
 
-        if len(member_of_list) == 1 and member_of_list[0] == "*":
+        if len(member_include_list) == 1 and member_include_list[0] == "*":
             conn = SnowflakeConnector()
-            member_of_list = conn.show_roles()
+            show_roles = conn.show_roles()
+            member_include_list = [
+                role for role in show_roles if role in all_entities and role != entity
+            ]
+
+        member_of_list = [
+            role for role in member_include_list if role not in member_exclude_list
+        ]
 
         for member_role in member_of_list:
             granted_role = SnowflakeConnector.snowflaky(member_role)

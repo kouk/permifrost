@@ -8,7 +8,7 @@ with open("VERSION") as version_file:
     version = version_file.read().strip()
 
 requires = [
-    "cerberus==1.2",
+    "cerberus==1.3.2",
     "click>=7.0,<=7.1.2",
     "click-default-group==1.2.1",
     "pyyaml>=3.13,<=5.3.1",

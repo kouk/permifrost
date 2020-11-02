@@ -27,6 +27,8 @@ If a schema name includes an asterisk, such as `snowplow_*`, then all schemas th
 
 All entities must be explicitly referenced. For example, if a permission is granted to a schema or table then the database must be explicitly referenced for permissioning as well.  Additionally, role membership must be explicit in the config file.  If a role does not have a `member_of` list, it will have all roles it currently has revoked.
 
+Roles can accept "*" as a role name either alone or nested under the `include` key. There is optionally an `exclude` key that can be used if `include` is used. `"*"` will grant membership to all roles defined in the spec. Any roles defined in `exclude` will be removed from the list defined in `include`.
+
 A specification file has the following structure:
 
 ```bash
@@ -51,6 +53,14 @@ roles:
             - role_name
             - role_name
             ...
+
+            # or
+        
+        member_of:
+            include:
+                - "*"
+            exclude:
+                - role_name
 
         privileges:
             databases:
