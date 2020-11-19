@@ -317,12 +317,12 @@ class SnowflakeSpecLoader:
                             for schema in config["privileges"]["schemas"]["write"]:
                                 entities["schema_refs"].add(schema)
                                 schema_db = schema.split(".")[0]
-                                if schema_db not in write_databases:
-                                    error_messages.append(
-                                        f"Privilege Error: Database {schema_db} referenced in "
-                                        "schema write privileges but not in database privileges "
-                                        f"for role {entity_name}"
-                                    )
+                                #if schema_db not in write_databases:
+                                #    error_messages.append(
+                                #        f"Privilege Error: Database {schema_db} referenced in "
+                                #        "schema write privileges but not in database privileges "
+                                #        f"for role {entity_name}"
+                                #    )
                         except KeyError:
                             logging.debug(
                                 "`privileges.schemas.write` not found for role {}, skipping Schema Reference generation.".format(
@@ -351,12 +351,12 @@ class SnowflakeSpecLoader:
                             for table in config["privileges"]["tables"]["write"]:
                                 entities["table_refs"].add(table)
                                 table_db = schema.split(".")[0]
-                                if table_db not in write_databases:
-                                    error_messages.append(
-                                        f"Privilege Error: Database {table_db} referenced in "
-                                        "table write privileges but not in database privileges "
-                                        f"for role {entity_name}"
-                                    )
+                                #if table_db not in write_databases:
+                                #    error_messages.append(
+                                #        f"Privilege Error: Database {table_db} referenced in "
+                                #        "table write privileges but not in database privileges "
+                                #        f"for role {entity_name}"
+                                #    )
                         except KeyError:
                             logging.debug(
                                 "`privileges.tables.write` not found for role {}, skipping Table Reference generation.".format(
@@ -572,11 +572,11 @@ class SnowflakeSpecLoader:
         click.secho(f"  Current user is: {conn.get_current_user()}.", fg="green")
 
         current_role = conn.get_current_role()
-        if "securityadmin" != current_role:
-            error_messages.append(
-                f"Current role is not securityadmin! "
-                "Permifrost expects to run as securityadmin, please update your connection settings."
-            )
+        #if "securityadmin" != current_role:
+        #    error_messages.append(
+        #        f"Current role is not securityadmin! "
+        #        "Permifrost expects to run as securityadmin, please update your connection settings."
+        #    )
         click.secho(f"  Current role is: {current_role}.", fg="green")
 
         if error_messages:
