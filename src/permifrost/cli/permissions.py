@@ -31,8 +31,8 @@ def print_command(command, diff):
     else:
         foreground_color = "red"
         run_prefix = "[ERROR] "
-
-    click.secho(f"{diff_prefix}{run_prefix}{command['sql']};", fg=foreground_color)
+    if diff or not command["already_granted"]:
+        click.secho(f"{diff_prefix}{run_prefix}{command['sql']};", fg=foreground_color)
 
 
 @cli.command()
