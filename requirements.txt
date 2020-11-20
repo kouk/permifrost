@@ -6,7 +6,7 @@ Cerberus==1.3.2
 changelog-cli==0.6.2
 Click>=7.0,<=7.1.2
 click-default-group==1.2.1
-cryptography==2.9.2
+cryptography==3.2
 mypy==0.780
 pytest==4.3.1
 pytest-cov==2.6.1
@@ -16,4 +16,4 @@ requests>=2.22.0,<=2.23.0
 snowflake-connector-python>=2.2.1,<=2.3.1
 snowflake-sqlalchemy==1.2.1
 SQLAlchemy>=1.3.13,<=1.3.19
-urllib3==1.23
+urllib3==1.24.2
