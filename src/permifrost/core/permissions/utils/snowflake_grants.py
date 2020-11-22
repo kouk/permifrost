@@ -99,7 +99,7 @@ class SnowflakeGrantsGenerator:
             conn = SnowflakeConnector()
             show_roles = conn.show_roles()
             member_include_list = [
-                role for role in show_roles if role in all_entities and role != entity
+                role for role in show_roles if role != entity and role in all_entities
             ]
 
         member_of_list = [
@@ -132,7 +132,7 @@ class SnowflakeGrantsGenerator:
         # Iterate through current state
         if entity_type == "users":
             for granted_role in self.roles_granted_to_user[entity]:
-                if granted_role not in member_of_list:
+                if granted_role not in member_of_list and entity not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                     sql_commands.append(
                         {
                             "already_granted": False,
@@ -148,7 +148,7 @@ class SnowflakeGrantsGenerator:
             for granted_role in (
                 self.grants_to_role.get(entity, {}).get("usage", {}).get("role", [])
             ):
-                if granted_role not in member_of_list:
+                if granted_role not in member_of_list and entity not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                     sql_commands.append(
                         {
                             "already_granted": False,
@@ -342,7 +342,7 @@ class SnowflakeGrantsGenerator:
         for granted_warehouse in (
             self.grants_to_role.get(role, {}).get("usage", {}).get("warehouse", [])
         ):
-            if granted_warehouse not in warehouses:
+            if granted_warehouse not in warehouses and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                 sql_commands.append(
                     {
                         "already_granted": False,
@@ -360,7 +360,7 @@ class SnowflakeGrantsGenerator:
         for granted_warehouse in (
             self.grants_to_role.get(role, {}).get("operate", {}).get("warehouse", [])
         ):
-            if granted_warehouse not in warehouses:
+            if granted_warehouse not in warehouses and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                 sql_commands.append(
                     {
                         "already_granted": False,
@@ -378,7 +378,7 @@ class SnowflakeGrantsGenerator:
         for granted_warehouse in (
             self.grants_to_role.get(role, {}).get("monitor", {}).get("warehouse", [])
         ):
-            if granted_warehouse not in warehouses:
+            if granted_warehouse not in warehouses and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                 sql_commands.append(
                     {
                         "already_granted": False,
@@ -501,7 +501,7 @@ class SnowflakeGrantsGenerator:
             # If it's a shared database, only revoke imported
             # We'll only know if it's a shared DB based on the spec
             all_databases = databases.get("read", []) + databases.get("write", [])
-            if granted_database not in spec_dbs:
+            if granted_database not in spec_dbs or role in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                 # Skip revocation on database that are not defined in spec
                 continue
             elif (
@@ -565,7 +565,7 @@ class SnowflakeGrantsGenerator:
                         ),
                     }
                 )
-            elif granted_database not in databases.get("write", []):
+            elif granted_database not in databases.get("write", []) and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                 sql_commands.append(
                     {
                         "already_granted": False,
@@ -756,6 +756,7 @@ class SnowflakeGrantsGenerator:
             elif (  # If future privilege is granted on snowflake but not in grant list
                 granted_schema == future_schema_name
                 and future_schema_name not in all_grant_schemas  #
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 sql_commands.append(
                     {
@@ -772,6 +773,7 @@ class SnowflakeGrantsGenerator:
             elif (
                 granted_schema not in all_grant_schemas
                 and future_schema_name not in all_grant_schemas
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 # Covers case where schema is granted in Snowflake
                 # But it's not in the grant list and it's not explicitly granted as a future grant
@@ -825,6 +827,7 @@ class SnowflakeGrantsGenerator:
             elif (  # If future privilege is granted but not in grant list
                 granted_schema == future_schema_name
                 and future_schema_name not in write_grant_schemas
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 sql_commands.append(
                     {
@@ -841,6 +844,7 @@ class SnowflakeGrantsGenerator:
             elif (
                 granted_schema not in write_grant_schemas
                 and future_schema_name not in write_grant_schemas
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 # Covers case where schema is granted and it's not explicitly granted as a future grant
                 sql_commands.append(
@@ -1207,6 +1211,7 @@ class SnowflakeGrantsGenerator:
                 continue
             elif (  # If future privilege is granted in Snowflake but not in grant list
                 granted_table == future_table and future_table not in all_grant_tables
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 sql_commands.append(
                     {
@@ -1223,6 +1228,7 @@ class SnowflakeGrantsGenerator:
             elif (
                 granted_table not in all_grant_tables
                 and future_table not in all_grant_tables
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 # Covers case where table is granted in Snowflake
                 # But it's not in the grant list and it's not explicitly granted as a future grant
@@ -1265,7 +1271,7 @@ class SnowflakeGrantsGenerator:
                 # No privileges to revoke on imported db. Done at database level
                 # Don't revoke on privileges on databases not defined in spec.
                 continue
-            elif granted_view == future_view and future_view not in all_grant_views:
+            elif granted_view == future_view and future_view not in all_grant_views and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin'):
                 # If future privilege is granted in Snowflake but not in grant list
                 sql_commands.append(
                     {
@@ -1282,6 +1288,7 @@ class SnowflakeGrantsGenerator:
             elif (
                 granted_view not in all_grant_views
                 and future_view not in all_grant_views
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 # Covers case where view is granted in Snowflake
                 # But it's not in the grant list and it's not explicitly granted as a future grant
@@ -1335,6 +1342,7 @@ class SnowflakeGrantsGenerator:
             elif (
                 granted_table == future_table
                 and future_table not in write_grant_tables_full
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 # If future privilege is granted in Snowflake but not in grant list
                 sql_commands.append(
@@ -1352,6 +1360,7 @@ class SnowflakeGrantsGenerator:
             elif (
                 granted_table not in write_grant_tables_full
                 and future_table not in write_grant_tables_full
+                and role not in ('sysadmin', 'accountadmin', 'useradmin', 'securityadmin')
             ):
                 # Covers case where table is granted in Snowflake
                 # But it's not in the grant list and it's not explicitly granted as a future grant
