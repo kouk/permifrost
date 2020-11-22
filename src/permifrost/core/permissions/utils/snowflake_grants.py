@@ -59,7 +59,7 @@ class SnowflakeGrantsGenerator:
 
         if future and entity_name in grants:
             return True
-        elif not future and SnowflakeConnector.snowflaky(entity_name) in grants:
+        elif not future and SnowflakeConnector.snowflaky(entity_name.replace('"', '').lower()) in grants:
             return True
         else:
             return False

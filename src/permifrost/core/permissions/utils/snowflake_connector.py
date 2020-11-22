@@ -139,7 +139,7 @@ class SnowflakeConnector:
                 names.append(
                     f"{result['database_name'].lower()}"
                     + f".{result['schema_name'].lower()}"
-                    + f".{result['name'].lower()}"
+                    + f".\"{result['name']}\""
                 )
 
         return names
