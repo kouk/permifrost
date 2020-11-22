@@ -1396,10 +1396,11 @@ class SnowflakeGrantsGenerator:
             else:
                 alter_privileges.append("DISABLED = TRUE")
 
+        # TODO: expand functionality here. For now, we dont disable or enable anybody
         if alter_privileges:
             sql_commands.append(
                 {
-                    "already_granted": False,
+                    "already_granted": True,
                     "sql": ALTER_USER_TEMPLATE.format(
                         user_name=SnowflakeConnector.snowflaky(user),
                         privileges=", ".join(alter_privileges),
