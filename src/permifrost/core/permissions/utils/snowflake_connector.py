@@ -216,10 +216,14 @@ class SnowflakeConnector:
 
         query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky(user)}"
         with self.engine.connect() as connection:
+            query_current_user = "SELECT CURRENT_ROLE() AS ROLE"
+            result = connection.execute(query_current_user).fetchone()
+            current_role = result["role"].lower()
             results = connection.execute(query).fetchall()
 
             for result in results:
-                roles.append(result["role"].lower())
+                if result["granted_by"].lower()==current_role or result["role"].lower() in ('sysadmin', 'accountadmin', 'securityadmin', 'useradmin'):
+                    roles.append(result["role"].lower())
 
         return roles
 

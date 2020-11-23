@@ -106,6 +106,7 @@ class SnowflakeGrantsGenerator:
             role for role in member_include_list if role not in member_exclude_list
         ]
 
+
         for member_role in member_of_list:
             granted_role = SnowflakeConnector.snowflaky(member_role)
             already_granted = False
@@ -128,6 +129,7 @@ class SnowflakeGrantsGenerator:
                     ),
                 }
             )
+
 
         # Iterate through current state
         if entity_type == "users":
