@@ -670,17 +670,40 @@ class SnowflakeSpecLoader:
 
         if len(self.entities["users"]) > 0:
             users = conn.show_users()
+            # Create users
             for user in self.entities["users"]:
                 if user not in users:
-                    error_messages.append(
-                        f"Missing Entity Error: User {user} was not found on"
-                        " Snowflake Server. Please create it before continuing."
-                    )
+                    # TODO: create users here if not exist
+                    user_create_query = self.create_user_query_from_name(user)
+                    click.secho(f"  User is in Spec but not found in Snowflake. Executing: {user_create_query}.", fg="red")
+                    conn.run_query(user_create_query)
+            # Drop users if not defined in spec
+            for user in users:
+                if user not in self.entities["users"]:
+                    user_drop_query = self.drop_user_query_from_name(user)
+                    click.secho(f"  User is in Snowflake but not found in Spec. Executing: {user_drop_query}.", fg="red")
+                    conn.run_query(user_drop_query)
         else:
             logging.debug("`users` not found in spec, skipping SHOW USERS call.")
 
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
+
+    def drop_user_query_from_name(self, user_name):
+        return "DROP USER IF EXISTS {user_name}".format(
+            user_name=SnowflakeConnector.snowflaky(user_name)
+        )
+
+    def create_user_query_from_name(self, user_name):
+        if '_APP' in user_name:
+            user_login = user_name
+        else:
+            user_login = f"{user_name.lower().replace('_', '.')}@allegropay.pl"
+        return "CREATE USER IF NOT EXISTS {user_name} LOGIN_NAME='{user_login}' DISPLAY_NAME='{display_name}'".format(
+            user_name=SnowflakeConnector.snowflaky(user_name),
+            user_login=user_login,
+            display_name=user_name.replace('_', ' ').title()
+        )
 
     def get_privileges_from_snowflake_server(
         self, conn: SnowflakeConnector = None
