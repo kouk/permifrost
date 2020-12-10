@@ -1,0 +1,154 @@
+{
+  "testrole": {
+    "create database": {
+      "account": [
+        "test_account"
+      ]
+    },
+    "create warehouse": {
+      "account": [
+        "test_account"
+      ]
+    },
+    "ownership": {
+      "database": [
+        "primarydb",
+        "secondarydb"
+      ],
+      "file_format": [
+        "primarydb.test_schema.csv",
+        "secondarydb.test_schema.csv"
+      ],
+      "function": [
+        "primarydb.test_schema.\"test_function(n integer):integer\"",
+        "secondarydb.test_schema.\"test_function(n integer):integer\""
+      ],
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ],
+      "stage": [
+        "primarydb.test_stage",
+        "secondarydb.test_stage"
+      ],
+      "table": [
+        "primarydb.test_schema.test_table",
+        "secondarydb.test_schema.test_table"
+      ],
+      "view": [
+        "primarydb.test_schema.test_view",
+        "secondarydb.test_schema.test_view"
+      ],
+      "warehouse": [
+        "primarywarehouse",
+        "secondarywarehouse"
+      ]
+    },
+    "create schema": {
+      "database": [
+        "primarydb",
+        "secondarydb"
+      ]
+    },
+    "modify": {
+      "database": [
+        "primarydb",
+        "secondarydb"
+      ],
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "monitor": {
+      "database": [
+        "primarydb",
+        "secondarydb"
+      ],
+      "warehouse": [
+        "primarywarehouse",
+        "secondarywarehouse"
+      ]
+    },
+    "reference_usage": {
+      "database": [
+        "primarydb",
+        "secondarydb"
+      ]
+    },
+    "usage": {
+      "database": [
+        "primarydb",
+        "secondarydb"
+      ],
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ],
+      "warehouse": [
+        "primarywarehouse",
+        "secondarywarehouse"
+      ]
+    },
+    "add search optimization": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create external table": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create masking policy": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create materialized view": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create procedure": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create stream": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create task": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "create temporary table": {
+      "schema": [
+        "primarydb.test_schema",
+        "secondarydb.test_schema"
+      ]
+    },
+    "select": {
+      "view": [
+        "primarydb.test_schema.test_view",
+        "secondarydb.test_schema.test_view"
+      ]
+    },
+    "operate": {
+      "warehouse": [
+        "primarywarehouse",
+        "secondarywarehouse"
+      ]
+    }
+  }
+}

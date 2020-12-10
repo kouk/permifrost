@@ -1,0 +1,127 @@
+{
+  "testrole": {
+    "create database": {
+      "account": [
+        "test_account"
+      ]
+    },
+    "create warehouse": {
+      "account": [
+        "test_account"
+      ]
+    },
+    "ownership": {
+      "database": [
+        "primarydb"
+      ],
+      "file_format": [
+        "primarydb.test_schema.csv"
+      ],
+      "function": [
+        "primarydb.test_schema.\"test_function(n integer):integer\""
+      ],
+      "schema": [
+        "primarydb.test_schema"
+      ],
+      "stage": [
+        "primarydb.test_stage"
+      ],
+      "table": [
+        "primarydb.test_schema.test_table"
+      ],
+      "view": [
+        "primarydb.test_schema.test_view"
+      ],
+      "warehouse": [
+        "primarywarehouse"
+      ]
+    },
+    "create schema": {
+      "database": [
+        "primarydb"
+      ]
+    },
+    "modify": {
+      "database": [
+        "primarydb"
+      ],
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "monitor": {
+      "database": [
+        "primarydb"
+      ],
+      "warehouse": [
+        "primarywarehouse"
+      ]
+    },
+    "reference_usage": {
+      "database": [
+        "primarydb"
+      ]
+    },
+    "usage": {
+      "database": [
+        "primarydb"
+      ],
+      "schema": [
+        "primarydb.test_schema"
+      ],
+      "warehouse": [
+        "primarywarehouse"
+      ]
+    },
+    "add search optimization": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create external table": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create masking policy": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create materialized view": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create procedure": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create stream": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create task": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "create temporary table": {
+      "schema": [
+        "primarydb.test_schema"
+      ]
+    },
+    "select": {
+      "view": [
+        "primarydb.test_schema.test_view"
+      ]
+    },
+    "operate": {
+      "warehouse": [
+        "primarywarehouse"
+      ]
+    }
+  }
+}

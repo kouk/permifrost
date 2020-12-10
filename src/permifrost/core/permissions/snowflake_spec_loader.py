@@ -704,7 +704,9 @@ class SnowflakeSpecLoader:
                             future_grants.setdefault(role, {})
                             .setdefault(privilege, {})
                             .setdefault(grant_on, [])
-                            .extend(grant_results[role][privilege][grant_on])
+                            .extend(self.filter_to_database_refs(
+                                grant_on=grant_on,
+                                filter_set=grant_results[role][privilege][grant_on]))
                         )
 
             # Get all schemas in all ref'd databases. Not all schemas will be
@@ -719,7 +721,14 @@ class SnowflakeSpecLoader:
                                 future_grants.setdefault(role, {})
                                 .setdefault(privilege, {})
                                 .setdefault(grant_on, [])
-                                .extend(grant_results[role][privilege][grant_on])
+                                .extend(
+
+                                self.filter_to_database_refs(
+                                grant_on=grant_on,
+                                filter_set=self.filter_to_database_refs(
+                                grant_on=grant_on,
+                                filter_set=grant_results[role][privilege][grant_on]))
+                            )
                             )
 
         for role in self.entities["roles"]:
@@ -765,7 +774,7 @@ class SnowflakeSpecLoader:
         elif grant_on == "account":
             return filter_set
         else:
-            # Everything else should either be binay: it has a dot or it doesn't
+            # Everything else should be binary: it has a dot or it doesn't
             # List of strings with `.`s:
             #       i.e. database.schema.function_name
             #       Since we are excluding all references to non-tracked databases we can simply check the first
