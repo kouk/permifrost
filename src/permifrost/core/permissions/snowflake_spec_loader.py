@@ -704,9 +704,12 @@ class SnowflakeSpecLoader:
                             future_grants.setdefault(role, {})
                             .setdefault(privilege, {})
                             .setdefault(grant_on, [])
-                            .extend(self.filter_to_database_refs(
-                                grant_on=grant_on,
-                                filter_set=grant_results[role][privilege][grant_on]))
+                            .extend(
+                                self.filter_to_database_refs(
+                                    grant_on=grant_on,
+                                    filter_set=grant_results[role][privilege][grant_on],
+                                )
+                            )
                         )
 
             # Get all schemas in all ref'd databases. Not all schemas will be
@@ -722,13 +725,16 @@ class SnowflakeSpecLoader:
                                 .setdefault(privilege, {})
                                 .setdefault(grant_on, [])
                                 .extend(
-
-                                self.filter_to_database_refs(
-                                grant_on=grant_on,
-                                filter_set=self.filter_to_database_refs(
-                                grant_on=grant_on,
-                                filter_set=grant_results[role][privilege][grant_on]))
-                            )
+                                    self.filter_to_database_refs(
+                                        grant_on=grant_on,
+                                        filter_set=self.filter_to_database_refs(
+                                            grant_on=grant_on,
+                                            filter_set=grant_results[role][privilege][
+                                                grant_on
+                                            ],
+                                        ),
+                                    )
+                                )
                             )
 
         for role in self.entities["roles"]:
