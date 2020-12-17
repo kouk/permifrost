@@ -727,12 +727,7 @@ class SnowflakeSpecLoader:
                                 .extend(
                                     self.filter_to_database_refs(
                                         grant_on=grant_on,
-                                        filter_set=self.filter_to_database_refs(
-                                            grant_on=grant_on,
-                                            filter_set=grant_results[role][privilege][
-                                                grant_on
-                                            ],
-                                        ),
+                                        filter_set=grant_results[role][privilege][grant_on],
                                     )
                                 )
                             )
