@@ -28,7 +28,7 @@ class TestSnowflakeConnector:
         assert SnowflakeConnector.snowflaky(db3) == '"123-with-quotes".schema.table'
         assert SnowflakeConnector.snowflaky(db4) == '"1_db-9-RANDOM".schema.table'
 
-    def test_uses_oauth_if_available(selfself, mocker, snowflake_connector_env):
+    def test_uses_oauth_if_available(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")
         os.environ["PERMISSION_BOT_OAUTH_TOKEN"] = "TEST"
         SnowflakeConnector()
@@ -37,7 +37,7 @@ class TestSnowflakeConnector:
             "snowflake://TEST:@TEST/?authenticator=oauth&token=TEST&warehouse=TEST"
         )
 
-    def test_uses_key_pair_if_available(selfself, mocker, snowflake_connector_env):
+    def test_uses_key_pair_if_available(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")
 
         test_private_key = "TEST_PK"
@@ -58,9 +58,7 @@ class TestSnowflakeConnector:
             connect_args={"private_key": test_private_key},
         )
 
-    def test_uses_username_password_by_default(
-        selfself, mocker, snowflake_connector_env
-    ):
+    def test_uses_username_password_by_default(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")
         SnowflakeConnector()
         sqlalchemy.create_engine.assert_called_with(
