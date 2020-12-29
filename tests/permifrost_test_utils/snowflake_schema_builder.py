@@ -1,3 +1,7 @@
+import os
+import json
+
+
 class SnowflakeSchemaBuilder:
     """
     Basic builder class for creating spec_files.  Useful for small, focused tests to generate
@@ -78,3 +82,9 @@ class SnowflakeSchemaBuilder:
     def require_owner(self):
         self.add_setting("require-owner", "true")
         return self
+
+    def build_from_file(self, schemas_dir, file_name):
+        schema_path = os.path.join(schemas_dir, file_name)
+        with open(schema_path, "r") as fd:
+            schema_file_data = json.load(fd)
+        return schema_file_data

@@ -7,6 +7,17 @@ from permifrost_test_utils.snowflake_schema_builder import SnowflakeSchemaBuilde
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+SPEC_FILE_DIR = os.path.join(THIS_DIR, "specs")
+SCHEMA_FILE_DIR = os.path.join(THIS_DIR, "schemas")
+
+
+def get_spec_from_file(file_name):
+    with open(os.path.join(SPEC_FILE_DIR, file_name), "r") as fd:
+        spec_data = fd.read()
+    return spec_data
+
+
 @pytest.fixture
 def test_dir(request):
     return request.fspath.dirname
@@ -35,6 +46,32 @@ def test_roles_spec_file():
         .build()
     )
     yield spec_file_data
+
+
+@pytest.fixture
+def test_grants_roles_mock_connection(mocker, mock_method, return_value):
+    mocker.patch("sqlalchemy.create_engine")
+    mock_connector = MockSnowflakeConnector()
+    mocker.patch.object(
+        mock_connector, "get_current_role", return_value="securityadmin"
+    )
+    mocker.patch.object(mock_connector, "get_current_user", return_value="testuser")
+    mocker.patch.object(
+        mock_connector,
+        "show_warehouses",
+        return_value=["primarywarehouse", "secondarywarehouse"],
+    )
+    mocker.patch.object(
+        mock_connector, "show_databases", return_value=["primarydb", "secondarydb"]
+    )
+    mocker.patch.object(
+        mock_connector, "show_roles", return_value=["testrole", "securityadmin"]
+    )
+    mocker.patch.object(
+        mock_connector, "show_users", return_value=["testuser", "testusername"]
+    )
+    mocker.patch.object(mock_connector, mock_method, return_value=return_value)
+    yield mock_connector
 
 
 @pytest.fixture()
@@ -227,6 +264,179 @@ class TestSnowflakeSpecLoader:
             SnowflakeSpecLoader("", mock_connector)
 
         assert expected_error in str(context.value)
+
+    @pytest.mark.parametrize(
+        "mock_method,spec_file_data,return_value,expected_value",
+        [
+            (
+                "show_future_grants",
+                get_spec_from_file(
+                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config.yml"
+                ),
+                SnowflakeSchemaBuilder().build_from_file(
+                    SCHEMA_FILE_DIR,
+                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_future_grants.json",
+                ),
+                SnowflakeSchemaBuilder().build_from_file(
+                    SCHEMA_FILE_DIR,
+                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_future_grants_expected_values.json",
+                ),
+            ),
+            (
+                "show_grants_to_role",
+                get_spec_from_file(
+                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config.yml"
+                ),
+                SnowflakeSchemaBuilder().build_from_file(
+                    SCHEMA_FILE_DIR,
+                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_grants_to_role.json",
+                ),
+                SnowflakeSchemaBuilder().build_from_file(
+                    SCHEMA_FILE_DIR,
+                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_grants_to_role_expected_values.json",
+                ),
+            ),
+        ],
+    )
+    def test_check_entities_on_snowflake_server_filters_grants_to_role_to_items_defined_in_config(
+        self,
+        test_grants_roles_mock_connection,
+        mocker,
+        mock_method,
+        spec_file_data,
+        return_value,
+        expected_value,
+    ):
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        spec_loader = SnowflakeSpecLoader(
+            spec_path="", conn=test_grants_roles_mock_connection
+        )
+
+        assert expected_value == spec_loader.grants_to_role
+
+    @pytest.mark.parametrize(
+        "database_refs,warehouse_refs,grant_on,filter_set,expected_value",
+        [
+            # database filter matches config
+            (
+                ["db1", "db2", "db3"],
+                ["warehouse_doesnt_matter"],
+                "database",
+                ["db1", "db2", "db3"],
+                ["db1", "db2", "db3"],
+            ),
+            # database filter less objects than config
+            (
+                ["db1", "db2", "db3"],
+                ["warehouse_doesnt_matter"],
+                "database",
+                ["db1"],
+                ["db1"],
+            ),
+            # database filter more objects than config
+            (
+                ["db1"],
+                ["warehouse_doesnt_matter"],
+                "database",
+                ["db1", "db2", "db3"],
+                ["db1"],
+            ),
+            # account return passed filter set
+            (
+                ["database_doesnt_matter"],
+                ["warehouse_doesnt_matter"],
+                "account",
+                ["account1", "account2"],
+                ["account1", "account2"],
+            ),
+            # warehouse filter matches config
+            (
+                ["database_doesnt_matter"],
+                ["warehouse1", "warehouse2", "warehouse3"],
+                "warehouse",
+                ["warehouse1", "warehouse2", "warehouse3"],
+                ["warehouse1", "warehouse2", "warehouse3"],
+            ),
+            # warehouse filter less than config
+            (
+                ["database_doesnt_matter"],
+                ["warehouse1", "warehouse2", "warehouse3"],
+                "warehouse",
+                ["warehouse1"],
+                ["warehouse1"],
+            ),
+            # warehouse filter more than config
+            (
+                ["database_doesnt_matter"],
+                ["warehouse1"],
+                "warehouse",
+                ["warehouse1", "warehouse2", "warehouse3"],
+                ["warehouse1"],
+            ),
+            ###
+            # everything else with single config db
+            ###
+            # filter set without dots
+            (
+                ["db1"],
+                ["warehouse_doesnt_matter"],
+                "not_really_relevant",
+                ["item1", "item2", "item3"],
+                ["item1", "item2", "item3"],
+            ),
+            # filter set with one level dots
+            (
+                ["db1"],
+                ["warehouse_doesnt_matter"],
+                "not_really_relevant",
+                ["db1.some_item", "db1.some_item2", "db2.some_item"],
+                ["db1.some_item", "db1.some_item2"],
+            ),
+            # filter set with 3 levels of dots
+            (
+                ["db1"],
+                ["warehouse_doesnt_matter"],
+                "not_really_relevant",
+                [
+                    "db1.some_item.sub_item.sub_sub_item",
+                    "db1.some_item.sub_item.sub_sub_item",
+                    "db2.some_item.sub_item.sub_sub_item",
+                ],
+                [
+                    "db1.some_item.sub_item.sub_sub_item",
+                    "db1.some_item.sub_item.sub_sub_item",
+                ],
+            ),
+            # filter set with 3 levels of dots no matching db
+            (
+                ["db1"],
+                ["warehouse_doesnt_matter"],
+                "not_really_relevant",
+                [
+                    "db2.some_item.sub_item.sub_sub_item",
+                    "db2.some_item.sub_item.sub_sub_item",
+                    "db2.some_item.sub_item.sub_sub_item",
+                ],
+                [],
+            ),
+        ],
+    )
+    def test_filter_to_database_refs(
+        self,
+        mocker,
+        database_refs,
+        warehouse_refs,
+        grant_on,
+        filter_set,
+        expected_value,
+    ):
+        mocker.patch.object(SnowflakeSpecLoader, "__init__", lambda *args: None)
+        spec_loader = SnowflakeSpecLoader("", None)
+        spec_loader.entities = {
+            "database_refs": database_refs,
+            "warehouse_refs": warehouse_refs,
+        }
+        spec_loader.filter_to_database_refs(grant_on=grant_on, filter_set=filter_set)
 
     def test_load_spec_loads_file(self, mocker, mock_connector):
         mock_open = mocker.patch(

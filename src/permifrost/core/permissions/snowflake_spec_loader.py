@@ -704,7 +704,12 @@ class SnowflakeSpecLoader:
                             future_grants.setdefault(role, {})
                             .setdefault(privilege, {})
                             .setdefault(grant_on, [])
-                            .extend(grant_results[role][privilege][grant_on])
+                            .extend(
+                                self.filter_to_database_refs(
+                                    grant_on=grant_on,
+                                    filter_set=grant_results[role][privilege][grant_on],
+                                )
+                            )
                         )
 
             # Get all schemas in all ref'd databases. Not all schemas will be
@@ -719,7 +724,14 @@ class SnowflakeSpecLoader:
                                 future_grants.setdefault(role, {})
                                 .setdefault(privilege, {})
                                 .setdefault(grant_on, [])
-                                .extend(grant_results[role][privilege][grant_on])
+                                .extend(
+                                    self.filter_to_database_refs(
+                                        grant_on=grant_on,
+                                        filter_set=grant_results[role][privilege][
+                                            grant_on
+                                        ],
+                                    )
+                                )
                             )
 
         for role in self.entities["roles"]:
@@ -730,13 +742,54 @@ class SnowflakeSpecLoader:
                         future_grants.setdefault(role, {})
                         .setdefault(privilege, {})
                         .setdefault(grant_on, [])
-                        .extend(grant_results[privilege][grant_on])
+                        .extend(
+                            self.filter_to_database_refs(
+                                grant_on=grant_on,
+                                filter_set=grant_results[privilege][grant_on],
+                            )
+                        )
                     )
 
         self.grants_to_role = future_grants
 
         for user in self.entities["users"]:
             self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
+
+    def filter_to_database_refs(
+        self, grant_on: str, filter_set: List[str]
+    ) -> List[str]:
+        """
+        Filter out grants to databases that are not tracked in the configuration file
+        :param grant_on: entity to be granted on. e.g. GRANT SOMETHING ON {DATABASE|ACCOUNT|WAREHOUSE|FILE FORMAT}...
+        :param filter_set: list of strings to filter
+        :return: list of strings with entities referring to non-tracked databases removed.
+        """
+        database_refs = self.entities["database_refs"]
+        warehouse_refs = self.entities["warehouse_refs"]
+
+        # Databases is the simple case. Just return items that are also in the database_refs list
+        if grant_on == "database":
+            return [item for item in filter_set if item in database_refs]
+        # Warehouses are also a simple case.
+        elif grant_on == "warehouse":
+            return [item for item in filter_set if item in warehouse_refs]
+        # Ignore account since currently account grants are not handled
+        elif grant_on == "account":
+            return filter_set
+        else:
+            # Everything else should be binary: it has a dot or it doesn't
+            # List of strings with `.`s:
+            #       i.e. database.schema.function_name
+            #       Since we are excluding all references to non-tracked databases we can simply check the first
+            #       segment of the string which represents the database. e.g. "database.item".split(".")[0]
+            # List of strings that have no `.`'s:
+            #       i.e. a role name `grant ownership on role role_name to role grantee`
+            #       If it does not have a `.` then it can just be included since it isn't referencing a database
+            return [
+                item
+                for item in filter_set
+                if item and ("." not in item or item.split(".")[0] in database_refs)
+            ]
 
     def generate_permission_queries(self, role: Optional[str] = None) -> List[Dict]:
         """

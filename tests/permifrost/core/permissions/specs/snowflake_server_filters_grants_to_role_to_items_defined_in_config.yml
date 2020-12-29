@@ -1,0 +1,38 @@
+# Databases
+databases:
+    - primarydb:
+        shared: no
+
+roles:
+    - testrole:
+          warehouses:
+              - primarywarehouse
+          owns:
+              databases:
+                  - primarydb
+              schemas:
+                  - primarydb.*
+              tables:
+                  - primarydb.*.*
+          privileges:
+              databases:
+                  read:
+                      - primarydb
+                  write:
+                      - primarydb
+              schemas:
+                  read:
+                      - primarydb.*
+                  write:
+                      - primarydb.*
+              tables:
+                  read:
+                      - primarydb.*.*
+                  write:
+                      - primarydb.*.*
+
+# Warehouses
+warehouses:
+    - primarywarehouse:
+        size: x-small
+        owner: testrole

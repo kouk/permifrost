@@ -16,6 +16,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 
 ### Breaks
 
+### Fixes
+* [#42](https://gitlab.com/gitlab-data/permifrost/-/merge_requests/42) Filter grants not related to the databases in the config file.
 
 ## 0.8.0 - (2020-11-02)
 ---
