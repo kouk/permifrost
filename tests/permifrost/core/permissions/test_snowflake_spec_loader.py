@@ -561,16 +561,54 @@ class TestSnowflakeSpecLoader:
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
         spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        assert spec_loader.generate_permission_queries(
+            roles=["primary"], run_list=["roles"]
+        ) == [{"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}]
 
-        assert spec_loader.generate_permission_queries(role="primary") == [
-            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}
-        ]
-
-    def test_no_role_filter(
+    def test_role_filter_multiple(
         self, mocker, test_roles_mock_connector, test_roles_spec_file
     ):
-        """Test that the generate_permissions_query does no filtering on
-        receipt of a None value for the role to filter."""
+        """Make sure that the grant queries list can be filtered by multiple roles."""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            roles=["primary", "secondary"], run_list=["roles"]
+        )
+        expected_results = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role secondary"},
+        ]
+        assert results == expected_results
+
+    def test_role_filter_and_user_filter(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Make sure that the grant queries list can be filtered by multiple roles and a single user ignores the user"""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            roles=["primary", "secondary"],
+            users=["testusername"],
+            run_list=["roles", "users"],
+        )
+        expected_results = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role secondary"},
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+        ]
+        assert results == expected_results
+
+    def test_no_role_or_user_filter(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Test that the generate_permissions_query does no filtering on when users and roles are not defined."""
 
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
@@ -595,3 +633,67 @@ class TestSnowflakeSpecLoader:
         ]
 
         assert spec_loader.generate_permission_queries() == expected_sql_queries
+
+    def test_user_filter(self, mocker, test_roles_mock_connector, test_roles_spec_file):
+        """Make sure that the grant queries list can be filtered by user."""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        assert spec_loader.generate_permission_queries(
+            users=["testusername"], run_list=["users"]
+        ) == [
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            }
+        ]
+
+    def test_user_filter_multiple(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Make sure that the grant queries list can be filtered by multiple users."""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            users=["testusername", "testuser"], run_list=["users"]
+        )
+        expected_results = [
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testuser SET DISABLED = FALSE",
+            },
+        ]
+        assert results == expected_results
+
+    def test_user_filter_and_roles_filter(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Make sure that the grant queries list can be filtered by multiple users and a single role ignores the role"""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            users=["testusername", "testuser"],
+            roles=["primary"],
+            run_list=["roles", "users"],
+        )
+        expected_results = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testuser SET DISABLED = FALSE",
+            },
+        ]
+        assert results == expected_results

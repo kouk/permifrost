@@ -3,7 +3,25 @@
 Use this command to check and manage the permissions of a Snowflake account.
 
 ```bash
-permifrost grant <spec_file> [--role] [--dry] [--diff]
+permifrost run <spec_file> [--role] [--dry] [--diff] [--user]
+```
+```shell
+#>permifrost run --help
+Usage: permifrost run [OPTIONS] SPEC
+
+  Grant the permissions provided in the provided specification file for
+  specific users and roles
+
+Options:
+  --dry        Do not actually run, just check.
+  --diff       Show full diff, both new and existing permissions.
+  --role TEXT  Run grants for specific roles. Usage: --role testrole --role
+               testrole2.
+
+  --user TEXT  Run grants for specific users. Usage: --user testuser --user
+               testuser2.
+
+  --help       Show this message and exit.
 ```
 
 Given the parameters to connect to a Snowflake account and a YAML file (a "spec") representing the desired database configuration, this command makes sure that the configuration of that database matches the spec. If there are differences, it will return the sql grant and revoke commands required to make it match the spec. If there are additional permissions set in the database this command will create the necessary revoke commands with the exception of:

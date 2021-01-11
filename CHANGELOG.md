@@ -9,12 +9,15 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Add support for --user flag, update --role flag to take
+multiples, modify `grant` entry point to `run`. NOTE: Breaking changes.
 
 ### Changes
 
 ### Fixes
 
 ### Breaks
+* [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Breaks `grant` entry point
 
 
 ## 0.8.1 - (2020-12-29)

@@ -166,7 +166,9 @@ class SnowflakeConnector:
 
         return names
 
-    def show_future_grants(self, database: str = None, schema: str = None) -> List[str]:
+    def show_future_grants(
+        self, database: str = None, schema: str = None
+    ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
         future_grants = {}
 
         if schema:
