@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### New
 
 ### Changes
+* [#42](https://gitlab.com/gitlab-data/permifrost/-/merge_requests/57) ISSUE-57: Stop pinning requires in the setup.py install_requires
 
 ### Fixes
 
