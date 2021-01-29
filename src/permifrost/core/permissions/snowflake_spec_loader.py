@@ -804,7 +804,6 @@ class SnowflakeSpecLoader:
         if "roles" in run_list:
             self.get_role_privileges_from_snowflake_server(conn=conn, roles=roles)
 
-
     def filter_to_database_refs(
         self, grant_on: str, filter_set: List[str]
     ) -> List[str]:
