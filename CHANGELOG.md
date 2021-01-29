@@ -9,13 +9,24 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+
+### Changes
+
+### Fixes
+
+### Breaks
+
+
+## 0.9.0 - (2021-01-29)
+---
+
+### New
 * [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Add support for --user flag, update --role flag to take
 multiples, modify `grant` entry point to `run`. NOTE: Breaking changes.
 
 ### Changes
 * [#42](https://gitlab.com/gitlab-data/permifrost/-/merge_requests/57) ISSUE-57: Stop pinning requires in the setup.py install_requires
 
-### Fixes
 
 ### Breaks
 * [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Renames `grant` entry point to `run`
