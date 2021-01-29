@@ -17,7 +17,7 @@ multiples, modify `grant` entry point to `run`. NOTE: Breaking changes.
 ### Fixes
 
 ### Breaks
-* [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Breaks `grant` entry point
+* [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Renames `grant` entry point to `run`
 
 
 ## 0.8.1 - (2020-12-29)
