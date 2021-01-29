@@ -799,10 +799,11 @@ class SnowflakeSpecLoader:
             conn = SnowflakeConnector()
 
         if "users" in run_list:
-            self.get_role_privileges_from_snowflake_server(conn=conn, roles=roles)
+            self.get_user_privileges_from_snowflake_server(conn=conn, users=users)
 
         if "roles" in run_list:
-            self.get_user_privileges_from_snowflake_server(conn=conn, users=users)
+            self.get_role_privileges_from_snowflake_server(conn=conn, roles=roles)
+
 
     def filter_to_database_refs(
         self, grant_on: str, filter_set: List[str]
