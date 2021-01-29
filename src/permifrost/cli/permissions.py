@@ -1,8 +1,5 @@
 import click
-import logging
 import sys
-
-from typing import List
 
 from permifrost.core.permissions import SpecLoadingError
 from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
@@ -37,17 +34,49 @@ def print_command(command, diff):
 
 @cli.command()
 @click.argument("spec")
-@click.option("--role", default=None)
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
 @click.option(
     "--diff", help="Show full diff, both new and existing permissions.", is_flag=True
 )
-def grant(spec, dry, diff, role):
+@click.option(
+    "--role",
+    multiple=True,
+    default=[],
+    help="Run grants for specific roles. Usage: --role testrole --role testrole2.",
+)
+@click.option(
+    "--user",
+    multiple=True,
+    default=[],
+    help="Run grants for specific users. Usage: --user testuser --user testuser2.",
+)
+def run(spec, dry, diff, role, user):
+    """
+    Grant the permissions provided in the provided specification file for specific users and roles
+    """
+    if role and user:
+        run_list = ["roles", "users"]
+    elif role:
+        run_list = ["roles"]
+    elif user:
+        run_list = ["users"]
+    else:
+        run_list = ["roles", "users"]
+    permifrost_grants(
+        spec=spec, dry=dry, diff=diff, roles=role, users=user, run_list=run_list
+    )
+
+
+def permifrost_grants(spec, dry, diff, roles, users, run_list):
     """Grant the permissions provided in the provided specification file."""
     try:
-        spec_loader = SnowflakeSpecLoader(spec)
+        spec_loader = SnowflakeSpecLoader(
+            spec, roles=roles, users=users, run_list=run_list
+        )
 
-        sql_grant_queries = spec_loader.generate_permission_queries(role)
+        sql_grant_queries = spec_loader.generate_permission_queries(
+            roles=roles, users=users, run_list=run_list
+        )
 
         click.secho()
         if diff:

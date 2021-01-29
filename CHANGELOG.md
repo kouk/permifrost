@@ -9,6 +9,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
+* [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Add support for --user flag, update --role flag to take
+multiples, modify `grant` entry point to `run`. NOTE: Breaking changes.
 
 ### Changes
 * [#42](https://gitlab.com/gitlab-data/permifrost/-/merge_requests/57) ISSUE-57: Stop pinning requires in the setup.py install_requires
@@ -16,6 +18,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### Fixes
 
 ### Breaks
+* [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Renames `grant` entry point to `run`
 
 
 ## 0.8.1 - (2020-12-29)

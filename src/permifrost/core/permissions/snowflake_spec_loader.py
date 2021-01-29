@@ -16,7 +16,15 @@ VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 
 
 class SnowflakeSpecLoader:
-    def __init__(self, spec_path: str, conn: SnowflakeConnector = None) -> None:
+    def __init__(
+        self,
+        spec_path: str,
+        conn: SnowflakeConnector = None,
+        roles: Optional[List[str]] = None,
+        users: Optional[List[str]] = None,
+        run_list: Optional[List[str]] = None,
+    ) -> None:
+        run_list = run_list or ["users", "roles"]
         # Load the specification file and check for (syntactical) errors
         click.secho("Loading spec file", fg="green")
         self.spec = self.load_spec(spec_path)
@@ -46,7 +54,9 @@ class SnowflakeSpecLoader:
         click.secho("Fetching granted privileges from Snowflake", fg="green")
         self.grants_to_role = {}
         self.roles_granted_to_user = {}
-        self.get_privileges_from_snowflake_server(conn)
+        self.get_privileges_from_snowflake_server(
+            conn, roles=roles, users=users, run_list=run_list
+        )
 
     def load_spec(self, spec_path: str) -> Dict:
         """
@@ -682,20 +692,21 @@ class SnowflakeSpecLoader:
         if error_messages:
             raise SpecLoadingError("\n".join(error_messages))
 
-    def get_privileges_from_snowflake_server(
-        self, conn: SnowflakeConnector = None
+    def get_role_privileges_from_snowflake_server(
+        self, conn: SnowflakeConnector, roles: Optional[List[str]] = None
     ) -> None:
-        """
-        Get the privileges granted to users and roles in the Snowflake account
-        Gets the future privileges granted in all database and schema objects
-        Consolidates role and future privileges into a single object for self.grants_to_role
-        """
-        if conn is None:
-            conn = SnowflakeConnector()
-
         future_grants = {}
         for database in self.entities["database_refs"]:
             grant_results = conn.show_future_grants(database=database)
+            grant_results = (
+                {
+                    role: role_grants
+                    for role, role_grants in grant_results.items()
+                    if role in roles
+                }
+                if roles
+                else grant_results
+            )
 
             for role in grant_results:
                 for privilege in grant_results[role]:
@@ -716,6 +727,15 @@ class SnowflakeSpecLoader:
             # ref'd in the spec.
             for schema in conn.show_schemas(database=database):
                 grant_results = conn.show_future_grants(schema=schema)
+                grant_results = (
+                    {
+                        role: role_grants
+                        for role, role_grants in grant_results.items()
+                        if role in roles
+                    }
+                    if roles
+                    else grant_results
+                )
 
                 for role in grant_results:
                     for privilege in grant_results[role]:
@@ -735,6 +755,8 @@ class SnowflakeSpecLoader:
                             )
 
         for role in self.entities["roles"]:
+            if roles and role not in roles:
+                continue
             grant_results = conn.show_grants_to_role(role)
             for privilege in grant_results:
                 for grant_on in grant_results[privilege]:
@@ -752,8 +774,35 @@ class SnowflakeSpecLoader:
 
         self.grants_to_role = future_grants
 
+    def get_user_privileges_from_snowflake_server(
+        self, conn: SnowflakeConnector, users: Optional[List[str]] = None
+    ) -> None:
         for user in self.entities["users"]:
+            if users and user not in users:
+                continue
             self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
+
+    def get_privileges_from_snowflake_server(
+        self,
+        conn: SnowflakeConnector = None,
+        roles: Optional[List[str]] = None,
+        users: Optional[List[str]] = None,
+        run_list: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Get the privileges granted to users and roles in the Snowflake account
+        Gets the future privileges granted in all database and schema objects
+        Consolidates role and future privileges into a single object for self.grants_to_role
+        """
+        run_list = run_list or ["users", "roles"]
+        if conn is None:
+            conn = SnowflakeConnector()
+
+        if "users" in run_list:
+            self.get_user_privileges_from_snowflake_server(conn=conn, users=users)
+
+        if "roles" in run_list:
+            self.get_role_privileges_from_snowflake_server(conn=conn, roles=roles)
 
     def filter_to_database_refs(
         self, grant_on: str, filter_set: List[str]
@@ -791,7 +840,12 @@ class SnowflakeSpecLoader:
                 if item and ("." not in item or item.split(".")[0] in database_refs)
             ]
 
-    def generate_permission_queries(self, role: Optional[str] = None) -> List[Dict]:
+    def generate_permission_queries(
+        self,
+        roles: Optional[List[str]] = None,
+        users: Optional[List[str]] = None,
+        run_list: Optional[List[str]] = None,
+    ) -> List[Dict]:
         """
         Starting point to generate all the permission queries.
 
@@ -800,6 +854,7 @@ class SnowflakeSpecLoader:
 
         Returns all the SQL commands as a list.
         """
+        run_list = run_list or ["users", "roles"]
         sql_commands = []
 
         generator = SnowflakeGrantsGenerator(
@@ -825,7 +880,11 @@ class SnowflakeSpecLoader:
                     if config
                 ]
                 for entity_name, config in entity_configs:
-                    if entity_type == "roles" and (not role or role == entity_name):
+                    if (
+                        entity_type == "roles"
+                        and "roles" in run_list
+                        and (not roles or entity_name in roles)
+                    ):
                         click.secho(f"     Processing role {entity_name}", fg="green")
                         sql_commands.extend(
                             generator.generate_grant_roles(
@@ -845,7 +904,11 @@ class SnowflakeSpecLoader:
                                 self.entities["databases"],
                             )
                         )
-                    elif entity_type == "users" and not role:
+                    elif (
+                        entity_type == "users"
+                        and "users" in run_list
+                        and (not users or entity_name in users)
+                    ):
                         click.secho(f"     Processing user {entity_name}", fg="green")
                         sql_commands.extend(
                             generator.generate_alter_user(entity_name, config)

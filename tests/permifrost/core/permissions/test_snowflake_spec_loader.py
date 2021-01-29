@@ -561,16 +561,54 @@ class TestSnowflakeSpecLoader:
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
         spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        assert spec_loader.generate_permission_queries(
+            roles=["primary"], run_list=["roles"]
+        ) == [{"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}]
 
-        assert spec_loader.generate_permission_queries(role="primary") == [
-            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}
-        ]
-
-    def test_no_role_filter(
+    def test_role_filter_multiple(
         self, mocker, test_roles_mock_connector, test_roles_spec_file
     ):
-        """Test that the generate_permissions_query does no filtering on
-        receipt of a None value for the role to filter."""
+        """Make sure that the grant queries list can be filtered by multiple roles."""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            roles=["primary", "secondary"], run_list=["roles"]
+        )
+        expected_results = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role secondary"},
+        ]
+        assert results == expected_results
+
+    def test_role_filter_and_user_filter(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Make sure that the grant queries list can be filtered by multiple roles and a single user ignores the user"""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            roles=["primary", "secondary"],
+            users=["testusername"],
+            run_list=["roles", "users"],
+        )
+        expected_results = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role secondary"},
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+        ]
+        assert results == expected_results
+
+    def test_no_role_or_user_filter(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Test that the generate_permissions_query does no filtering on when users and roles are not defined."""
 
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
@@ -595,3 +633,237 @@ class TestSnowflakeSpecLoader:
         ]
 
         assert spec_loader.generate_permission_queries() == expected_sql_queries
+
+    def test_user_filter(self, mocker, test_roles_mock_connector, test_roles_spec_file):
+        """Make sure that the grant queries list can be filtered by user."""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        assert spec_loader.generate_permission_queries(
+            users=["testusername"], run_list=["users"]
+        ) == [
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            }
+        ]
+
+    def test_user_filter_multiple(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Make sure that the grant queries list can be filtered by multiple users."""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            users=["testusername", "testuser"], run_list=["users"]
+        )
+        expected_results = [
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testuser SET DISABLED = FALSE",
+            },
+        ]
+        assert results == expected_results
+
+    def test_user_filter_and_roles_filter(
+        self, mocker, test_roles_mock_connector, test_roles_spec_file
+    ):
+        """Make sure that the grant queries list can be filtered by multiple users and a single role ignores the role"""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
+        results = spec_loader.generate_permission_queries(
+            users=["testusername", "testuser"],
+            roles=["primary"],
+            run_list=["roles", "users"],
+        )
+        expected_results = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"},
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testusername SET DISABLED = FALSE",
+            },
+            {
+                "already_granted": False,
+                "sql": "ALTER USER testuser SET DISABLED = FALSE",
+            },
+        ]
+        assert results == expected_results
+
+    @pytest.mark.parametrize(
+        "users,roles,run_list,expected_calls",
+        [
+            # Only users with full run_list
+            (
+                ["testusername", "testuser"],
+                [],
+                ["roles", "users"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, []),
+                    (
+                        "get_user_privileges_from_snowflake_server",
+                        1,
+                        ["testusername", "testuser"],
+                    ),
+                ],
+            ),
+            # Only Roles passed with full run_list
+            (
+                [],
+                ["primary"],
+                ["roles", "users"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    ("get_user_privileges_from_snowflake_server", 1, []),
+                ],
+            ),
+            # Users and roles passed but roles not in run_list
+            (
+                ["testusername", "testuser"],
+                ["primary"],
+                ["users"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 0, False),
+                    (
+                        "get_user_privileges_from_snowflake_server",
+                        1,
+                        ["testusername", "testuser"],
+                    ),
+                ],
+            ),
+            # Users and roles passed but users not in run_list
+            (
+                ["testusername", "testuser"],
+                ["primary"],
+                ["roles"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    ("get_user_privileges_from_snowflake_server", 0, False),
+                ],
+            ),
+            # Only Users passed with only users in run_list
+            (
+                ["testusername", "testuser"],
+                [],
+                ["users"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 0, False),
+                    (
+                        "get_user_privileges_from_snowflake_server",
+                        1,
+                        ["testusername", "testuser"],
+                    ),
+                ],
+            ),
+            # Only Roles passed with only roles in run_list
+            (
+                [],
+                ["primary"],
+                ["roles"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    ("get_user_privileges_from_snowflake_server", 0, False),
+                ],
+            ),
+            # Users and Roles passed with users and roles in run_list
+            (
+                ["testusername", "testuser"],
+                ["primary"],
+                ["roles", "users"],
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    (
+                        "get_user_privileges_from_snowflake_server",
+                        1,
+                        ["testusername", "testuser"],
+                    ),
+                ],
+            ),
+            # Users and Roles passed with empty list run_list
+            (
+                ["testusername", "testuser"],
+                ["primary"],
+                [],
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    (
+                        "get_user_privileges_from_snowflake_server",
+                        1,
+                        ["testusername", "testuser"],
+                    ),
+                ],
+            ),
+            # Users and Roles passed with None run_list
+            (
+                ["testusername", "testuser"],
+                ["primary"],
+                None,
+                [
+                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    (
+                        "get_user_privileges_from_snowflake_server",
+                        1,
+                        ["testusername", "testuser"],
+                    ),
+                ],
+            ),
+        ],
+    )
+    def test_get_privileges_from_snowflake_server(
+        self,
+        mocker,
+        test_roles_mock_connector,
+        test_roles_spec_file,
+        users,
+        roles,
+        run_list,
+        expected_calls,
+    ):
+        """Verify correct calls when getting privs from server"""
+
+        print(f"Spec File Data is:\n{test_roles_spec_file}")
+        mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
+        mock_get_role_privileges_from_snowflake_server = mocker.patch.object(
+            SnowflakeSpecLoader,
+            "get_role_privileges_from_snowflake_server",
+            return_value=None,
+        )
+        mock_get_user_privileges_from_snowflake_server = mocker.patch.object(
+            SnowflakeSpecLoader,
+            "get_user_privileges_from_snowflake_server",
+            return_value=None,
+        )
+        SnowflakeSpecLoader(
+            spec_path="",
+            conn=test_roles_mock_connector,
+            users=users,
+            roles=roles,
+            run_list=run_list,
+        )
+        for method, call_count, arguments in expected_calls:
+            if method == "get_role_privileges_from_snowflake_server":
+                assert (
+                    mock_get_role_privileges_from_snowflake_server.call_count
+                    == call_count
+                )
+                if arguments:
+                    mock_get_role_privileges_from_snowflake_server.assert_called_with(
+                        conn=test_roles_mock_connector, roles=arguments
+                    )
+            if method == "get_user_privileges_from_snowflake_server":
+                assert (
+                    mock_get_user_privileges_from_snowflake_server.call_count
+                    == call_count
+                )
+                if arguments:
+                    mock_get_user_privileges_from_snowflake_server.assert_called_with(
+                        conn=test_roles_mock_connector, users=arguments
+                    )
