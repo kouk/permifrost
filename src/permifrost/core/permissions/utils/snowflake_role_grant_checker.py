@@ -8,7 +8,7 @@ from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConne
 from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
 
 
-class SnowflakeGrantChecker:
+class SnowflakeRoleGrantChecker:
     """
     Holds permissions for roles and allows you to check if a role has a permission and also if it is able to grant a permission.
     """

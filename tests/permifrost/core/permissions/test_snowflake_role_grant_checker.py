@@ -1,8 +1,8 @@
 import pytest
 
 from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
-from permifrost.core.permissions.utils.snowflake_grant_checker import (
-    SnowflakeGrantChecker,
+from permifrost.core.permissions.utils.snowflake_role_grant_checker import (
+    SnowflakeRoleGrantChecker,
 )
 
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
@@ -28,10 +28,10 @@ def mock_connector(mocker):
 
 @pytest.fixture
 def grant_checker(mock_connector):
-    return SnowflakeGrantChecker(mock_connector)
+    return SnowflakeRoleGrantChecker(mock_connector)
 
 
-class TestSnowflakeGrantChecker:
+class TestSnowflakeRoleGrantChecker:
     def test_get_permissions(self, grant_checker, mock_connector):
         permissions = grant_checker.get_permissions("my_role")
         mock_connector.show_grants_to_role.assert_called_with("my_role")
