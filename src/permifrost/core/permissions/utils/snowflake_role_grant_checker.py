@@ -22,7 +22,9 @@ class SnowflakeRoleGrantChecker:
 
     def _get_permissions(self, role: str) -> Dict:
         if role not in self.role_permission_cache:
-            self.role_permission_cache[role] = self.conn.show_grants_to_role(role)
+            self.role_permission_cache[
+                role
+            ] = self.conn.show_grants_to_role_with_grant_option(role)
 
         return self.role_permission_cache[role]
 
@@ -37,63 +39,54 @@ class SnowflakeRoleGrantChecker:
         role_permissions = []
         for privilege, entity_types in role_permission_dict.items():
             for entity_type, entity_names in entity_types.items():
-                for entity_name in entity_names:
+                for entity_name, options in entity_names.items():
+                    name = entity_name if entity_type != "account" else "*"
                     role_permissions.append(
-                        SnowflakePermission(entity_name, entity_type, [privilege])
+                        SnowflakePermission(
+                            name, entity_type, [privilege], options["grant_option"]
+                        )
                     )
         return role_permissions
 
     def _has_permission(
         self, role: Optional[str], permission: SnowflakePermission
-    ) -> bool:
+    ) -> SnowflakePermission:
         """
-        Will return true if the <role> has the given <permission> on the <entity_name>.
-        Will always return true if no <role> is none.
+        Will return the SnowflakePermission if the <role> has the given <permission> on the <entity_name>.
+        Will always return the given permission if <role> is none.
         """
 
         if not role:
-            return True
+            return permission
 
-        role_permissions = self._get_permissions(role)
-        return (
-            permission.entity_name
-            in role_permissions.get("ownership", {}).get(permission.entity_type, {})
-            # TODO(MH) Still need to modify the show grants function to return grant_option information
-            # .get(permission.entity_name, {})
-            # .get("grant_option", False)
-            or functools.reduce(
-                lambda a, b: a and b,
-                map(
-                    lambda privilege: permission.entity_name
-                    in role_permissions.get(privilege, {}).get(
-                        permission.entity_type, {}
-                    ),
-                    permission.privileges,
-                ),
-            )
-            or (
-                # Special check for account level permissions
-                permission.entity_name == "*"
-                and permission.entity_type == "account"
-                and functools.reduce(
-                    lambda a, b: a and b,
-                    map(
-                        lambda privilege: permission.entity_type
-                        in role_permissions.get(privilege, {}),
-                        permission.privileges,
-                    ),
-                )
-            )
-        )
+        role_permissions = self.get_permissions(role)
+
+        # Always check for ownership first because it gives the most permissions
+        if permission.as_owner() in role_permissions:
+            # Since we don't check the grant_option of a permission when checking equality, we want to make sure
+            # to return the actual permission value that was stored in the database to be most correct.
+            return role_permissions[role_permissions.index(permission.as_owner())]
+        if permission in role_permissions:
+            return role_permissions[role_permissions.index(permission)]
 
     def has_permission(
         self, role: Optional[str], permission: SnowflakePermission
     ) -> bool:
-        return self._has_permission(role, permission) or self._has_permission(
-            role,
-            permission.with_entity_name(
-                SnowflakeConnector.snowflaky(permission.entity_name)
-            ),
+        """
+        Will return true if the <role> has the given <permission> on the <entity_name>. 
+        Where the <entity_name> is the name given in the permission object, or the "snowflaky" version. Both are checked.
+        If the role has ownership of the entity in question, then this function should always return true.
+        Will always return true if <role> is none.
+        """
+        return (
+            self._has_permission(role, permission) is not None
+            or self._has_permission(
+                role,
+                permission.with_entity_name(
+                    SnowflakeConnector.snowflaky(permission.entity_name)
+                ),
+            )
+            is not None
         )
 
     def _can_grant_permission(
@@ -107,25 +100,20 @@ class SnowflakeRoleGrantChecker:
         if not role:
             return True
 
-        role_permissions = self._get_permissions(role)
-        return role_permissions.get("ownership", {}).get(
-            permission.entity_type, {}
-        ).get(permission.entity_name, {}).get(
-            "grant_option", False
-        ) or functools.reduce(
-            lambda a, b: a and b,
-            map(
-                lambda privilege: role_permissions.get(privilege, {})
-                .get(permission.entity_type, {})
-                .get(permission.entity_name, {})
-                .get("grant_option", False),
-                permission.privileges,
-            ),
-        )
+        permission = self._has_permission(role, permission)
+
+        # Ownership will let you grant any permission on that object and is always grantable.
+        # Since _has_permission will return ownership over other privileges, we only need to do a single check.
+        return permission is not None and permission.grant_option
 
     def can_grant_permission(
         self, role: Optional[str], permission: SnowflakePermission
     ) -> bool:
+        """
+        Given the <permission>, will return true if the <role> is able to grant them on the <entity_name>.
+        Where the <entity_name> is the name given in the permission object, or the "snowflaky" version. Both are checked.
+        Will always return true if no <role> was given.
+        """
         return self._can_grant_permission(
             role, permission
         ) or self._can_grant_permission(

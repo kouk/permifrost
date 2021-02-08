@@ -213,6 +213,25 @@ class SnowflakeConnector:
 
         return grants
 
+    def show_grants_to_role_with_grant_option(self, role) -> Dict[str, Any]:
+        grants = {}
+
+        query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky(role)}"
+        with self.engine.connect() as connection:
+            results = connection.execute(query).fetchall()
+
+            for result in results:
+                privilege = result["privilege"].lower()
+                granted_on = result["granted_on"].lower()
+                grant_option = result["grant_option"].lower() == "true"
+                name = result["name"].lower()
+
+                grants.setdefault(privilege, {}).setdefault(granted_on, {}).setdefault(
+                    name, {}
+                ).update({"grant_option": grant_option})
+
+        return grants
+
     def show_roles_granted_to_user(self, user) -> List[str]:
         roles = []
 
