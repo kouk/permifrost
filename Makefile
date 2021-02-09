@@ -44,7 +44,7 @@ endif
 # Testing
 test: compose-build
 	@docker-compose run permifrost /bin/bash \
-		-c "pip install -e . && pytest -v --disable-pytest-warnings"
+		-c "pip install -e . && pytest -x -v --disable-pytest-warnings"
 
 typecheck: compose-build
 	@docker-compose run permifrost /bin/bash \
