@@ -1,3 +1,8 @@
+"""
+This file describes the expected schema for a spec file.
+These schemas are used to both parse and validate spec files.
+"""
+
 SNOWFLAKE_SPEC_SCHEMA = """
     version:
         type: string
