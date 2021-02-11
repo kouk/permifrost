@@ -707,11 +707,11 @@ class TestSnowflakeSpecLoader:
                 [],
                 ["roles", "users"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, []),
+                    ("get_role_privileges_from_snowflake_server", 1, {}),
                     (
                         "get_user_privileges_from_snowflake_server",
                         1,
-                        ["testusername", "testuser"],
+                        {"users": ["testusername", "testuser"]},
                     ),
                 ],
             ),
@@ -721,8 +721,12 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 ["roles", "users"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
-                    ("get_user_privileges_from_snowflake_server", 1, []),
+                    (
+                        "get_role_privileges_from_snowflake_server",
+                        1,
+                        {"roles": ["primary"], "ignore_memberships": False},
+                    ),
+                    ("get_user_privileges_from_snowflake_server", 1, {"users": []}),
                 ],
             ),
             # Users and roles passed but roles not in run_list
@@ -731,11 +735,11 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 ["users"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 0, False),
+                    ("get_role_privileges_from_snowflake_server", 0, {}),
                     (
                         "get_user_privileges_from_snowflake_server",
                         1,
-                        ["testusername", "testuser"],
+                        {"users": ["testusername", "testuser"]},
                     ),
                 ],
             ),
@@ -745,8 +749,12 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 ["roles"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
-                    ("get_user_privileges_from_snowflake_server", 0, False),
+                    (
+                        "get_role_privileges_from_snowflake_server",
+                        1,
+                        {"roles": ["primary"], "ignore_memberships": False},
+                    ),
+                    ("get_user_privileges_from_snowflake_server", 0, {}),
                 ],
             ),
             # Only Users passed with only users in run_list
@@ -755,11 +763,11 @@ class TestSnowflakeSpecLoader:
                 [],
                 ["users"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 0, False),
+                    ("get_role_privileges_from_snowflake_server", 0, {}),
                     (
                         "get_user_privileges_from_snowflake_server",
                         1,
-                        ["testusername", "testuser"],
+                        {"users": ["testusername", "testuser"]},
                     ),
                 ],
             ),
@@ -769,8 +777,12 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 ["roles"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
-                    ("get_user_privileges_from_snowflake_server", 0, False),
+                    (
+                        "get_role_privileges_from_snowflake_server",
+                        1,
+                        {"roles": ["primary"], "ignore_memberships": False},
+                    ),
+                    ("get_user_privileges_from_snowflake_server", 0, {}),
                 ],
             ),
             # Users and Roles passed with users and roles in run_list
@@ -779,11 +791,15 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 ["roles", "users"],
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    (
+                        "get_role_privileges_from_snowflake_server",
+                        1,
+                        {"roles": ["primary"], "ignore_memberships": False},
+                    ),
                     (
                         "get_user_privileges_from_snowflake_server",
                         1,
-                        ["testusername", "testuser"],
+                        {"users": ["testusername", "testuser"]},
                     ),
                 ],
             ),
@@ -793,11 +809,15 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 [],
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    (
+                        "get_role_privileges_from_snowflake_server",
+                        1,
+                        {"roles": ["primary"], "ignore_memberships": False},
+                    ),
                     (
                         "get_user_privileges_from_snowflake_server",
                         1,
-                        ["testusername", "testuser"],
+                        {"users": ["testusername", "testuser"]},
                     ),
                 ],
             ),
@@ -807,11 +827,15 @@ class TestSnowflakeSpecLoader:
                 ["primary"],
                 None,
                 [
-                    ("get_role_privileges_from_snowflake_server", 1, ["primary"]),
+                    (
+                        "get_role_privileges_from_snowflake_server",
+                        1,
+                        {"roles": ["primary"], "ignore_memberships": False},
+                    ),
                     (
                         "get_user_privileges_from_snowflake_server",
                         1,
-                        ["testusername", "testuser"],
+                        {"users": ["testusername", "testuser"]},
                     ),
                 ],
             ),
@@ -856,7 +880,7 @@ class TestSnowflakeSpecLoader:
                 )
                 if arguments:
                     mock_get_role_privileges_from_snowflake_server.assert_called_with(
-                        conn=test_roles_mock_connector, roles=arguments
+                        conn=test_roles_mock_connector, **arguments
                     )
             if method == "get_user_privileges_from_snowflake_server":
                 assert (
@@ -865,5 +889,5 @@ class TestSnowflakeSpecLoader:
                 )
                 if arguments:
                     mock_get_user_privileges_from_snowflake_server.assert_called_with(
-                        conn=test_roles_mock_connector, users=arguments
+                        conn=test_roles_mock_connector, **arguments
                     )

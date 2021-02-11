@@ -24,6 +24,7 @@ class SnowflakeSpecLoader:
         roles: Optional[List[str]] = None,
         users: Optional[List[str]] = None,
         run_list: Optional[List[str]] = None,
+        ignore_memberships: Optional[bool] = False,
     ) -> None:
         run_list = run_list or ["users", "roles"]
         # Load the specification file and check for (syntactical) errors
@@ -57,7 +58,11 @@ class SnowflakeSpecLoader:
         self.grants_to_role = {}
         self.roles_granted_to_user = {}
         self.get_privileges_from_snowflake_server(
-            conn, roles=roles, users=users, run_list=run_list
+            conn,
+            roles=roles,
+            users=users,
+            run_list=run_list,
+            ignore_memberships=ignore_memberships,
         )
 
     def load_spec(self, spec_path: str) -> Dict:
@@ -274,7 +279,10 @@ class SnowflakeSpecLoader:
             raise SpecLoadingError("\n".join(error_messages))
 
     def get_role_privileges_from_snowflake_server(
-        self, conn: SnowflakeConnector, roles: Optional[List[str]] = None
+        self,
+        conn: SnowflakeConnector,
+        roles: Optional[List[str]] = None,
+        ignore_memberships: Optional[bool] = False,
     ) -> None:
         future_grants = {}
         for database in self.entities["database_refs"]:
@@ -336,7 +344,7 @@ class SnowflakeSpecLoader:
                             )
 
         for role in self.entities["roles"]:
-            if roles and role not in roles:
+            if (roles and role not in roles) or ignore_memberships:
                 continue
             grant_results = conn.show_grants_to_role(role)
             for privilege in grant_results:
@@ -369,6 +377,7 @@ class SnowflakeSpecLoader:
         roles: Optional[List[str]] = None,
         users: Optional[List[str]] = None,
         run_list: Optional[List[str]] = None,
+        ignore_memberships: Optional[bool] = False,
     ) -> None:
         """
         Get the privileges granted to users and roles in the Snowflake account
@@ -379,11 +388,13 @@ class SnowflakeSpecLoader:
         if conn is None:
             conn = SnowflakeConnector()
 
-        if "users" in run_list:
+        if "users" in run_list and not ignore_memberships:
             self.get_user_privileges_from_snowflake_server(conn=conn, users=users)
 
         if "roles" in run_list:
-            self.get_role_privileges_from_snowflake_server(conn=conn, roles=roles)
+            self.get_role_privileges_from_snowflake_server(
+                conn=conn, roles=roles, ignore_memberships=ignore_memberships
+            )
 
     def filter_to_database_refs(
         self, grant_on: str, filter_set: List[str]
@@ -426,6 +437,7 @@ class SnowflakeSpecLoader:
         roles: Optional[List[str]] = None,
         users: Optional[List[str]] = None,
         run_list: Optional[List[str]] = None,
+        ignore_memberships: Optional[bool] = False,
     ) -> List[Dict]:
         """
         Starting point to generate all the permission queries.
@@ -439,7 +451,9 @@ class SnowflakeSpecLoader:
         sql_commands = []
 
         generator = SnowflakeGrantsGenerator(
-            self.grants_to_role, self.roles_granted_to_user
+            self.grants_to_role,
+            self.roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
         )
 
         click.secho("Generating permission Queries:", fg="green")
