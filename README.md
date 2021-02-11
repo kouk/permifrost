@@ -3,7 +3,7 @@
 Use this command to check and manage the permissions of a Snowflake account.
 
 ```bash
-permifrost run <spec_file> [--role] [--dry] [--diff] [--user]
+permifrost run <spec_file> [--role] [--dry] [--diff] [--user] [--ignore-memberships]
 ```
 ```shell
 #>permifrost run --help
@@ -20,7 +20,8 @@ Options:
 
   --user TEXT  Run grants for specific users. Usage: --user testuser --user
                testuser2.
-
+  
+  --ignore-memberships  Do not handle role membership grants/revokes
   --help       Show this message and exit.
 ```
 

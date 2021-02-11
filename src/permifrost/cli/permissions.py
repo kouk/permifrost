@@ -50,7 +50,12 @@ def print_command(command, diff):
     default=[],
     help="Run grants for specific users. Usage: --user testuser --user testuser2.",
 )
-def run(spec, dry, diff, role, user):
+@click.option(
+    "--ignore-memberships",
+    help="Do not handle role membership grants/revokes",
+    is_flag=True,
+)
+def run(spec, dry, diff, role, user, ignore_memberships):
     """
     Grant the permissions provided in the provided specification file for specific users and roles
     """
@@ -63,19 +68,32 @@ def run(spec, dry, diff, role, user):
     else:
         run_list = ["roles", "users"]
     permifrost_grants(
-        spec=spec, dry=dry, diff=diff, roles=role, users=user, run_list=run_list
+        spec=spec,
+        dry=dry,
+        diff=diff,
+        roles=role,
+        users=user,
+        run_list=run_list,
+        ignore_memberships=ignore_memberships,
     )
 
 
-def permifrost_grants(spec, dry, diff, roles, users, run_list):
+def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_memberships):
     """Grant the permissions provided in the provided specification file."""
     try:
         spec_loader = SnowflakeSpecLoader(
-            spec, roles=roles, users=users, run_list=run_list
+            spec,
+            roles=roles,
+            users=users,
+            run_list=run_list,
+            ignore_memberships=ignore_memberships,
         )
 
         sql_grant_queries = spec_loader.generate_permission_queries(
-            roles=roles, users=users, run_list=run_list
+            roles=roles,
+            users=users,
+            run_list=run_list,
+            ignore_memberships=ignore_memberships,
         )
 
         click.secho()
