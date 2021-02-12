@@ -9,13 +9,19 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#58](https://gitlab.com/gitlab-data/permifrost/-/issues/58) Add support for --ignore-membership flag to skip grant/revoke of role memberships
 
 ### Changes
 
 ### Fixes
 
 ### Breaks
+
+
+## 0.10.0 - (2021-02-12)
+---
+
+### New
+* [#58](https://gitlab.com/gitlab-data/permifrost/-/issues/58) Add support for --ignore-membership flag to skip grant/revoke of role memberships
 
 
 ## 0.9.0 - (2021-01-29)
