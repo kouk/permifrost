@@ -9,9 +9,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* Started adding data objects to create nicer interface for developing. These objects are not in use yet, but are available to start migrations and for adding new features.
-    - Added SnowflakePermission data object
-    - Added SnowflakeRoleGrantChecker class that uses the above to make checking for existing roles easier.
+* [#38](https://gitlab.com/gitlab-data/permifrost/-/issues/38)
+To begin addressing this issue the SnowflakePermission object was added, and the SnowflakeRoleGrantChecker added to use the SnowflakePermission object in its interface. This starts to lay the groundwork to make managing the grants easier.
 
 ### Changes
 
