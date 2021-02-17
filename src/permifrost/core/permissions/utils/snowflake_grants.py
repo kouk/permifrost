@@ -33,9 +33,15 @@ GRANT_OWNERSHIP_TEMPLATE = (
 
 
 class SnowflakeGrantsGenerator:
-    def __init__(self, grants_to_role: Dict, roles_granted_to_user: Dict) -> None:
+    def __init__(
+        self,
+        grants_to_role: Dict,
+        roles_granted_to_user: Dict,
+        ignore_memberships: Optional[bool] = False,
+    ) -> None:
         self.grants_to_role = grants_to_role
         self.roles_granted_to_user = roles_granted_to_user
+        self.ignore_memberships = ignore_memberships
 
     def check_grant_to_role(
         self, role: str, privilege: str, entity_type: str, entity_name: str
@@ -82,12 +88,13 @@ class SnowflakeGrantsGenerator:
         Returns the SQL commands generated as a list
         """
         sql_commands = []
+        if self.ignore_memberships:
+            return sql_commands
 
         if entity_type == "users":
             grant_type = "user"
         if entity_type == "roles":
             grant_type = "role"
-
         if isinstance(config.get("member_of", []), dict):
             member_include_list = config.get("member_of", {}).get("include", [])
             member_exclude_list = config.get("member_of", {}).get("exclude", [])
@@ -1380,6 +1387,8 @@ class SnowflakeGrantsGenerator:
         """
         sql_commands = []
         alter_privileges = []
+        if self.ignore_memberships:
+            return sql_commands
 
         if "can_login" in config:
             if config["can_login"]:

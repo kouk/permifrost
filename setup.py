@@ -49,6 +49,6 @@ setup(
     tests_require=dev_requires,
     # run `make requirements.txt` after editing
     install_requires=requires,
-    extras_require={"dev": dev_requires,},
+    extras_require={"dev": dev_requires},
     entry_points={"console_scripts": ["permifrost = permifrost.cli:main"]},
 )

@@ -140,6 +140,19 @@ class TestSnowflakeGrants:
         assert "grant role user_role to user user_name" in user_lower_list
         assert "revoke role function_role from user user_name" in user_lower_list
 
+    def test_generate_grant_roles_ignore_membership(
+        self, test_grants_to_role, test_roles_granted_to_user
+    ):
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user, ignore_memberships=True
+        )
+
+        role_command_list = generator.generate_grant_roles(
+            "roles", "functional_role", "no_config"
+        )
+
+        assert role_command_list == []
+
     def test_revoke_with_no_member_of(
         self,
         test_grants_to_role,
@@ -164,15 +177,31 @@ class TestSnowflakeGrants:
             in role_lower_list
         )
 
+    def test_no_revoke_with_no_member_of_but_ignore_membership(
+        self, test_grants_to_role, test_roles_granted_to_user
+    ):
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user, ignore_memberships=True
+        )
+
+        role_command_list = generator.generate_grant_roles(
+            "roles", "role_without_member_of", "no_config"
+        )
+        assert role_command_list == []
+
+    @pytest.mark.parametrize("ignore_memberships", [True, False])
     def test_generate_warehouse_grants(
         self,
         test_grants_to_role,
         test_roles_granted_to_user,
         test_role_config,
         test_user_config,
+        ignore_memberships,
     ):
         generator = SnowflakeGrantsGenerator(
-            test_grants_to_role, test_roles_granted_to_user
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
         )
 
         warehouse_command_list = generator.generate_warehouse_grants(
@@ -222,6 +251,7 @@ class TestSnowflakeGrants:
             in warehouse_lower_list
         )
 
+    @pytest.mark.parametrize("ignore_memberships", [True, False])
     def test_generate_database_grants(
         self,
         test_grants_to_role,
@@ -230,9 +260,13 @@ class TestSnowflakeGrants:
         test_user_config,
         test_shared_dbs,
         test_spec_dbs,
+        ignore_memberships,
     ):
+        # Generation of database grants should be identical while ignoring or not ignoring memberships
         generator = SnowflakeGrantsGenerator(
-            test_grants_to_role, test_roles_granted_to_user
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
         )
 
         database_command_list = generator.generate_database_grants(
