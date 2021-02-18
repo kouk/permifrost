@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List
 
 
@@ -15,6 +15,15 @@ class SnowflakePermission:
     entity_name: str
     entity_type: str
     privileges: List[str]
+    grant_option: bool
+
+    def __eq__(self, obj):
+        return (
+            isinstance(obj, SnowflakePermission)
+            and obj.entity_name == self.entity_name
+            and obj.entity_type == self.entity_type
+            and obj.privileges == self.privileges
+        )
 
     def with_entity_name(self, entity_name: str):
         """
@@ -22,6 +31,9 @@ class SnowflakePermission:
         """
         self.entity_name = entity_name
         return self
+
+    def as_owner(self):
+        return replace(self, privileges=["ownership"])
 
     def contains_any(self, privileges: List[str]):
         """
