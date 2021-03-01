@@ -1,0 +1,87 @@
+version: "1.0"
+
+# Databases
+databases:
+  - demo:
+      shared: no
+
+# Roles
+roles:
+  ## Admin Roles
+  - accountadmin:
+      warehouses:
+        - loading
+      member_of:
+        - sysadmin
+        - securityadmin
+
+  - securityadmin:
+      warehouses:
+        - loading
+      member_of:
+        - useradmin
+
+  - useradmin:
+      warehouses:
+        - loading
+
+  - sysadmin:
+      warehouses:
+        - loading
+        - transforming
+        - reporting
+      member_of:
+        - demo
+
+  - demo:
+      warehouses:
+        - demo
+      owns:
+        schemas:
+          - demo.*
+          - demo.*
+        tables:
+          - demo.*.*
+          - demo.*.*
+      privileges:
+        databases:
+          read:
+            - demo
+          write:
+            - demo
+        schemas:
+          read:
+            - demo.*
+          write:
+            - demo.*
+        tables:
+          read:
+            - demo.*.*
+          write:
+            - demo.*.*
+
+# Users
+users:
+  - airflow_demo:
+      can_login: yes
+      member_of:
+        - demo
+
+  - dbt_demo:
+      can_login: yes
+      member_of:
+        - demo
+
+# Warehouses
+warehouses:
+  - loading:
+      size: x-small
+
+  - reporting:
+      size: x-small
+
+  - transforming:
+      size: x-small
+
+  - demo:
+      size: x-small

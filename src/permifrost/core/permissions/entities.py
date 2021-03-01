@@ -43,6 +43,17 @@ class EntityGenerator:
 
         return self.entities
 
+    def filter_by_type(self, entities_list: List, type: str):
+        filtered_entities = [
+            entries for entity_type, entries in entities_list if entity_type == type
+        ]
+
+        # Avoid returning a nested list if there are entities
+        if filtered_entities == []:
+            return filtered_entities
+        else:
+            return filtered_entities[0]
+
     def generate(self) -> Tuple[Dict, List[str]]:
         """
         Generate and return a dictionary with all the entities defined or
@@ -66,22 +77,10 @@ class EntityGenerator:
             if entry and entity_type != "version"
         ]
 
-        filter_entities = lambda type: [
-            entries[0]  # Avoid a nested list
-            for entity_type, entries in entities_by_type
-            if entity_type == type
-        ]
-        self.generate_databases(filter_entities("databases"))
-        self.generate_roles(filter_entities("roles"))
-        self.generate_warehouses(filter_entities("warehouses"))
-        # Can't use the lambda filter because of nesting issues
-        self.generate_users(
-            [
-                entries
-                for entity_type, entries in entities_by_type
-                if entity_type == "users"
-            ]
-        )
+        self.generate_roles(self.filter_by_type(entities_by_type, "roles"))
+        self.generate_databases(self.filter_by_type(entities_by_type, "databases"))
+        self.generate_warehouses(self.filter_by_type(entities_by_type, "warehouses"))
+        self.generate_users(self.filter_by_type(entities_by_type, "users"))
 
         # Filter the owner requirement and set it to True or False
         require_owner = [
@@ -401,9 +400,6 @@ class EntityGenerator:
         Generate all of the user entities.
         Also can populate the role_refs, database_refs, schema_refs & table_refs
         """
-
-        # Needed for certain cases where users aren't defined
-        user_list = user_list[0] if user_list != [] else []
 
         for user_entry in user_list:
             for user_name, config in user_entry.items():
