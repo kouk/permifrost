@@ -42,7 +42,7 @@ prod_image_tag = gitlab-data/permifrost
 endif
 
 # Testing
-test: compose-build
+test: compose-down compose-build
 	@docker-compose run permifrost /bin/bash \
 		-c "pip install -e . && pytest -x -v --disable-pytest-warnings"
 

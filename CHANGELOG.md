@@ -15,6 +15,7 @@ To begin addressing this issue the SnowflakePermission object was added, and the
 ### Changes
 
 ### Fixes
+* [#61](https://gitlab.com/gitlab-data/permifrost/-/issues/61) Fixes a bug where reference errors were being triggered due to inadvertant filtering.
 
 ### Breaks
 
