@@ -9,15 +9,24 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ---
 
 ### New
-* [#38](https://gitlab.com/gitlab-data/permifrost/-/issues/38)
-To begin addressing this issue the SnowflakePermission object was added, and the SnowflakeRoleGrantChecker added to use the SnowflakePermission object in its interface. This starts to lay the groundwork to make managing the grants easier.
 
 ### Changes
 
 ### Fixes
-* [#61](https://gitlab.com/gitlab-data/permifrost/-/issues/61) Fixes a bug where reference errors were being triggered due to inadvertant filtering.
 
 ### Breaks
+
+
+## 0.11.0 - (2021-03-01)
+---
+
+### New
+* [#38](https://gitlab.com/gitlab-data/permifrost/-/issues/38)
+To begin addressing this issue the SnowflakePermission object was added, and the SnowflakeRoleGrantChecker added to use the SnowflakePermission object in its interface. This starts to lay the groundwork to make managing the grants easier.
+
+
+### Fixes
+* [#61](https://gitlab.com/gitlab-data/permifrost/-/issues/61) Fixes a bug where reference errors were being triggered due to inadvertant filtering.
 
 
 ## 0.10.0 - (2021-02-12)
