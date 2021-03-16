@@ -634,7 +634,7 @@ class SnowflakeSpecLoader:
         else:
             logging.debug("`schemas` not found in spec, skipping SHOW SCHEMAS call.")
 
-        if len(self.entities["table_refs"]) > 0:
+        if False and len(self.entities["table_refs"]) > 0: #add false for now to switch off this check as a hotfix
             tables = conn.show_tables()
             views = conn.show_views()
             for table in self.entities["table_refs"]:
