@@ -126,11 +126,11 @@ class SnowflakeConnector:
         names = []
 
         if schema:
-            query = f"SHOW TERSE TABLES IN SCHEMA {schema}"
+            query = f"SHOW TERSE TABLES IN SCHEMA {schema} LIMIT 10000"
         elif database:
-            query = f"SHOW TERSE TABLES IN DATABASE {database}"
+            query = f"SHOW TERSE TABLES IN DATABASE {database} LIMIT 10000"
         else:
-            query = "SHOW TERSE TABLES IN ACCOUNT"
+            query = "SHOW TERSE TABLES IN ACCOUNT LIMIT 10000"
 
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
