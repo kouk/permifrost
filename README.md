@@ -95,20 +95,25 @@ roles:
                 read:
                     - database_name.*
                     - database_name.schema_name
+                    - database_name.schema_partial_*
                     ...
                 write:
                     - database_name.*
                     - database_name.schema_name
+                    - database_name.schema_partial_*
+
                     ...
             tables:
                 read:
                     - database_name.*.*
                     - database_name.schema_name.*
+                    - database_name.schema_partial_*.*
                     - database_name.schema_name.table_name
                     ...
                 write:
                     - database_name.*.*
                     - database_name.schema_name.*
+                    - database_name.schema_partial_*.*
                     - database_name.schema_name.table_name
                     ...
 
