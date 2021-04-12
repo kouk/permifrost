@@ -101,7 +101,6 @@ roles:
                     - database_name.*
                     - database_name.schema_name
                     - database_name.schema_partial_*
-
                     ...
             tables:
                 read:
