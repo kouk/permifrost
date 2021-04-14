@@ -13,6 +13,8 @@ This project adheres to [Semantic Versioning](http://semver.org/) and [Keep a Ch
 ### Changes
 
 ### Fixes
+* [#69](https://gitlab.com/gitlab-data/permifrost/-/issues/69)
+Adds quote_plus to the SnowflakeConnector to resolve possible connection issues caused by complex passwords.
 
 ### Breaks
 

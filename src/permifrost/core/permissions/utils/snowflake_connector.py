@@ -5,6 +5,7 @@ import sqlalchemy
 
 from typing import Dict, List, Any
 from snowflake.sqlalchemy import URL
+from urllib.parse import quote_plus
 
 # To support key pair authentication
 from cryptography.hazmat.backends import default_backend
@@ -23,7 +24,7 @@ class SnowflakeConnector:
         if not config:
             config = {
                 "user": os.getenv("PERMISSION_BOT_USER"),
-                "password": os.getenv("PERMISSION_BOT_PASSWORD"),
+                "password": quote_plus(os.getenv("PERMISSION_BOT_PASSWORD")),
                 "account": os.getenv("PERMISSION_BOT_ACCOUNT"),
                 "database": os.getenv("PERMISSION_BOT_DATABASE"),
                 "role": os.getenv("PERMISSION_BOT_ROLE"),
