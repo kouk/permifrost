@@ -40,6 +40,9 @@ All permissions are abbreviated as `read` or `write` permissions, with Permifros
 
 Tables and views are listed under `tables` and handled properly behind the scenes.
 
+Also under the hood, Permifrost grants privileges for more object types than databases, schemas and tables/views. E.g.:
+* `write` permissions for a schema include the ability to create tables and views, but also stages, sequences, functions, file formats, pipes, tasks, streams and procedures on that schema (as the owner, you should be able to manage those objects without further permissions).
+
 If `*` is provided as the parameter for tables the grant statement will use the `ALL <object_type>s in SCHEMA` syntax. It will also grant to future tables and views. See Snowflake documenation for [`ON FUTURE`](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html#optional-parameters)
 
 If a schema name includes an asterisk, such as `snowplow_*`, then all schemas that match this pattern will be included in the grant statement _unless it is for ownership_, in which case the asterisk is not supported. This can be coupled with the asterisk for table grants to grant permissions on all tables in all schemas that match the given pattern. This is useful for date-partitioned schemas.

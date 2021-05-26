@@ -616,7 +616,8 @@ class SnowflakeGrantsGenerator:
         partial_write_privileges = (
             "monitor, create table,"
             " create view, create stage, create file format,"
-            " create sequence, create function, create pipe"
+            " create sequence, create function, create pipe,"
+            " create task, create stream, create procedure"
         )
         write_privileges = f"{read_privileges}, {partial_write_privileges}"
         write_privileges_array = write_privileges.split(", ")
