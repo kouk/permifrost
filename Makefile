@@ -4,6 +4,7 @@
 
 .DEFAULT_GOAL := dev-help
 COMMIT_HASH = $(shell git log -1 --pretty=%H)
+DEFAULT_ORG ?= hightouchio
 
 dev-help:
 	@echo "base-image -> builds gitlab-data/base"
@@ -34,11 +35,11 @@ permifrost: compose-down compose-build
 .PHONY: base-image prod-image lint show_lint test clean docker-images release
 
 ifdef DOCKER_REGISTRY
-base_image_tag = ${DOCKER_REGISTRY}/gitlab-data/permifrost/base
-prod_image_tag = ${DOCKER_REGISTRY}/gitlab-data/permifrost
+base_image_tag = ${DOCKER_REGISTRY}/${DEFAULT_ORG}/permifrost/base
+prod_image_tag = ${DOCKER_REGISTRY}/${DEFAULT_ORG}/permifrost
 else
-base_image_tag = gitlab-data/permifrost/base
-prod_image_tag = gitlab-data/permifrost
+base_image_tag = ${DEFAULT_ORG}/permifrost/base
+prod_image_tag = ${DEFAULT_ORG}/permifrost
 endif
 
 # Testing
