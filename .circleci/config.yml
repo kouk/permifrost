@@ -1,0 +1,21 @@
+version: 2.1
+
+jobs:
+  build_test:
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: Build and install distribution
+          command: |
+            python3 -m pip install --upgrade build
+            pip3 install -e '.[dev]'
+      - run:
+          name: Test permifrost
+          command: pytest -x -v --disable-pytest-warnings
+
+workflows:
+  build_test_publish:
+    jobs:
+      - build_test

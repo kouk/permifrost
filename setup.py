@@ -25,6 +25,7 @@ dev_requires = [
     "mypy==0.780",
     "pytest==4.3.1",
     "pytest-cov==2.6.1",
+    "pytest-mock==3.2.0"
 ]
 
 setup(
