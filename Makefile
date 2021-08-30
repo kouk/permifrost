@@ -10,8 +10,9 @@ dev-help:
 	@echo "base-image -> builds gitlab-data/base"
 	@echo "docker-clean -> deletes all the build artifacts"
 	@echo "docker-images -> builds the base and prod images"
+	@echo "install-dev -> installs local package with dev dependencies"
 	@echo "permifrost -> starts a shell in a container with the local Permifrost installed"
-	@echo "requirements.txt -> pins dependency versions in `requirements.txt`"
+	@echo 'requirements.txt -> pins dependency versions in `requirements.txt`'
 	@echo "prod-image -> builds gitlab-data/permifrost which is an all-in-one production image"
 	@echo "test -> runs pytest"
 
@@ -70,6 +71,7 @@ prod-image: base-image
 
 # Linting
 BLACK_RUN = black src/permifrost tests/
+MYPY_RUN = mypy src
 
 lint: compose-build
 	@docker-compose run permifrost /bin/bash -c "make local-lint"
@@ -79,9 +81,11 @@ show-lint: compose-build
 
 local-lint:
 	${BLACK_RUN}
+	${MYPY_RUN}
 
 local-show-lint:
 	${BLACK_RUN} --check --diff
+	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
 
 #########################################################
 #################### Deployment #########################
@@ -90,6 +94,9 @@ local-show-lint:
 # Packaging Related
 requirements.txt: setup.py
 	pip freeze --exclude-editable > $@
+
+install-dev:
+	pip install -e '.[dev]'
 
 # Release
 ifdef type

@@ -22,7 +22,9 @@ class EntityGenerator:
         }
         self.error_messages: List[Optional[str]] = []
 
-    def inspect_entities(self,) -> Dict:
+    def inspect_entities(
+        self,
+    ) -> Dict:
         """
         Inspect a valid spec and make sure that no logic errors exist.
 

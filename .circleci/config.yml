@@ -1,21 +1,39 @@
 version: 2.1
+orbs:
+  python: circleci/python@1.4.0
 
 jobs:
-  build_test:
-    docker:
-      - image: cimg/python:3.8
+  build:
+    executor: python/default
+    steps:
+      - checkout
+      - python/dist
+
+  test:
+    executor: python/default
     steps:
       - checkout
       - run:
-          name: Build and install distribution
-          command: |
-            python3 -m pip install --upgrade build
-            pip3 install -e '.[dev]'
+          name: Install dev dependencies
+          command: make install-dev
       - run:
-          name: Test permifrost
+          name: Run pytest
           command: pytest -x -v --disable-pytest-warnings
 
+  lint:
+    executor: python/default
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Run linters
+          command: make local-lint
+
+
 workflows:
-  build_test_publish:
+  build_test_link:
     jobs:
-      - build_test
+      - build
+      - test
+      - lint

@@ -73,7 +73,7 @@ class SnowflakeRoleGrantChecker:
         self, role: Optional[str], permission: SnowflakePermission
     ) -> bool:
         """
-        Will return true if the <role> has the given <permission> on the <entity_name>. 
+        Will return true if the <role> has the given <permission> on the <entity_name>.
         Where the <entity_name> is the name given in the permission object, or the "snowflaky" version. Both are checked.
         If the role has ownership of the entity in question, then this function should always return true.
         Will always return true if <role> is none.
