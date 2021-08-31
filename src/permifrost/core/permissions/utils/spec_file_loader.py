@@ -3,7 +3,13 @@ import yaml
 from typing import Dict, List
 
 from permifrost.core.permissions.utils.error import SpecLoadingError
-from permifrost.core.permissions.spec_schemas.snowflake import *
+from permifrost.core.permissions.spec_schemas.snowflake import (
+    SNOWFLAKE_SPEC_DATABASE_SCHEMA,
+    SNOWFLAKE_SPEC_ROLE_SCHEMA,
+    SNOWFLAKE_SPEC_SCHEMA,
+    SNOWFLAKE_SPEC_USER_SCHEMA,
+    SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA,
+)
 
 VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 

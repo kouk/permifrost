@@ -41,7 +41,9 @@ class EntityGenerator:
         self.error_messages.extend(self.ensure_valid_references(self.entities))
 
         if self.error_messages:
-            raise SpecLoadingError("\n".join(self.error_messages))
+            raise SpecLoadingError(
+                "\n".join([msg for msg in self.error_messages if msg])
+            )
 
         return self.entities
 
@@ -214,12 +216,12 @@ class EntityGenerator:
 
         return error_messages
 
-    def generate_warehouses(self, warehouse_list: List[Dict[str, Dict]]) -> Tuple:
+    def generate_warehouses(self, warehouse_list: List[Dict[str, Dict]]) -> None:
         for warehouse_entry in warehouse_list:
             for warehouse_name, _ in warehouse_entry.items():
                 self.entities["warehouses"].add(warehouse_name)
 
-    def generate_databases(self, db_list: List[Dict[str, Dict]]) -> Tuple:
+    def generate_databases(self, db_list: List[Dict[str, Dict]]) -> None:
         for db_entry in db_list:
             for db_name, config in db_entry.items():
                 self.entities["databases"].add(db_name)
@@ -234,7 +236,8 @@ class EntityGenerator:
                             )
                         )
 
-    def generate_roles(self, role_list):
+    # TODO: This is too complex and could be refactored
+    def generate_roles(self, role_list):  # noqa
         """
         Generate all of the role entities.
         Also can populate the role_refs, database_refs,

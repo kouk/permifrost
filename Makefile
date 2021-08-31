@@ -72,6 +72,7 @@ prod-image: base-image
 # Linting
 BLACK_RUN = black src/permifrost tests/
 MYPY_RUN = mypy src
+FLAKE8_RUN = flake8
 
 lint: compose-build
 	@docker-compose run permifrost /bin/bash -c "make local-lint"
@@ -82,10 +83,12 @@ show-lint: compose-build
 local-lint:
 	${BLACK_RUN}
 	${MYPY_RUN}
+	${FLAKE8_RUN}
 
 local-show-lint:
 	${BLACK_RUN} --check --diff
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
+	${FLAKE8_RUN}
 
 #########################################################
 #################### Deployment #########################

@@ -4,3 +4,6 @@ from . import permissions
 
 def main():
     cli()
+
+
+__all__ = ["permissions"]

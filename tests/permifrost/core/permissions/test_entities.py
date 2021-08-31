@@ -3,7 +3,6 @@ import os
 
 from permifrost.core.permissions.entities import EntityGenerator
 from permifrost.core.permissions.utils.spec_file_loader import load_spec
-from permifrost_test_utils.snowflake_schema_builder import SnowflakeSchemaBuilder
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

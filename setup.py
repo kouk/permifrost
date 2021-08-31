@@ -22,10 +22,12 @@ dev_requires = [
     "bumpversion",
     "changelog-cli",
     "coverage",
+    "flake8",
     "mypy",
     "pytest",
     "pytest-cov",
     "pytest-mock",
+    "types-PyYAML",
 ]
 
 setup(

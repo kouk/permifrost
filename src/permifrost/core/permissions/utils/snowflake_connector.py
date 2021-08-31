@@ -9,8 +9,6 @@ from urllib.parse import quote_plus
 
 # To support key pair authentication
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.asymmetric import dsa
 from cryptography.hazmat.primitives import serialization
 
 # Don't show all the info log messages from Snowflake
@@ -24,7 +22,7 @@ class SnowflakeConnector:
         if not config:
             config = {
                 "user": os.getenv("PERMISSION_BOT_USER"),
-                "password": quote_plus(os.getenv("PERMISSION_BOT_PASSWORD")),
+                "password": quote_plus(os.getenv("PERMISSION_BOT_PASSWORD", "")),
                 "account": os.getenv("PERMISSION_BOT_ACCOUNT"),
                 "database": os.getenv("PERMISSION_BOT_DATABASE"),
                 "role": os.getenv("PERMISSION_BOT_ROLE"),
@@ -72,7 +70,7 @@ class SnowflakeConnector:
                 )
             )
 
-    def generate_private_key(self, key_path: str, key_passphrase: str) -> str:
+    def generate_private_key(self, key_path: str, key_passphrase: str) -> bytes:
         with open(key_path, "rb") as key:
             p_key = serialization.load_pem_private_key(
                 key.read(), password=key_passphrase.encode(), backend=default_backend()
@@ -170,7 +168,7 @@ class SnowflakeConnector:
     def show_future_grants(
         self, database: str = None, schema: str = None
     ) -> Dict[str, Dict[str, Dict[str, List[str]]]]:
-        future_grants = {}
+        future_grants: Dict[str, Any] = {}
 
         if schema:
             query = f"SHOW FUTURE GRANTS IN SCHEMA {schema}"
@@ -198,7 +196,7 @@ class SnowflakeConnector:
         return future_grants
 
     def show_grants_to_role(self, role) -> Dict[str, Any]:
-        grants = {}
+        grants: Dict[str, Any] = {}
 
         query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky(role)}"
         with self.engine.connect() as connection:
@@ -215,7 +213,7 @@ class SnowflakeConnector:
         return grants
 
     def show_grants_to_role_with_grant_option(self, role) -> Dict[str, Any]:
-        grants = {}
+        grants: Dict[str, Any] = {}
 
         query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky(role)}"
         with self.engine.connect() as connection:
@@ -318,6 +316,7 @@ class SnowflakeConnector:
 
         return fetched_schemas
 
+    @staticmethod
     def snowflaky(name: str) -> str:
         """
         Convert an entity name to an object identifier that will most probably be

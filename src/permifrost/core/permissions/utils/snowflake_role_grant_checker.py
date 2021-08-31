@@ -1,8 +1,4 @@
-import functools
-import logging
-import re
-
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
@@ -18,7 +14,7 @@ class SnowflakeRoleGrantChecker:
         # A simple in memory map to store lookups against the database.
         # In the future we can use something like https://pypi.org/project/cachetools/
         # to annotate the methods we want to cache calls to.
-        self.role_permission_cache = {}
+        self.role_permission_cache: Dict[str, Any] = {}
 
     def _get_permissions(self, role: str) -> Dict:
         if role not in self.role_permission_cache:
@@ -50,7 +46,7 @@ class SnowflakeRoleGrantChecker:
 
     def _has_permission(
         self, role: Optional[str], permission: SnowflakePermission
-    ) -> SnowflakePermission:
+    ) -> Optional[SnowflakePermission]:
         """
         Will return the SnowflakePermission if the <role> has the given <permission> on the <entity_name>.
         Will always return the given permission if <role> is none.
@@ -68,6 +64,7 @@ class SnowflakeRoleGrantChecker:
             return role_permissions[role_permissions.index(permission.as_owner())]
         if permission in role_permissions:
             return role_permissions[role_permissions.index(permission)]
+        return None
 
     def has_permission(
         self, role: Optional[str], permission: SnowflakePermission
@@ -100,11 +97,11 @@ class SnowflakeRoleGrantChecker:
         if not role:
             return True
 
-        permission = self._has_permission(role, permission)
+        has_permission = self._has_permission(role, permission)
 
         # Ownership will let you grant any permission on that object and is always grantable.
         # Since _has_permission will return ownership over other privileges, we only need to do a single check.
-        return permission is not None and permission.grant_option
+        return has_permission is not None and has_permission.grant_option
 
     def can_grant_permission(
         self, role: Optional[str], permission: SnowflakePermission

@@ -1,9 +1,8 @@
 import logging
 import re
 
-from typing import Dict, List, Tuple, Set, Any, Optional
+from typing import Any, Dict, List, Set, Optional
 
-from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
 
@@ -74,8 +73,8 @@ class SnowflakeGrantsGenerator:
         self,
         entity_type: str,
         entity: str,
-        config: str,
-        all_entities: Optional[list] = None,
+        config: Dict[str, Any],
+        all_entities: Optional[List] = None,
     ) -> List[Dict]:
         """
         Generate the GRANT statements for both roles and users.
@@ -87,22 +86,31 @@ class SnowflakeGrantsGenerator:
 
         Returns the SQL commands generated as a list
         """
-        sql_commands = []
+        sql_commands: List[Dict] = []
+        member_include_list = []
+        member_exclude_list = []
+
         if self.ignore_memberships:
             return sql_commands
 
         if entity_type == "users":
             grant_type = "user"
-        if entity_type == "roles":
+        elif entity_type == "roles":
             grant_type = "role"
+        else:
+            raise ValueError("grant_type must be either 'users' or 'roles'")
+
         if isinstance(config.get("member_of", []), dict):
             member_include_list = config.get("member_of", {}).get("include", [])
             member_exclude_list = config.get("member_of", {}).get("exclude", [])
         elif isinstance(config.get("member_of", []), list):
             member_include_list = config.get("member_of", [])
-            member_exclude_list = []
 
         if len(member_include_list) == 1 and member_include_list[0] == "*":
+            if not all_entities:
+                raise ValueError(
+                    "Cannot generate grant roles if all_entities not provided"
+                )
             conn = SnowflakeConnector()
             show_roles = conn.show_roles()
             member_include_list = [
@@ -170,7 +178,7 @@ class SnowflakeGrantsGenerator:
         return sql_commands
 
     def generate_grant_privileges_to_role(
-        self, role: str, config: str, shared_dbs: Set, spec_dbs: Set
+        self, role: str, config: Dict[str, Any], shared_dbs: Set, spec_dbs: Set
     ) -> List[Dict]:
         """
         Generate all the privilege granting and revocation
@@ -190,7 +198,7 @@ class SnowflakeGrantsGenerator:
 
         Returns the SQL commands generated as a list
         """
-        sql_commands = []
+        sql_commands: List[Dict] = []
 
         # TODO Convert to simpler format
         try:
@@ -212,14 +220,14 @@ class SnowflakeGrantsGenerator:
             "write": config.get("privileges", {}).get("databases", {}).get("write", []),
         }
 
-        if len(databases.get("read")) == 0:
+        if len(databases.get("read", "")) == 0:
             logging.debug(
                 "`privileges.databases.read` not found for role {}, skipping generation of database read level GRANT statements.".format(
                     role
                 )
             )
 
-        if len(databases.get("write")) == 0:
+        if len(databases.get("write", "")) == 0:
             logging.debug(
                 "`privileges.databases.write` not found for role {}, skipping generation of database write level GRANT statements.".format(
                     role
@@ -237,14 +245,14 @@ class SnowflakeGrantsGenerator:
             "write": config.get("privileges", {}).get("schemas", {}).get("write", []),
         }
 
-        if len(schemas.get("read")) == 0:
+        if len(schemas.get("read", "")) == 0:
             logging.debug(
                 "`privileges.schemas.read` not found for role {}, skipping generation of schemas read level GRANT statements.".format(
                     role
                 )
             )
 
-        if len(schemas.get("write")) == 0:
+        if len(schemas.get("write", "")) == 0:
             logging.debug(
                 "`privileges.schemas.write` not found for role {}, skipping generation of schemas write level GRANT statements.".format(
                     role
@@ -262,14 +270,14 @@ class SnowflakeGrantsGenerator:
             "write": config.get("privileges", {}).get("tables", {}).get("write", []),
         }
 
-        if len(tables.get("read")) == 0:
+        if len(tables.get("read", "")) == 0:
             logging.debug(
                 "`privileges.tables.read` not found for role {}, skipping generation of tables read level GRANT statements.".format(
                     role
                 )
             )
 
-        if len(tables.get("write")) == 0:
+        if len(tables.get("write", "")) == 0:
             logging.debug(
                 "`privileges.tables.write` not found for role {}, skipping generation of tables write level GRANT statements.".format(
                     role
@@ -283,7 +291,9 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    def generate_warehouse_grants(self, role: str, warehouses: list) -> List[str]:
+    def generate_warehouse_grants(
+        self, role: str, warehouses: list
+    ) -> List[Dict[str, Any]]:
         """
         Generate the GRANT statements for Warehouse usage and operation.
 
@@ -292,7 +302,7 @@ class SnowflakeGrantsGenerator:
 
         Returns the SQL command generated
         """
-        sql_commands = []
+        sql_commands: List[Dict] = []
 
         for warehouse in warehouses:
             if self.check_grant_to_role(role, "usage", "warehouse", warehouse):
@@ -404,7 +414,7 @@ class SnowflakeGrantsGenerator:
 
     def generate_database_grants(
         self, role: str, databases: Dict[str, List], shared_dbs: Set, spec_dbs: Set
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Generate the GRANT and REVOKE statements for Databases
         to align Snowflake with the spec.
@@ -589,7 +599,8 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    def generate_schema_grants(
+    # TODO: This method is too complex, consider refactoring
+    def generate_schema_grants(  # noqa
         self, role: str, schemas: Dict[str, List], shared_dbs: Set, spec_dbs: Set
     ) -> List[Dict]:
         """
@@ -864,7 +875,8 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    def generate_table_and_view_grants(
+    # TODO: This method is too complex, consider refactoring
+    def generate_table_and_view_grants(  # noqa
         self, role: str, tables: Dict[str, List], shared_dbs: Set, spec_dbs: Set
     ) -> List[Dict]:
         """
@@ -1193,7 +1205,6 @@ class SnowflakeGrantsGenerator:
             all_grant_tables = read_grant_tables_full + write_grant_tables_full
             table_split = granted_table.split(".")
             database_name = table_split[0]
-            table_name = table_split[-1]
 
             # For future grants at the database level
             if len(table_split) == 2:
@@ -1253,7 +1264,6 @@ class SnowflakeGrantsGenerator:
             all_grant_views = read_grant_views_full + write_grant_views_full
             view_split = granted_view.split(".")
             database_name = view_split[0]
-            view_name = view_split[-1]
 
             # For future grants at the database level
             if len(view_split) == 2:
@@ -1320,7 +1330,6 @@ class SnowflakeGrantsGenerator:
         ):
             table_split = granted_table.split(".")
             database_name = table_split[0]
-            table_name = table_split[-1]
 
             # For future grants at the database level
             if len(table_split) == 2:
@@ -1376,7 +1385,7 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    def generate_alter_user(self, user: str, config: str) -> List[Dict]:
+    def generate_alter_user(self, user: str, config: Dict[str, Any]) -> List[Dict]:
         """
         Generate the ALTER statements for USERs.
 
@@ -1385,13 +1394,13 @@ class SnowflakeGrantsGenerator:
 
         Returns the SQL commands generated as a List
         """
-        sql_commands = []
-        alter_privileges = []
+        sql_commands: List[Any] = []
+        alter_privileges: List[Any] = []
         if self.ignore_memberships:
             return sql_commands
 
         if "can_login" in config:
-            if config["can_login"]:
+            if config.get("can_login"):
                 alter_privileges.append("DISABLED = FALSE")
             else:
                 alter_privileges.append("DISABLED = TRUE")
@@ -1409,7 +1418,10 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    def generate_grant_ownership(self, role: str, config: str) -> List[Dict]:
+    # TODO: This method is too complex, consider refactoring
+    def generate_grant_ownership(  # noqa
+        self, role: str, config: Dict[str, Any]
+    ) -> List[Dict]:
         """
         Generate the GRANT ownership statements for databases, schemas and tables.
 

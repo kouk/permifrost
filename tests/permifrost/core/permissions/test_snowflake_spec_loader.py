@@ -178,7 +178,7 @@ class TestSnowflakeSpecLoader:
         mocker.patch.object(
             MockSnowflakeConnector, "get_current_role", return_value="notsecurityadmin"
         )
-        with pytest.raises(SpecLoadingError) as context:
+        with pytest.raises(SpecLoadingError):
             SnowflakeSpecLoader(
                 os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"),
                 mock_connector,
