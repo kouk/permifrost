@@ -49,11 +49,10 @@ def ensure_valid_schema(spec: Dict) -> List[str]:
         "warehouses": cerberus.Validator(schema["warehouses"]),
     }
 
-    entities_by_type = [
-        (entity_type, entities)
-        for entity_type, entities in spec.items()
-        if entities and entity_type in ["databases", "roles", "users", "warehouses"]
-    ]
+    entities_by_type = []
+    for entity_type, entities in spec.items():
+        if entities and entity_type in ["databases", "roles", "users", "warehouses"]:
+            entities_by_type.append((entity_type, entities))
 
     for entity_type, entities in entities_by_type:
         for entity_dict in entities:
