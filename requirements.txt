@@ -23,6 +23,7 @@ greenlet==1.1.1
 idna==3.2
 iniconfig==1.1.1
 isodate==0.6.0
+isort==5.9.3
 jmespath==0.10.0
 mccabe==0.6.1
 msrest==0.6.21

@@ -1,9 +1,9 @@
-import click
 import logging
+
+import click
 
 import permifrost
 from permifrost.core.logging import setup_logging
-
 
 logger = logging.getLogger(__name__)
 

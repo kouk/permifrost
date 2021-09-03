@@ -1,10 +1,8 @@
 import logging
 import re
-
-from typing import Any, Dict, List, Set, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
-
 
 GRANT_ROLE_TEMPLATE = "GRANT ROLE {role_name} TO {type} {entity_name}"
 

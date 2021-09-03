@@ -1,13 +1,28 @@
 import logging
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple, TypedDict
 
+from permifrost.core.permissions.types import PermifrostSpecSchema
 from permifrost.core.permissions.utils.error import SpecLoadingError
 
 
+class EntitySchema(TypedDict):
+    databases: Set[str]
+    database_refs: Set[str]
+    shared_databases: Set[str]
+    schema_refs: Set[str]
+    table_refs: Set[str]
+    roles: Set[str]
+    role_refs: Set[str]
+    users: Set[str]
+    warehouses: Set[str]
+    warehouse_refs: Set[str]
+    require_owner: bool
+
+
 class EntityGenerator:
-    def __init__(self, spec):
+    def __init__(self, spec: PermifrostSpecSchema):
         self.spec = spec
-        self.entities = {
+        self.entities: EntitySchema = {
             "databases": set(),
             "database_refs": set(),
             "shared_databases": set(),
@@ -18,13 +33,11 @@ class EntityGenerator:
             "users": set(),
             "warehouses": set(),
             "warehouse_refs": set(),
-            "require-owner": False,
+            "require_owner": False,
         }
         self.error_messages: List[str] = []
 
-    def inspect_entities(
-        self,
-    ) -> Dict:
+    def inspect_entities(self) -> EntitySchema:
         """
         Inspect a valid spec and make sure that no logic errors exist.
 
@@ -45,9 +58,18 @@ class EntityGenerator:
 
         return self.entities
 
-    def filter_by_type(self, entities_list: List, type: str) -> List:
+    @staticmethod
+    def filter_grouped_entities_by_type(grouped_entities: List, type: str) -> List:
+        """
+        Takes a list of grouped entities and filters them for a particular entity_type
+
+        For example:
+            filter_grouped_entities_by_type(grouped_entities, 'role') ->
+                {'accountadmin', 'demo', 'securityadmin', 'sysadmin', 'useradmin'}
+
+        """
         filtered_entities = [
-            entries for entity_type, entries in entities_list if entity_type == type
+            entries for entity_type, entries in grouped_entities if entity_type == type
         ]
 
         # Avoid returning a nested list if there are entities
@@ -56,7 +78,34 @@ class EntityGenerator:
         else:
             return filtered_entities[0]
 
-    def generate(self) -> Tuple[Dict, List[str]]:
+    @staticmethod
+    def group_spec_by_type(spec: PermifrostSpecSchema) -> List[Tuple[str, Any]]:
+        """
+        Takes as input the Permifrost Spec and converts it to a grouped list
+        For example:
+            [('databases',
+                [{'demo': {'shared': False}}]),
+            ('roles',
+                [
+                  {'accountadmin':
+                    {'warehouses': ['loading'],
+                     'member_of': ['sysadmin', 'securityadmin']}},
+                  {'securityadmin':
+                    {'warehouses': ['loading'],
+                    'member_of': ['useradmin']}},
+                ]
+            ...
+            ]
+
+        """
+        entities_by_type = [
+            (entity_type, entry)
+            for entity_type, entry in spec.items()
+            if entry and entity_type != "version"
+        ]
+        return entities_by_type
+
+    def generate(self) -> EntitySchema:
         """
         Generate and return a dictionary with all the entities defined or
         referenced in the permissions specification file.
@@ -71,18 +120,19 @@ class EntityGenerator:
         Returns a tuple (entities, error_messages) with all the entities defined
         in the spec and any errors found (e.g. a user not assigned their user role)
         """
-
-        # Filter out the `version` key and group by entity type
-        entities_by_type: List[Tuple[str, List[Dict]]] = [
-            (entity_type, entry)
-            for entity_type, entry in self.spec.items()
-            if entry and entity_type != "version"
-        ]
-
-        self.generate_roles(self.filter_by_type(entities_by_type, "roles"))
-        self.generate_databases(self.filter_by_type(entities_by_type, "databases"))
-        self.generate_warehouses(self.filter_by_type(entities_by_type, "warehouses"))
-        self.generate_users(self.filter_by_type(entities_by_type, "users"))
+        entities_by_type = self.group_spec_by_type(self.spec)
+        self.generate_roles(
+            self.filter_grouped_entities_by_type(entities_by_type, "roles")
+        )
+        self.generate_databases(
+            self.filter_grouped_entities_by_type(entities_by_type, "databases")
+        )
+        self.generate_warehouses(
+            self.filter_grouped_entities_by_type(entities_by_type, "warehouses")
+        )
+        self.generate_users(
+            self.filter_grouped_entities_by_type(entities_by_type, "users")
+        )
 
         # Filter the owner requirement and set it to True or False
         require_owner = [
@@ -90,7 +140,7 @@ class EntityGenerator:
             for entity_type, entry in entities_by_type
             if entity_type == "require-owner"
         ]
-        self.entities["require-owner"] = require_owner == [True]
+        self.entities["require_owner"] = require_owner == [True]
 
         self.generate_implicit_schema_refs()
         self.generate_implicit_table_refs()
@@ -117,7 +167,7 @@ class EntityGenerator:
             if name_parts[1] != "*":
                 self.entities["schema_refs"].add(f"{name_parts[0]}.{name_parts[1]}")
 
-    def ensure_valid_entity_names(self, entities: Dict) -> List[str]:
+    def ensure_valid_entity_names(self, entities: EntitySchema) -> List[str]:
         """
         Check that all entity names are valid.
 
@@ -157,7 +207,7 @@ class EntityGenerator:
 
         return error_messages
 
-    def ensure_valid_references(self, entities: Dict) -> List[str]:
+    def ensure_valid_references(self, entities: EntitySchema) -> List[str]:
         """
         Make sure that all references are well defined.
 
@@ -189,13 +239,15 @@ class EntityGenerator:
 
         return error_messages
 
-    def ensure_valid_spec_for_conditional_settings(self, entities: Dict) -> List[str]:
+    def ensure_valid_spec_for_conditional_settings(
+        self, entities: EntitySchema
+    ) -> List[str]:
         """
         Make sure that the spec is valid based on conditional settings such as require-owner
         """
         error_messages = []
 
-        if entities["require-owner"]:
+        if entities["require_owner"]:
             error_messages.extend(self.check_entities_define_owner())
 
         return error_messages
@@ -210,7 +262,7 @@ class EntityGenerator:
         ]
 
         for entity_type, entry in entities_by_type:
-            for entity_dict in entry:
+            for entity_dict in entry:  # type: ignore
                 for entity_name, config in entity_dict.items():
                     if "owner" not in config.keys():
                         error_messages.append(

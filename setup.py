@@ -23,6 +23,7 @@ dev_requires = [
     "changelog-cli",
     "coverage",
     "flake8",
+    "isort",
     "mypy",
     "pytest",
     "pytest-cov",

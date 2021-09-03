@@ -73,6 +73,7 @@ prod-image: base-image
 BLACK_RUN = black src/permifrost tests/
 MYPY_RUN = mypy src
 FLAKE8_RUN = flake8
+ISORT_RUN = isort src/
 
 lint: compose-build
 	@docker-compose run permifrost /bin/bash -c "make local-lint"
@@ -82,11 +83,13 @@ show-lint: compose-build
 
 local-lint:
 	${BLACK_RUN}
+	${ISORT_RUN}
 	${MYPY_RUN}
 	${FLAKE8_RUN}
 
 local-show-lint:
 	${BLACK_RUN} --check --diff
+	${ISORT_RUN} --check
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
 	${FLAKE8_RUN}
 
@@ -96,7 +99,8 @@ local-show-lint:
 
 # Packaging Related
 requirements.txt: setup.py
-	pip freeze --exclude-editable > $@
+	@docker-compose run permifrost /bin/bash \
+		-c "pip install -e .'[dev]' && pip freeze --exclude-editable > $@"
 
 install-dev:
 	pip install -e '.[dev]'

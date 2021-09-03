@@ -1,5 +1,5 @@
 from .cli import cli
-from . import permissions
+from permifrost.cli import permissions
 
 
 def main():

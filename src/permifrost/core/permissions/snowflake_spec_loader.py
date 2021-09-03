@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import click
 
@@ -156,7 +156,7 @@ class SnowflakeSpecLoader:
                             f"Missing Entity Error: Role {role_name} was not found on"
                             " Snowflake Server. Please create it before continuing."
                         )
-                    elif "owner" in config.keys():
+                    elif "owner" in config:
                         owner_on_snowflake = roles[role_name]
                         owner_in_spec = config["owner"]
                         if owner_on_snowflake != owner_in_spec:
@@ -395,6 +395,7 @@ class SnowflakeSpecLoader:
                 continue
 
             # Generate list of all entities (used for roles currently)
+            entry = cast(List, entry)
             all_entities = [list(entity.keys())[0] for entity in entry]
 
             for entity_dict in entry:

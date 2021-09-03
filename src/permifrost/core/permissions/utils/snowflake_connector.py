@@ -1,15 +1,15 @@
 import logging
 import os
 import re
-import sqlalchemy
-
-from typing import Dict, List, Any
-from snowflake.sqlalchemy import URL
+from typing import Any, Dict, List
 from urllib.parse import quote_plus
+
+import sqlalchemy
 
 # To support key pair authentication
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from snowflake.sqlalchemy import URL
 
 # Don't show all the info log messages from Snowflake
 for logger_name in ["snowflake.connector", "botocore", "boto3"]:

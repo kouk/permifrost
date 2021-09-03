@@ -45,3 +45,12 @@ class TestEntityGenerator:
     def test_entity_warehouses(self, entities):
         expected = {"demo", "loading", "transforming", "reporting"}
         assert entities["warehouses"] == expected
+
+
+def test_filter_by_type(entities):
+    expected = {"demo", "sysadmin", "accountadmin", "useradmin", "securityadmin"}
+    grouped_entities = EntityGenerator.group_spec_by_type(entities)
+    assert (
+        EntityGenerator.filter_grouped_entities_by_type(grouped_entities, "roles")
+        == expected
+    )
