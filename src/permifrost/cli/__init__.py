@@ -1,4 +1,5 @@
-from .cli import cli
+from .cli import cli  # isort:skip
+
 from permifrost.cli import permissions
 
 

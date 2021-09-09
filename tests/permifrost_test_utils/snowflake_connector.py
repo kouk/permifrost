@@ -40,3 +40,6 @@ class MockSnowflakeConnector:
 
     def get_current_role(self) -> str:
         return "securityadmin"
+
+    def full_schema_list(self, schema: str) -> List[str]:
+        return []

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
@@ -33,14 +33,27 @@ class SnowflakeGrantsGenerator:
     def __init__(
         self,
         grants_to_role: Dict,
-        roles_granted_to_user: Dict,
+        roles_granted_to_user: Dict[str, List[str]],
         ignore_memberships: Optional[bool] = False,
     ) -> None:
+        """
+        Initializes a grants generator, used to generate SQL for generating grants
+
+        grants_to_role: a dict, mapping role to grants where role is a string
+            and grants is a dictionary of privileges to entities.
+            e.g. {'functional_role': {'create schema': {'database': ['database_1', 'database_2']}, ...}}
+
+        roles_granted_to_user: a dict, mapping the user to a list of roles.,
+            e.g. {'user_name': ['role_1', 'role_2']
+
+        ignore_memberships: bool, whether to skip role grant/revoke of memberships
+
+        """
         self.grants_to_role = grants_to_role
         self.roles_granted_to_user = roles_granted_to_user
         self.ignore_memberships = ignore_memberships
 
-    def check_grant_to_role(
+    def is_granted_privilege(
         self, role: str, privilege: str, entity_type: str, entity_name: str
     ) -> bool:
         """
@@ -50,8 +63,8 @@ class SnowflakeGrantsGenerator:
         of the fully qualified name for a future table grant.
 
         For example:
-        check_grant_to_role('reporter', 'usage', 'database', 'analytics') -> True
-        means that role reported has been granted the privilege to use the
+        is_granted_privilege('reporter', 'usage', 'database', 'analytics') -> True
+        means that role reporter has been granted the privilege to use the
         Database ANALYTICS on the Snowflake server.
         """
         future = True if re.search(r"<(table|view|schema)>", entity_name) else False
@@ -62,10 +75,132 @@ class SnowflakeGrantsGenerator:
 
         if future and entity_name in grants:
             return True
-        elif not future and SnowflakeConnector.snowflaky(entity_name) in grants:
+
+        if not future and SnowflakeConnector.snowflaky(entity_name) in grants:
             return True
+
+        return False
+
+    def _generate_member_lists(self, config: Dict) -> Tuple[List[str], List[str]]:
+        """
+        Generate a tuple with the member_include_list (e.g. roles that should be granted)
+        and member_exclude_list (e.g. roles that should not be granted)
+
+        config: the subtree for the entity as specified in the spec
+
+        Returns: A tuple of two lists with the roles/users to include and exclude:
+            (member_include_list, member_exclude_list)
+        """
+        member_include_list = []
+        member_exclude_list = []
+
+        if isinstance(config.get("member_of", []), dict):
+            member_include_list = config.get("member_of", {}).get("include", [])
+            member_exclude_list = config.get("member_of", {}).get("exclude", [])
+        elif isinstance(config.get("member_of", []), list):
+            member_include_list = config.get("member_of", [])
+
+        return (member_include_list, member_exclude_list)
+
+    def _generate_member_star_lists(self, all_entities: List, entity: str) -> List[str]:
+        """
+        Generates the member include list when a * privilege is granted
+
+        all_entities: a List of all entities defined in the spec
+        entity: the entity to generate the list for
+
+        Returns: a list of all roles to include for the entity
+        """
+        conn = SnowflakeConnector()
+        show_roles = conn.show_roles()
+        member_include_list = [
+            role for role in show_roles if role in all_entities and role != entity
+        ]
+        return member_include_list
+
+    def _generate_sql_commands_for_member_of_list(
+        self, member_of_list: List[str], entity: str, entity_type: str
+    ) -> List[Dict]:
+        """For a given member_of list and entity, generate the SQL commands
+        to grant the entity privileges for every member_role in the member_of list
+
+        member_of_list: List of roles to generate sql commands for
+        entity: the user or role to grant permissions for
+        entity_type: the type of enttiy, either "users" or "roles"
+
+        returns:  a List of SQL Commands
+        """
+        if entity_type == "users":
+            grant_type = "user"
+        elif entity_type == "roles":
+            grant_type = "role"
         else:
-            return False
+            raise ValueError("grant_type must be either 'users' or 'roles'")
+
+        sql_commands = []
+        for member_role in member_of_list:
+            granted_role = SnowflakeConnector.snowflaky(member_role)
+            already_granted = False
+            if (
+                entity_type == "users"
+                and granted_role in self.roles_granted_to_user[entity]
+            ) or (
+                entity_type == "roles"
+                and self.is_granted_privilege(entity, "usage", "role", member_role)
+            ):
+                already_granted = True
+
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_ROLE_TEMPLATE.format(
+                        role_name=SnowflakeConnector.snowflaky(member_role),
+                        type=grant_type,
+                        entity_name=SnowflakeConnector.snowflaky(entity),
+                    ),
+                }
+            )
+        return sql_commands
+
+    def _generate_revoke_sql_commands_for_user(
+        self, username: str, member_of_list: List[str]
+    ) -> List[Dict]:
+        """For a given user, generate the SQL commands to revoke privileges
+        to any roles not defined in the member of list
+        """
+        sql_commands = []
+        for granted_role in self.roles_granted_to_user[username]:
+            if granted_role not in member_of_list:
+                sql_commands.append(
+                    {
+                        "already_granted": False,
+                        "sql": REVOKE_ROLE_TEMPLATE.format(
+                            role_name=SnowflakeConnector.snowflaky(granted_role),
+                            type="user",
+                            entity_name=SnowflakeConnector.snowflaky(username),
+                        ),
+                    }
+                )
+
+        return sql_commands
+
+    def _generate_revoke_sql_commands_for_role(self, rolename, member_of_list):
+        sql_commands = []
+        for granted_role in (
+            self.grants_to_role.get(rolename, {}).get("usage", {}).get("role", [])
+        ):
+            if granted_role not in member_of_list:
+                sql_commands.append(
+                    {
+                        "already_granted": False,
+                        "sql": REVOKE_ROLE_TEMPLATE.format(
+                            role_name=SnowflakeConnector.snowflaky(granted_role),
+                            type="role",
+                            entity_name=SnowflakeConnector.snowflaky(rolename),
+                        ),
+                    }
+                )
+        return sql_commands
 
     def generate_grant_roles(
         self,
@@ -85,95 +220,113 @@ class SnowflakeGrantsGenerator:
         Returns the SQL commands generated as a list
         """
         sql_commands: List[Dict] = []
-        member_include_list = []
-        member_exclude_list = []
 
         if self.ignore_memberships:
             return sql_commands
 
-        if entity_type == "users":
-            grant_type = "user"
-        elif entity_type == "roles":
-            grant_type = "role"
-        else:
-            raise ValueError("grant_type must be either 'users' or 'roles'")
-
-        if isinstance(config.get("member_of", []), dict):
-            member_include_list = config.get("member_of", {}).get("include", [])
-            member_exclude_list = config.get("member_of", {}).get("exclude", [])
-        elif isinstance(config.get("member_of", []), list):
-            member_include_list = config.get("member_of", [])
+        member_include_list, member_exclude_list = self._generate_member_lists(config)
 
         if len(member_include_list) == 1 and member_include_list[0] == "*":
             if not all_entities:
                 raise ValueError(
                     "Cannot generate grant roles if all_entities not provided"
                 )
-            conn = SnowflakeConnector()
-            show_roles = conn.show_roles()
-            member_include_list = [
-                role for role in show_roles if role in all_entities and role != entity
-            ]
+            member_include_list = self._generate_member_star_lists(all_entities, entity)
 
         member_of_list = [
             role for role in member_include_list if role not in member_exclude_list
         ]
 
-        for member_role in member_of_list:
-            granted_role = SnowflakeConnector.snowflaky(member_role)
-            already_granted = False
-            if (
-                entity_type == "users"
-                and granted_role in self.roles_granted_to_user[entity]
-            ) or (
-                entity_type == "roles"
-                and self.check_grant_to_role(entity, "usage", "role", member_role)
-            ):
-                already_granted = True
-
-            sql_commands.append(
-                {
-                    "already_granted": already_granted,
-                    "sql": GRANT_ROLE_TEMPLATE.format(
-                        role_name=SnowflakeConnector.snowflaky(member_role),
-                        type=grant_type,
-                        entity_name=SnowflakeConnector.snowflaky(entity),
-                    ),
-                }
+        sql_commands.extend(
+            self._generate_sql_commands_for_member_of_list(
+                member_of_list, entity, entity_type
+            )
+        )
+        if entity_type == "users":
+            sql_commands.extend(
+                self._generate_revoke_sql_commands_for_user(entity, member_of_list)
+            )
+        if entity_type == "roles":
+            sql_commands.extend(
+                self._generate_revoke_sql_commands_for_role(entity, member_of_list)
             )
 
-        # Iterate through current state
-        if entity_type == "users":
-            for granted_role in self.roles_granted_to_user[entity]:
-                if granted_role not in member_of_list:
-                    sql_commands.append(
-                        {
-                            "already_granted": False,
-                            "sql": REVOKE_ROLE_TEMPLATE.format(
-                                role_name=SnowflakeConnector.snowflaky(granted_role),
-                                type=grant_type,
-                                entity_name=SnowflakeConnector.snowflaky(entity),
-                            ),
-                        }
-                    )
-
-        if entity_type == "roles":
-            for granted_role in (
-                self.grants_to_role.get(entity, {}).get("usage", {}).get("role", [])
-            ):
-                if granted_role not in member_of_list:
-                    sql_commands.append(
-                        {
-                            "already_granted": False,
-                            "sql": REVOKE_ROLE_TEMPLATE.format(
-                                role_name=SnowflakeConnector.snowflaky(granted_role),
-                                type=grant_type,
-                                entity_name=SnowflakeConnector.snowflaky(entity),
-                            ),
-                        }
-                    )
-
         return sql_commands
+
+    def _generate_database_commands(self, role, config, shared_dbs, spec_dbs):
+        databases = {
+            "read": config.get("privileges", {}).get("databases", {}).get("read", []),
+            "write": config.get("privileges", {}).get("databases", {}).get("write", []),
+        }
+
+        if len(databases.get("read", "")) == 0:
+            logging.debug(
+                "`privileges.databases.read` not found for role {}, skipping generation of database read level GRANT statements.".format(
+                    role
+                )
+            )
+
+        if len(databases.get("write", "")) == 0:
+            logging.debug(
+                "`privileges.databases.write` not found for role {}, skipping generation of database write level GRANT statements.".format(
+                    role
+                )
+            )
+
+        database_commands = self.generate_database_grants(
+            role=role, databases=databases, shared_dbs=shared_dbs, spec_dbs=spec_dbs
+        )
+        return database_commands
+
+    def _generate_schema_commands(self, role, config, shared_dbs, spec_dbs):
+        schemas = {
+            "read": config.get("privileges", {}).get("schemas", {}).get("read", []),
+            "write": config.get("privileges", {}).get("schemas", {}).get("write", []),
+        }
+
+        if len(schemas.get("read", "")) == 0:
+            logging.debug(
+                "`privileges.schemas.read` not found for role {}, skipping generation of schemas read level GRANT statements.".format(
+                    role
+                )
+            )
+
+        if len(schemas.get("write", "")) == 0:
+            logging.debug(
+                "`privileges.schemas.write` not found for role {}, skipping generation of schemas write level GRANT statements.".format(
+                    role
+                )
+            )
+
+        schema_commands = self.generate_schema_grants(
+            role=role, schemas=schemas, shared_dbs=shared_dbs, spec_dbs=spec_dbs
+        )
+        return schema_commands
+
+    def _generate_table_commands(self, role, config, shared_dbs, spec_dbs):
+        tables = {
+            "read": config.get("privileges", {}).get("tables", {}).get("read", []),
+            "write": config.get("privileges", {}).get("tables", {}).get("write", []),
+        }
+
+        if len(tables.get("read", "")) == 0:
+            logging.debug(
+                "`privileges.tables.read` not found for role {}, skipping generation of tables read level GRANT statements.".format(
+                    role
+                )
+            )
+
+        if len(tables.get("write", "")) == 0:
+            logging.debug(
+                "`privileges.tables.write` not found for role {}, skipping generation of tables write level GRANT statements.".format(
+                    role
+                )
+            )
+
+        table_commands = self.generate_table_and_view_grants(
+            role=role, tables=tables, shared_dbs=shared_dbs, spec_dbs=spec_dbs
+        )
+        return table_commands
 
     def generate_grant_privileges_to_role(
         self, role: str, config: Dict[str, Any], shared_dbs: Set, spec_dbs: Set
@@ -198,7 +351,6 @@ class SnowflakeGrantsGenerator:
         """
         sql_commands: List[Dict] = []
 
-        # TODO Convert to simpler format
         try:
             warehouses = config["warehouses"]
             new_commands = self.generate_warehouse_grants(
@@ -211,79 +363,18 @@ class SnowflakeGrantsGenerator:
                     role
                 )
             )
-
-        # Databases
-        databases = {
-            "read": config.get("privileges", {}).get("databases", {}).get("read", []),
-            "write": config.get("privileges", {}).get("databases", {}).get("write", []),
-        }
-
-        if len(databases.get("read", "")) == 0:
-            logging.debug(
-                "`privileges.databases.read` not found for role {}, skipping generation of database read level GRANT statements.".format(
-                    role
-                )
-            )
-
-        if len(databases.get("write", "")) == 0:
-            logging.debug(
-                "`privileges.databases.write` not found for role {}, skipping generation of database write level GRANT statements.".format(
-                    role
-                )
-            )
-
-        database_commands = self.generate_database_grants(
-            role=role, databases=databases, shared_dbs=shared_dbs, spec_dbs=spec_dbs
+        database_commands = self._generate_database_commands(
+            role, config, shared_dbs, spec_dbs
         )
         sql_commands.extend(database_commands)
 
-        # Schemas
-        schemas = {
-            "read": config.get("privileges", {}).get("schemas", {}).get("read", []),
-            "write": config.get("privileges", {}).get("schemas", {}).get("write", []),
-        }
-
-        if len(schemas.get("read", "")) == 0:
-            logging.debug(
-                "`privileges.schemas.read` not found for role {}, skipping generation of schemas read level GRANT statements.".format(
-                    role
-                )
-            )
-
-        if len(schemas.get("write", "")) == 0:
-            logging.debug(
-                "`privileges.schemas.write` not found for role {}, skipping generation of schemas write level GRANT statements.".format(
-                    role
-                )
-            )
-
-        schema_commands = self.generate_schema_grants(
-            role=role, schemas=schemas, shared_dbs=shared_dbs, spec_dbs=spec_dbs
+        schema_commands = self._generate_schema_commands(
+            role, config, shared_dbs, spec_dbs
         )
         sql_commands.extend(schema_commands)
 
-        # Tables
-        tables = {
-            "read": config.get("privileges", {}).get("tables", {}).get("read", []),
-            "write": config.get("privileges", {}).get("tables", {}).get("write", []),
-        }
-
-        if len(tables.get("read", "")) == 0:
-            logging.debug(
-                "`privileges.tables.read` not found for role {}, skipping generation of tables read level GRANT statements.".format(
-                    role
-                )
-            )
-
-        if len(tables.get("write", "")) == 0:
-            logging.debug(
-                "`privileges.tables.write` not found for role {}, skipping generation of tables write level GRANT statements.".format(
-                    role
-                )
-            )
-
-        table_commands = self.generate_table_and_view_grants(
-            role=role, tables=tables, shared_dbs=shared_dbs, spec_dbs=spec_dbs
+        table_commands = self._generate_table_commands(
+            role, config, shared_dbs, spec_dbs
         )
         sql_commands.extend(table_commands)
 
@@ -303,110 +394,41 @@ class SnowflakeGrantsGenerator:
         sql_commands: List[Dict] = []
 
         for warehouse in warehouses:
-            if self.check_grant_to_role(role, "usage", "warehouse", warehouse):
-                already_granted = True
-            else:
-                already_granted = False
+            for priv in ["usage", "operate", "monitor"]:
+                already_granted = self.is_granted_privilege(
+                    role, priv, "warehouse", warehouse
+                )
 
-            sql_commands.append(
-                {
-                    "already_granted": already_granted,
-                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
-                        privileges="usage",
-                        resource_type="warehouse",
-                        resource_name=SnowflakeConnector.snowflaky(warehouse),
-                        role=SnowflakeConnector.snowflaky(role),
-                    ),
-                }
-            )
-
-            if self.check_grant_to_role(role, "operate", "warehouse", warehouse):
-                already_granted = True
-            else:
-                already_granted = False
-
-            sql_commands.append(
-                {
-                    "already_granted": already_granted,
-                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
-                        privileges="operate",
-                        resource_type="warehouse",
-                        resource_name=SnowflakeConnector.snowflaky(warehouse),
-                        role=SnowflakeConnector.snowflaky(role),
-                    ),
-                }
-            )
-
-            if self.check_grant_to_role(role, "monitor", "warehouse", warehouse):
-                already_granted = True
-            else:
-                already_granted = False
-
-            sql_commands.append(
-                {
-                    "already_granted": already_granted,
-                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
-                        privileges="monitor",
-                        resource_type="warehouse",
-                        resource_name=SnowflakeConnector.snowflaky(warehouse),
-                        role=SnowflakeConnector.snowflaky(role),
-                    ),
-                }
-            )
-
-        for granted_warehouse in (
-            self.grants_to_role.get(role, {}).get("usage", {}).get("warehouse", [])
-        ):
-            if granted_warehouse not in warehouses:
                 sql_commands.append(
                     {
-                        "already_granted": False,
-                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
-                            privileges="usage",
+                        "already_granted": already_granted,
+                        "sql": GRANT_PRIVILEGES_TEMPLATE.format(
+                            privileges=priv,
                             resource_type="warehouse",
-                            resource_name=SnowflakeConnector.snowflaky(
-                                granted_warehouse
-                            ),
+                            resource_name=SnowflakeConnector.snowflaky(warehouse),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
                 )
 
-        for granted_warehouse in (
-            self.grants_to_role.get(role, {}).get("operate", {}).get("warehouse", [])
-        ):
-            if granted_warehouse not in warehouses:
-                sql_commands.append(
-                    {
-                        "already_granted": False,
-                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
-                            privileges="operate",
-                            resource_type="warehouse",
-                            resource_name=SnowflakeConnector.snowflaky(
-                                granted_warehouse
+        for priv in ["usage", "operate", "monitor"]:
+            for granted_warehouse in (
+                self.grants_to_role.get(role, {}).get(priv, {}).get("warehouse", [])
+            ):
+                if granted_warehouse not in warehouses:
+                    sql_commands.append(
+                        {
+                            "already_granted": False,
+                            "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
+                                privileges=priv,
+                                resource_type="warehouse",
+                                resource_name=SnowflakeConnector.snowflaky(
+                                    granted_warehouse
+                                ),
+                                role=SnowflakeConnector.snowflaky(role),
                             ),
-                            role=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
-
-        for granted_warehouse in (
-            self.grants_to_role.get(role, {}).get("monitor", {}).get("warehouse", [])
-        ):
-            if granted_warehouse not in warehouses:
-                sql_commands.append(
-                    {
-                        "already_granted": False,
-                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
-                            privileges="monitor",
-                            resource_type="warehouse",
-                            resource_name=SnowflakeConnector.snowflaky(
-                                granted_warehouse
-                            ),
-                            role=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
+                        }
+                    )
 
         return sql_commands
 
@@ -432,9 +454,9 @@ class SnowflakeGrantsGenerator:
         write_privileges = f"{read_privileges}, {partial_write_privileges}"
 
         for database in databases.get("read", []):
-            already_granted = False
-            if self.check_grant_to_role(role, "usage", "database", database):
-                already_granted = True
+            already_granted = self.is_granted_privilege(
+                role, "usage", "database", database
+            )
 
             # If this is a shared database, we have to grant the "imported privileges"
             # privilege to the user and skip granting the specific permissions as
@@ -466,15 +488,13 @@ class SnowflakeGrantsGenerator:
             )
 
         for database in databases.get("write", []):
-            already_granted = False
-            if (
-                self.check_grant_to_role(role, "usage", "database", database)
-                and self.check_grant_to_role(role, "monitor", "database", database)
-                and self.check_grant_to_role(
+            already_granted = (
+                self.is_granted_privilege(role, "usage", "database", database)
+                and self.is_granted_privilege(role, "monitor", "database", database)
+                and self.is_granted_privilege(
                     role, "create schema", "database", database
                 )
-            ):
-                already_granted = True
+            )
 
             # If this is a shared database, we have to grant the "imported privileges"
             # privilege to the user and skip granting the specific permissions as
@@ -597,40 +617,15 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    # TODO: This method is too complex, consider refactoring
-    def generate_schema_grants(  # noqa
-        self, role: str, schemas: Dict[str, List], shared_dbs: Set, spec_dbs: Set
-    ) -> List[Dict]:
-        """
-        Generate the GRANT and REVOKE statements for schemas
-        including future grants.
+    def _generate_schema_read_grants(
+        self, schemas, shared_dbs, role
+    ) -> Tuple[List[Dict], List]:
 
-        role: the name of the role the privileges are GRANTed to
-        schemas: the name of the Schema (e.g. "raw.public", "raw.*")
-        shared_dbs: a set of all the shared databases defined in the spec.
-        spec_dbs: a set of all the databases defined in the spec. This is used in revoke
-                  commands to validate revocations are only for spec'd databases
-
-        Returns the SQL commands generated as a List
-        """
         sql_commands = []
-
-        # Schema lists to hold read/write grants. This is necessary
-        # as the provided schemas are not the full list - we determine
-        # the full list via full_schema_list and store in these variables
         read_grant_schemas = []
-        write_grant_schemas = []
-
         read_privileges = "usage"
-        partial_write_privileges = (
-            "monitor, create table,"
-            " create view, create stage, create file format,"
-            " create sequence, create function, create pipe"
-        )
-        write_privileges = f"{read_privileges}, {partial_write_privileges}"
-        write_privileges_array = write_privileges.split(", ")
 
-        for schema in schemas.get("read", []):
+        for schema in schemas:
             # Split the schema identifier into parts {DB_NAME}.{SCHEMA_NAME}
             # so that we can check and use each one
             name_parts = schema.split(".")
@@ -650,11 +645,9 @@ class SnowflakeGrantsGenerator:
                 future_schema = f"{database}.<schema>"
                 read_grant_schemas.append(future_schema)
 
-                schema_already_granted = False
-                if self.check_grant_to_role(
+                schema_already_granted = self.is_granted_privilege(
                     role, read_privileges, "schema", future_schema
-                ):
-                    schema_already_granted = True
+                )
 
                 # Grant on FUTURE schemas
                 sql_commands.append(
@@ -673,7 +666,9 @@ class SnowflakeGrantsGenerator:
             for db_schema in fetched_schemas:
                 already_granted = False
 
-                if self.check_grant_to_role(role, read_privileges, "schema", db_schema):
+                if self.is_granted_privilege(
+                    role, read_privileges, "schema", db_schema
+                ):
                     already_granted = True
 
                 sql_commands.append(
@@ -687,8 +682,24 @@ class SnowflakeGrantsGenerator:
                         ),
                     }
                 )
+        return (sql_commands, read_grant_schemas)
 
-        for schema in schemas.get("write", []):
+    def _generate_schema_write_grants(
+        self, schemas, shared_dbs, role
+    ) -> Tuple[List[Dict], List]:
+        sql_commands = []
+        write_grant_schemas = []
+
+        read_privileges = "usage"
+        partial_write_privileges = (
+            "monitor, create table,"
+            " create view, create stage, create file format,"
+            " create sequence, create function, create pipe"
+        )
+        write_privileges = f"{read_privileges}, {partial_write_privileges}"
+        write_privileges_array = write_privileges.split(", ")
+
+        for schema in schemas:
             # Split the schema identifier into parts {DB_NAME}.{SCHEMA_NAME}
             # so that we can check and use each one
             name_parts = schema.split(".")
@@ -712,7 +723,7 @@ class SnowflakeGrantsGenerator:
 
                 for privilege in write_privileges_array:
                     # If any of the privileges are not granted, set already_granted to False
-                    if not self.check_grant_to_role(
+                    if not self.is_granted_privilege(
                         role, privilege, "schema", future_schema
                     ):
                         already_granted = False
@@ -736,7 +747,7 @@ class SnowflakeGrantsGenerator:
 
                 for privilege in write_privileges_array:
                     # If any of the privileges are not granted, set already_granted to False
-                    if not self.check_grant_to_role(
+                    if not self.is_granted_privilege(
                         role, privilege, "schema", db_schema
                     ):
                         already_granted = False
@@ -752,15 +763,15 @@ class SnowflakeGrantsGenerator:
                         ),
                     }
                 )
+        return (sql_commands, write_grant_schemas)
 
-        # REVOKES
+    def _generate_schema_revokes(
+        self, usage_schemas, all_grant_schemas, shared_dbs, spec_dbs, role
+    ):
+        sql_commands = []
+        read_privileges = "usage"
 
-        # The "usage" privilege is consistent across read and write.
-        # Compare granted usage to full read/write set and revoke missing ones
-        for granted_schema in list(
-            set(self.grants_to_role.get(role, {}).get("usage", {}).get("schema", []))
-        ):
-            all_grant_schemas = read_grant_schemas + write_grant_schemas
+        for granted_schema in usage_schemas:
             database_name = granted_schema.split(".")[0]
             future_schema_name = f"{database_name}.<schema>"
             if granted_schema not in all_grant_schemas and (
@@ -803,33 +814,88 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
+        return sql_commands
+
+    # TODO: This method is too complex, consider refactoring
+    def generate_schema_grants(
+        self, role: str, schemas: Dict[str, List], shared_dbs: Set, spec_dbs: Set
+    ) -> List[Dict]:
+        """
+        Generate the GRANT and REVOKE statements for schemas
+        including future grants.
+
+        role: the name of the role the privileges are GRANTed to
+        schemas: the name of the Schema (e.g. "raw.public", "raw.*")
+        shared_dbs: a set of all the shared databases defined in the spec.
+        spec_dbs: a set of all the databases defined in the spec. This is used in revoke
+                  commands to validate revocations are only for spec'd databases
+
+        Returns the SQL commands generated as a List
+        """
+        sql_commands = []
+
+        # Schema lists to hold read/write grants. This is necessary
+        # as the provided schemas are not the full list - we determine
+        # the full list via full_schema_list and store in these variables
+        read_grant_schemas = []
+        write_grant_schemas = []
+
+        partial_write_privileges = (
+            "monitor, create table,"
+            " create view, create stage, create file format,"
+            " create sequence, create function, create pipe"
+        )
+
+        # Get Schema Read Commands
+        read_schemas = schemas.get("read", [])
+        read_commands, read_grants = self._generate_schema_read_grants(
+            read_schemas, shared_dbs, role
+        )
+        sql_commands.extend(read_commands)
+        read_grant_schemas.extend(read_grants)
+
+        write_schemas = schemas.get("write", [])
+        write_commands, write_grants = self._generate_schema_write_grants(
+            write_schemas, shared_dbs, role
+        )
+        sql_commands.extend(write_commands)
+        write_grant_schemas.extend(write_grants)
+
+        # REVOKES
+
+        # The "usage" privilege is consistent across read and write.
+        # Compare granted usage to full read/write set and revoke missing ones
+        usage_schemas = set(
+            self.grants_to_role.get(role, {}).get("usage", {}).get("schema", [])
+        )
+        all_grant_schemas = read_grant_schemas + write_grant_schemas
+        sql_commands.extend(
+            self._generate_schema_revokes(
+                usage_schemas, all_grant_schemas, shared_dbs, spec_dbs, role
+            )
+        )
+
         # Get all other write privilege schemas in case there are schemas where
         # usage was revoked but other write permissions still exist
         # This also preserves the case where somebody switches write access
         # for read access
-        for granted_schema in list(
-            set(
-                self.grants_to_role.get(role, {}).get("monitor", {}).get("schema", [])
-                + self.grants_to_role.get(role, {})
-                .get("create table", {})
-                .get("schema", [])
-                + self.grants_to_role.get(role, {})
-                .get("create view", {})
-                .get("schema", [])
-                + self.grants_to_role.get(role, {})
-                .get("create stage", {})
-                .get("schema", [])
-                + self.grants_to_role.get(role, {})
-                .get("create file format", {})
-                .get("schema", [])
-                + self.grants_to_role.get(role, {})
-                .get("create sequence", {})
-                .get("schema", [])
-                + self.grants_to_role.get(role, {})
-                .get("create pipe", {})
-                .get("schema", [])
+        other_privileges = [
+            "monitor",
+            "create table",
+            "create view",
+            "create stage",
+            "create file format",
+            "create sequence",
+            "create pipe",
+        ]
+
+        other_schema_grants = list()
+        for privilege in other_privileges:
+            other_schema_grants.extend(
+                self.grants_to_role.get(role, {}).get(privilege, {}).get("schema", [])
             )
-        ):
+
+        for granted_schema in other_schema_grants:
             database_name = granted_schema.split(".")[0]
             future_schema_name = f"{database_name}.<schema>"
             if granted_schema not in write_grant_schemas and (
@@ -873,41 +939,13 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    # TODO: This method is too complex, consider refactoring
-    def generate_table_and_view_grants(  # noqa
-        self, role: str, tables: Dict[str, List], shared_dbs: Set, spec_dbs: Set
-    ) -> List[Dict]:
-        """
-        Generate the GRANT and REVOKE statements for tables and views
-        including future grants.
-
-        role: the name of the role the privileges are GRANTed to
-        table: the name of the TABLE/VIEW (e.g. "raw.public.my_table")
-        shared_dbs: a set of all the shared databases defined in the spec.
-        spec_dbs: a set of all the databases defined in the spec. This is used in revoke
-                  commands to validate revocations are only for spec'd databases
-
-        Returns the SQL commands generated as a List
-        """
+    def _generate_table_read_grants(self, conn, tables, shared_dbs, role):
         sql_commands = []
-
-        # These are necessary as the provided tables/views are not the full list
-        # we determine the full list for granting via full_schema_list()
-        # and store in these variables
         read_grant_tables_full = []
         read_grant_views_full = []
-
-        write_grant_tables_full = []
-        write_grant_views_full = []
-
         read_privileges = "select"
-        write_partial_privileges = "insert, update, delete, truncate, references"
-        write_privileges = f"{read_privileges}, {write_partial_privileges}"
-        write_privileges_array = write_privileges.split(", ")
 
-        conn = SnowflakeConnector()
-
-        for table in tables.get("read", []):
+        for table in tables:
             # Split the table identifier into parts {DB_NAME}.{SCHEMA_NAME}.{TABLE_NAME}
             # so that we can check and use each one
             name_parts = table.split(".")
@@ -927,6 +965,50 @@ class SnowflakeGrantsGenerator:
             read_view_list = []
 
             fetched_schemas = conn.full_schema_list(f"{name_parts[0]}.{name_parts[1]}")
+
+            # For future grants at the database level
+            future_database_table = "{database}.<table>".format(database=name_parts[0])
+            future_database_view = "{database}.<view>".format(database=name_parts[0])
+
+            table_already_granted = self.is_granted_privilege(
+                role, read_privileges, "table", future_database_table
+            )
+
+            view_already_granted = self.is_granted_privilege(
+                role, read_privileges, "view", future_database_view
+            )
+
+            read_grant_tables_full.append(future_database_table)
+
+            if name_parts[1] == "*" and name_parts[2] == "*":
+                sql_commands.append(
+                    {
+                        "already_granted": table_already_granted,
+                        "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                            privileges=read_privileges,
+                            resource_type="table",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            role=SnowflakeConnector.snowflaky(role),
+                        ),
+                    }
+                )
+
+            read_grant_views_full.append(future_database_view)
+
+            if name_parts[1] == "*" and name_parts[2] == "*":
+                sql_commands.append(
+                    {
+                        "already_granted": view_already_granted,
+                        "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                            privileges=read_privileges,
+                            resource_type="view",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            role=SnowflakeConnector.snowflaky(role),
+                        ),
+                    }
+                )
 
             for schema in fetched_schemas:
                 # Fetch all tables from Snowflake for each schema and add
@@ -957,7 +1039,7 @@ class SnowflakeGrantsGenerator:
 
                     table_already_granted = False
 
-                    if self.check_grant_to_role(
+                    if self.is_granted_privilege(
                         role, read_privileges, "table", future_table
                     ):
                         table_already_granted = True
@@ -978,7 +1060,7 @@ class SnowflakeGrantsGenerator:
 
                     view_already_granted = False
 
-                    if self.check_grant_to_role(
+                    if self.is_granted_privilege(
                         role, read_privileges, "view", future_view
                     ):
                         view_already_granted = True
@@ -1014,7 +1096,7 @@ class SnowflakeGrantsGenerator:
             # Instead of doing grant to all tables/views in schema
             for db_table in read_grant_tables:
                 already_granted = False
-                if self.check_grant_to_role(role, read_privileges, "table", db_table):
+                if self.is_granted_privilege(role, read_privileges, "table", db_table):
                     already_granted = True
 
                 sql_commands.append(
@@ -1032,7 +1114,7 @@ class SnowflakeGrantsGenerator:
             # Grant privileges to all flagged views
             for db_view in read_grant_views:
                 already_granted = False
-                if self.check_grant_to_role(role, read_privileges, "view", db_view):
+                if self.is_granted_privilege(role, read_privileges, "view", db_view):
                     already_granted = True
 
                 sql_commands.append(
@@ -1047,7 +1129,18 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
-        for table in tables.get("write", []):
+        return (sql_commands, read_grant_tables_full, read_grant_views_full)
+
+    #  TODO: This method remains complex, could use extra refactoring
+    def _generate_table_write_grants(self, conn, tables, shared_dbs, role):  # noqa
+        sql_commands, write_grant_tables_full, write_grant_views_full = [], [], []
+
+        read_privileges = "select"
+        write_partial_privileges = "insert, update, delete, truncate, references"
+        write_privileges = f"{read_privileges}, {write_partial_privileges}"
+        write_privileges_array = write_privileges.split(", ")
+
+        for table in tables:
             # Split the table identifier into parts {DB_NAME}.{SCHEMA_NAME}.{TABLE_NAME}
             #  so that we can check and use each one
             name_parts = table.split(".")
@@ -1067,6 +1160,55 @@ class SnowflakeGrantsGenerator:
 
             fetched_schemas = conn.full_schema_list(f"{name_parts[0]}.{name_parts[1]}")
 
+            # For future grants at the database level
+            future_database_table = "{database}.<table>".format(database=name_parts[0])
+            future_database_view = "{database}.<view>".format(database=name_parts[0])
+
+            table_already_granted = False
+            view_already_granted = False
+
+            if self.is_granted_privilege(
+                role, write_privileges, "table", future_database_table
+            ):
+                table_already_granted = True
+
+            write_grant_tables_full.append(future_database_table)
+
+            if name_parts[1] == "*" and name_parts[2] == "*":
+                sql_commands.append(
+                    {
+                        "already_granted": table_already_granted,
+                        "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                            privileges=write_privileges,
+                            resource_type="table",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            role=SnowflakeConnector.snowflaky(role),
+                        ),
+                    }
+                )
+
+            if self.is_granted_privilege(
+                role, write_privileges, "view", future_database_view
+            ):
+                view_already_granted = True
+
+            write_grant_views_full.append(future_database_view)
+
+            if name_parts[1] == "*" and name_parts[2] == "*":
+                sql_commands.append(
+                    {
+                        "already_granted": view_already_granted,
+                        "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                            privileges=write_privileges,
+                            resource_type="view",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            role=SnowflakeConnector.snowflaky(role),
+                        ),
+                    }
+                )
+
             for schema in fetched_schemas:
                 # Fetch all tables from Snowflake for each schema and add
                 # to the write_tables_list[] and write_views_list[] variables.
@@ -1075,7 +1217,7 @@ class SnowflakeGrantsGenerator:
                 write_table_list.extend(conn.show_tables(schema=schema))
                 write_view_list.extend(conn.show_views(schema=schema))
 
-            if name_parts[2] == "*":
+            if name_parts[1] != "*" and name_parts[2] == "*":
                 # If <schema_name>.* then you add all tables to grant list and then grant future
                 # If *.* was provided then we're still ok as the full_schema_list
                 # Would fetch all schemas and we'd still iterate through each
@@ -1098,7 +1240,7 @@ class SnowflakeGrantsGenerator:
 
                     for privilege in write_privileges_array:
                         # If any of the privileges are not granted, set already_granted to False
-                        if not self.check_grant_to_role(
+                        if not self.is_granted_privilege(
                             role, privilege, "table", future_table
                         ):
                             table_already_granted = False
@@ -1117,12 +1259,9 @@ class SnowflakeGrantsGenerator:
                         }
                     )
 
-                    view_already_granted = True
-
-                    if not self.check_grant_to_role(
+                    view_already_granted = not self.is_granted_privilege(
                         role, "select", "view", future_view
-                    ):
-                        view_already_granted = False
+                    )
 
                     # Grant future on all views. Select is only privilege
                     sql_commands.append(
@@ -1157,7 +1296,9 @@ class SnowflakeGrantsGenerator:
                 table_already_granted = True
                 for privilege in write_privileges_array:
                     # If any of the privileges are not granted, set already_granted to False
-                    if not self.check_grant_to_role(role, privilege, "table", db_table):
+                    if not self.is_granted_privilege(
+                        role, privilege, "table", db_table
+                    ):
                         table_already_granted = False
 
                 sql_commands.append(
@@ -1177,7 +1318,7 @@ class SnowflakeGrantsGenerator:
             # https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html
             for db_view in write_grant_views:
                 already_granted = False
-                if self.check_grant_to_role(role, "select", "view", db_view):
+                if self.is_granted_privilege(role, "select", "view", db_view):
                     already_granted = True
 
                 sql_commands.append(
@@ -1192,6 +1333,21 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
+        return (sql_commands, write_grant_tables_full, write_grant_views_full)
+
+    def _generate_revoke_privs(
+        self,
+        role,
+        shared_dbs,
+        spec_dbs,
+        all_grant_tables,
+        all_grant_views,
+        write_grant_tables_full,
+    ):
+        read_privileges = "select"
+        write_partial_privileges = "insert, update, delete, truncate, references"
+
+        sql_commands = []
         # REVOKES
 
         # Read Privileges
@@ -1200,7 +1356,6 @@ class SnowflakeGrantsGenerator:
         for granted_table in list(
             set(self.grants_to_role.get(role, {}).get("select", {}).get("table", []))
         ):
-            all_grant_tables = read_grant_tables_full + write_grant_tables_full
             table_split = granted_table.split(".")
             database_name = table_split[0]
 
@@ -1259,12 +1414,15 @@ class SnowflakeGrantsGenerator:
         for granted_view in list(
             set(self.grants_to_role.get(role, {}).get("select", {}).get("view", []))
         ):
-            all_grant_views = read_grant_views_full + write_grant_views_full
             view_split = granted_view.split(".")
             database_name = view_split[0]
 
             # For future grants at the database level
-            if len(view_split) == 2:
+            # TODO: Not sure what is happenign with table split here, it
+            # may posibly be unbound
+            if len(view_split) == 2 or (
+                len(table_split) == 3 and table_split[1] == "*"
+            ):
                 future_view = f"{database_name}.<view>"
                 grouping_type = "database"
                 grouping_name = database_name
@@ -1330,7 +1488,9 @@ class SnowflakeGrantsGenerator:
             database_name = table_split[0]
 
             # For future grants at the database level
-            if len(table_split) == 2:
+            if len(table_split) == 2 or (
+                len(table_split) == 3 and table_split[1] == "*"
+            ):
                 future_table = f"{database_name}.<table>"
                 grouping_type = "database"
                 grouping_name = database_name
@@ -1383,6 +1543,65 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
+    def generate_table_and_view_grants(
+        self, role: str, tables: Dict[str, List], shared_dbs: Set, spec_dbs: Set
+    ) -> List[Dict]:
+        """
+        Generate the GRANT and REVOKE statements for tables and views
+        including future grants.
+
+        role: the name of the role the privileges are GRANTed to
+        table: the name of the TABLE/VIEW (e.g. "raw.public.my_table")
+        shared_dbs: a set of all the shared databases defined in the spec.
+        spec_dbs: a set of all the databases defined in the spec. This is used in revoke
+                  commands to validate revocations are only for spec'd databases
+
+        Returns the SQL commands generated as a List
+        """
+        sql_commands = []
+
+        # These are necessary as the provided tables/views are not the full list
+        # we determine the full list for granting via full_schema_list()
+        # and store in these variables
+        read_grant_tables_full = []
+        read_grant_views_full = []
+
+        write_grant_tables_full = []
+        write_grant_views_full = []
+
+        conn = SnowflakeConnector()
+
+        read_tables = tables.get("read", [])
+        read_command, read_table, read_views = self._generate_table_read_grants(
+            conn, read_tables, shared_dbs, role
+        )
+        sql_commands.extend(read_command)
+        read_grant_tables_full.extend(read_table)
+        read_grant_views_full.extend(read_views)
+
+        write_tables = tables.get("write", [])
+        write_command, write_table, write_views = self._generate_table_write_grants(
+            conn, write_tables, shared_dbs, role
+        )
+        sql_commands.extend(write_command)
+        write_grant_tables_full.extend(write_table)
+        write_grant_views_full.extend(write_views)
+
+        all_grant_tables = read_grant_tables_full + write_grant_tables_full
+        all_grant_views = read_grant_views_full + write_grant_views_full
+
+        sql_commands.extend(
+            self._generate_revoke_privs(
+                role,
+                shared_dbs,
+                spec_dbs,
+                all_grant_tables,
+                all_grant_views,
+                write_grant_tables_full,
+            )
+        )
+        return sql_commands
+
     def generate_alter_user(self, user: str, config: Dict[str, Any]) -> List[Dict]:
         """
         Generate the ALTER statements for USERs.
@@ -1432,7 +1651,7 @@ class SnowflakeGrantsGenerator:
 
         try:
             for database in config["owns"]["databases"]:
-                if self.check_grant_to_role(role, "ownership", "database", database):
+                if self.is_granted_privilege(role, "ownership", "database", database):
                     already_granted = True
                 else:
                     already_granted = False
@@ -1472,7 +1691,9 @@ class SnowflakeGrantsGenerator:
                     schemas = [schema]
 
                 for db_schema in schemas:
-                    if self.check_grant_to_role(role, "ownership", "schema", db_schema):
+                    if self.is_granted_privilege(
+                        role, "ownership", "schema", db_schema
+                    ):
                         already_granted = True
                     else:
                         already_granted = False
@@ -1522,7 +1743,7 @@ class SnowflakeGrantsGenerator:
 
             # And then grant ownership to all tables
             for db_table in tables:
-                if self.check_grant_to_role(role, "ownership", "table", db_table):
+                if self.is_granted_privilege(role, "ownership", "table", db_table):
                     already_granted = True
                 else:
                     already_granted = False

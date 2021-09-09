@@ -17,6 +17,9 @@ Changelog](http://keepachangelog.com/).
   to the SnowflakeConnector to resolve possible connection issues caused by
   complex passwords.
 
+* [#80](https://gitlab.com/gitlab-data/permifrost/-/issues/80)
+Future grants on tables and views are granted on the database level.
+
 ### Breaks
 
 
