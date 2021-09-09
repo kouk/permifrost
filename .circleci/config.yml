@@ -18,7 +18,9 @@ jobs:
           command: make install-dev
       - run:
           name: Run pytest
-          command: pytest -x -v --disable-pytest-warnings
+          command: pytest -v --disable-pytest-warnings --cov-report=html --cov permifrost
+      - store_artifacts:
+          path: htmlcov
 
   lint:
     executor: python/default

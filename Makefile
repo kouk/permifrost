@@ -93,6 +93,9 @@ local-show-lint:
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
 	${FLAKE8_RUN}
 
+local-show-coverage:
+	pytest --disable-pytest-warnings --cov-report term-missing --cov permifrost
+
 #########################################################
 #################### Deployment #########################
 #########################################################
