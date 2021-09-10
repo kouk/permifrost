@@ -876,7 +876,6 @@ class TestGenerateSchemaGrants:
         assert schemas_list_sql == expected
 
 
-
 class TestGenerateTableAndViewRevokeGrants:
     def revoke_single_r_table_config(mocker):
         """
@@ -1265,6 +1264,7 @@ class TestGenerateSchemaRevokeGrants:
 
         assert schemas_list_sql == expected
 
+
 class TestGenerateDatabaseGrants:
     def single_r_database_config(mocker):
         """
@@ -1359,7 +1359,7 @@ class TestGenerateDatabaseGrants:
 
     def multi_shared_db_rw_database_config(mocker):
         """
-        Provides read/write access on 
+        Provides read/write access on
         DATABASE_1, DATABASE_2, SHARED_DATABASE_1 databases.
         """
         config = {
