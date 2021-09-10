@@ -854,6 +854,7 @@ class SnowflakeGrantsGenerator:
         sql_commands.extend(read_commands)
         read_grant_schemas.extend(read_grants)
 
+        # Get Schema Write Commands
         write_schemas = schemas.get("write", [])
         write_commands, write_grants = self._generate_schema_write_grants(
             write_schemas, shared_dbs, role
