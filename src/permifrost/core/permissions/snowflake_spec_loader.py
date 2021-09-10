@@ -391,7 +391,7 @@ class SnowflakeSpecLoader:
         #  SQL command granting that permission
 
         for entity_type, entry in self.spec.items():
-            if entity_type in ["require-owner", "databases", "warehouses", "version"]:
+            if entity_type in ["require_owner", "databases", "warehouses", "version"]:
                 continue
 
             # Generate list of all entities (used for roles currently)

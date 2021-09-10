@@ -471,23 +471,23 @@ class TestSnowflakeSpecLoader:
                 ["testwarehouse"],
             ),
             (
-                SnowflakeSchemaBuilder().require-owner().add_db(owner="user").build(),
+                SnowflakeSchemaBuilder().require_owner().add_db(owner="user").build(),
                 "show_databases",
                 ["testdb"],
             ),
             (
-                SnowflakeSchemaBuilder().require-owner().add_role(owner="user").build(),
+                SnowflakeSchemaBuilder().require_owner().add_role(owner="user").build(),
                 "show_roles",
                 {"testrole": "user"},
             ),
             (
-                SnowflakeSchemaBuilder().require-owner().add_user(owner="user").build(),
+                SnowflakeSchemaBuilder().require_owner().add_user(owner="user").build(),
                 "show_users",
                 ["testusername"],
             ),
             (
                 SnowflakeSchemaBuilder()
-                .require-owner()
+                .require_owner()
                 .add_warehouse(owner="user")
                 .build(),
                 "show_warehouses",
@@ -508,22 +508,22 @@ class TestSnowflakeSpecLoader:
         "spec_file_data,method,return_value",
         [
             (
-                SnowflakeSchemaBuilder().require-owner().add_db().build(),
+                SnowflakeSchemaBuilder().require_owner().add_db().build(),
                 "show_databases",
                 ["testdb"],
             ),
             (
-                SnowflakeSchemaBuilder().require-owner().add_role().build(),
+                SnowflakeSchemaBuilder().require_owner().add_role().build(),
                 "show_roles",
                 ["testrole"],
             ),
             (
-                SnowflakeSchemaBuilder().require-owner().add_user().build(),
+                SnowflakeSchemaBuilder().require_owner().add_user().build(),
                 "show_users",
                 ["testusername"],
             ),
             (
-                SnowflakeSchemaBuilder().require-owner().add_warehouse().build(),
+                SnowflakeSchemaBuilder().require_owner().add_warehouse().build(),
                 "show_warehouses",
                 ["testwarehouse"],
             ),
@@ -545,7 +545,7 @@ class TestSnowflakeSpecLoader:
         self, mocker, mock_connector
     ):
         spec_file_data = (
-            SnowflakeSchemaBuilder().set_version("1.0").require-owner().build()
+            SnowflakeSchemaBuilder().set_version("1.0").require_owner().build()
         )
         print("Spec file is: ")
         print(spec_file_data)
