@@ -709,18 +709,130 @@ class TestGenerateSchemaGrants:
         schemas in DATABASE_1 database
         """
         mocker.patch.object(
-            MockSnowflakeConnector, "show_tables", return_value=["raw.public.table_1"]
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            return_value=[
+                "database_1.schema_1",
+                "database_1.schema_2",
+                "database_1.schema_3",
+            ],
         )
-        mocker.patch.object(MockSnowflakeConnector, "show_views", return_value=[])
         config = {
             "read": ["database_1.*"],
             "write": [],
         }
 
         expected = [
+            "GRANT usage ON FUTURE schemas IN database database_1 TO ROLE functional_role",
             "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT usage ON schema database_2.schema_2 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_3 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def star_rw_schema_config(mocker):
+        """
+        Provides read/write access on SCHEMA_1, SCHEMA_2, SCHEMA_3
+        schemas in DATABASE_1 database
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            return_value=[
+                "database_1.schema_1",
+                "database_1.schema_2",
+                "database_1.schema_3",
+            ],
+        )
+        config = {
+            "read": ["database_1.*"],
+            "write": ["database_1.*"],
+        }
+
+        expected = [
+            "GRANT usage ON FUTURE schemas IN database database_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_3 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON FUTURE schemas IN database database_1 TO ROLE functional_role",
             "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_3 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def star_diff_rw_schema_config(mocker):
+        """
+        Provides read access on SCHEMA_1, SCHEMA_2
+        and read/write access on SCHEMA_3 in DATABASE_1 database
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[
+                [
+                    "database_1.schema_1",
+                    "database_1.schema_2",
+                    "database_1.schema_3",
+                ],
+                ["database_1.schema_3"],
+            ],
+        )
+        config = {
+            "read": ["database_1.*"],
+            "write": ["database_1.schema_3"],
+        }
+
+        expected = [
+            "GRANT usage ON FUTURE schemas IN database database_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_3 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_3 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def multi_star_rw_schema_config(mocker):
+        """
+        Provides read/write access on SCHEMA_1, SCHEMA_2 in DATABASE_1
+        and read/write access on SCHEMA_3 in DATABASE_2
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[
+                [
+                    "database_1.schema_1",
+                    "database_1.schema_2",
+                ],
+                [
+                    "database_1.schema_1",
+                    "database_1.schema_2",
+                ],
+                ["database_2.schema_3"],
+                ["database_2.schema_3"],
+            ],
+        )
+        config = {
+            "read": ["database_1.*", "database_2.*"],
+            "write": ["database_1.*", "database_2.*"],
+        }
+
+        expected = [
+            "GRANT usage ON FUTURE schemas IN database database_1 TO ROLE functional_role",
+            "GRANT usage ON FUTURE schemas IN database database_2 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON FUTURE schemas IN database database_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON FUTURE schemas IN database database_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_2.schema_3 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_2.schema_3 TO ROLE functional_role",
         ]
         return [MockSnowflakeConnector, config, expected]
 
@@ -733,7 +845,10 @@ class TestGenerateSchemaGrants:
             multi_rw_schema_config,
             multi_diff_rw_schema_config,
             multi_diff_db_rw_schema_config,
-            star_r_schema_config
+            star_r_schema_config,
+            star_rw_schema_config,
+            star_diff_rw_schema_config,
+            multi_star_rw_schema_config,
         ],
     )
     def test_generate_schema_grants(
@@ -756,20 +871,10 @@ class TestGenerateSchemaGrants:
 
         mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
 
-        # mocker.patch(
-        #     "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_schemas",
-        #     mock_connector.show_schemas,
-        # )
-
-        # mocker.patch(
-        #     "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_tables",
-        #     mock_connector.show_tables,
-        # )
-
-        # mocker.patch(
-        #     "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_views",
-        #     mock_connector.show_views,
-        # )
+        mocker.patch(
+            "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_schemas",
+            mock_connector.show_schemas,
+        )
 
         schemas_list = generator.generate_schema_grants(
             "functional_role",
@@ -787,5 +892,4 @@ class TestGenerateSchemaGrants:
         # Sort list of SQL queries for readability
         schemas_list_sql.sort()
 
-        breakpoint()
         assert schemas_list_sql == expected
