@@ -80,7 +80,7 @@ class SnowflakeSchemaBuilder:
         return self
 
     def require_owner(self):
-        self.add_setting("require-owner", "true")
+        self.add_setting("require_owner", "true")
         return self
 
     def build_from_file(self, schemas_dir, file_name):

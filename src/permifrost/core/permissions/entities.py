@@ -138,7 +138,7 @@ class EntityGenerator:
         require_owner = [
             entry
             for entity_type, entry in entities_by_type
-            if entity_type == "require-owner"
+            if entity_type == "require_owner"
         ]
         self.entities["require_owner"] = require_owner == [True]
 
@@ -243,7 +243,7 @@ class EntityGenerator:
         self, entities: EntitySchema
     ) -> List[str]:
         """
-        Make sure that the spec is valid based on conditional settings such as require-owner
+        Make sure that the spec is valid based on conditional settings such as require_owner
         """
         error_messages = []
 
@@ -266,7 +266,7 @@ class EntityGenerator:
                 for entity_name, config in entity_dict.items():
                     if "owner" not in config.keys():
                         error_messages.append(
-                            f"Spec Error: Owner not defined for {entity_type} {entity_name} and require-owner is set!"
+                            f"Spec Error: Owner not defined for {entity_type} {entity_name} and require_owner is set!"
                         )
 
         return error_messages
