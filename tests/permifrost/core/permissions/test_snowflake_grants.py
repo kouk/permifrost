@@ -195,11 +195,15 @@ def partial_rw_future_schemas_tables_views_config(mocker):
     mocker.patch.object(
         MockSnowflakeConnector,
         "show_schemas",
+        # show_schemas called by read before write function call
         side_effect=[["raw.public", "raw.public_1"], ["raw.public"]],
     )
     mocker.patch.object(
         MockSnowflakeConnector,
         "show_tables",
+        # show_tables called multiple times for read/write
+        # therefore, there is a need to have different
+        # results for each call where read comes before write
         side_effect=[
             [
                 "raw.public.table_1",
