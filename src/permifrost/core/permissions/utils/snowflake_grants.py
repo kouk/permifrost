@@ -1337,7 +1337,7 @@ class SnowflakeGrantsGenerator:
         granted_resources: Optional[List] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Generates revoke privileges for tables/views known as resources here
+        Generates REVOKE privileges for tables/views known as resources here
 
         role: Snowflake role to revoke the resource from
         all_grant_resources: All the GRANTS applied
@@ -1448,7 +1448,7 @@ class SnowflakeGrantsGenerator:
         sql_commands.extend(
             self._generate_revoke_select_privs(
                 role=role,
-                all_grant_resources=all_grant_tables,
+                all_grant_resources=all_grant_views,
                 shared_dbs=shared_dbs,
                 spec_dbs=spec_dbs,
                 privilege_set=read_privileges,
@@ -1473,7 +1473,7 @@ class SnowflakeGrantsGenerator:
         sql_commands.extend(
             self._generate_revoke_select_privs(
                 role=role,
-                all_grant_resources=all_grant_tables,
+                all_grant_resources=write_grant_tables_full,
                 shared_dbs=shared_dbs,
                 spec_dbs=spec_dbs,
                 privilege_set=write_partial_privileges,
