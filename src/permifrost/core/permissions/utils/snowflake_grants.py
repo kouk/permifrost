@@ -1345,6 +1345,7 @@ class SnowflakeGrantsGenerator:
         spec_dbs: Databases to apply REVOKE statements on
         privilege_set: Privileges to revoke (i.e. SELECT, INSERT, etc.)
         resource_type: Database object to revoke (i.e. table, view, etc.)
+        granted_resources: List of GRANTS to filter through
 
         Returns a list of REVOKE statements
         """
@@ -1475,7 +1476,7 @@ class SnowflakeGrantsGenerator:
                 all_grant_resources=all_grant_tables,
                 shared_dbs=shared_dbs,
                 spec_dbs=spec_dbs,
-                privilege_set=read_privileges,
+                privilege_set=write_partial_privileges,
                 resource_type="table",
                 granted_resources=granted_tables
             )
