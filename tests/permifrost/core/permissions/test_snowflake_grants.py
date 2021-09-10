@@ -635,6 +635,19 @@ class TestGenerateSchemaGrants:
         ]
         return [MockSnowflakeConnector, config, expected]
 
+    def shared_db_single_rw_schema_config(mocker):
+        """
+        Permissions at the schema level for a shared database
+        are not allowed so this is the expected behaviour
+        """
+        config = {
+            "read": ["shared_database_1.schema_1"],
+            "write": ["shared_database_1.schema_1"],
+        }
+
+        expected = []
+        return [MockSnowflakeConnector, config, expected]
+
     def multi_r_schema_config(mocker):
         """
         Provides read access on SCHEMA_1, SCHEMA_2
@@ -699,6 +712,23 @@ class TestGenerateSchemaGrants:
         expected = [
             "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
             "GRANT usage ON schema database_2.schema_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def multi_diff_shared_db_rw_schema_config(mocker):
+        """
+        Permissions at the schema level for a shared database
+        are not allowed so permissions should only be for 
+        read/write on DATABASE_1.SCHEMA_1
+        """
+        config = {
+            "read": ["shared_database_1.shared_schema_1", "database_1.schema_1"],
+            "write": ["shared_database_1.shared_schema_1", "database_1.schema_1"],
+        }
+
+        expected = [
+            "GRANT usage ON schema database_1.schema_1 TO ROLE functional_role",
             "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1 TO ROLE functional_role",
         ]
         return [MockSnowflakeConnector, config, expected]
@@ -841,10 +871,12 @@ class TestGenerateSchemaGrants:
         [
             single_r_schema_config,
             single_rw_schema_config,
+            shared_db_single_rw_schema_config,
             multi_r_schema_config,
             multi_rw_schema_config,
             multi_diff_rw_schema_config,
             multi_diff_db_rw_schema_config,
+            multi_diff_shared_db_rw_schema_config,
             star_r_schema_config,
             star_rw_schema_config,
             star_diff_rw_schema_config,
