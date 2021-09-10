@@ -1364,16 +1364,16 @@ class SnowflakeGrantsGenerator:
         for granted_resource in granted_resources:
             resource_split = granted_resource.split(".")
             database_name = resource_split[0]
+            schema_name = resource_split[1] if 1 < len(resource_split) else None
 
             # For future grants at the database level
             if len(resource_split) == 2 or (
-                len(resource_split) == 3 and resource_split[1] == "*"
+                len(resource_split) == 3 and schema_name == "*"
             ):
                 future_resource = f"{database_name}.<{resource_type}>"
                 grouping_type = "database"
                 grouping_name = database_name
             else:
-                schema_name = resource_split[1]
                 future_resource = f"{database_name}.{schema_name}.<{resource_type}>"
                 grouping_type = "schema"
                 grouping_name = f"{database_name}.{schema_name}"
@@ -1422,18 +1422,17 @@ class SnowflakeGrantsGenerator:
                 )
         return sql_commands
 
-    def _generate_revoke_privs(
+    def generate_revoke_privs(
         self,
-        role,
-        shared_dbs,
-        spec_dbs,
-        all_grant_tables,
-        all_grant_views,
-        write_grant_tables_full,
-    ):
+        role: str,
+        shared_dbs: List[str],
+        spec_dbs: List[str],
+        all_grant_tables: List[str],
+        all_grant_views: List[str],
+        write_grant_tables_full: List[str],
+    ) -> List[Dict[str, Any]]:
         read_privileges = "select"
         write_partial_privileges = "insert, update, delete, truncate, references"
-
         sql_commands = []
 
         sql_commands.extend(
@@ -1533,7 +1532,7 @@ class SnowflakeGrantsGenerator:
         all_grant_views = read_grant_views_full + write_grant_views_full
 
         sql_commands.extend(
-            self._generate_revoke_privs(
+            self.generate_revoke_privs(
                 role,
                 shared_dbs,
                 spec_dbs,
