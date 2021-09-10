@@ -74,6 +74,16 @@ def test_user_config():
 
 @pytest.fixture(scope="class")
 def test_grants_to_role():
+    """
+    Outlines the existing permissions for a role (i.e. functional_role)
+    For more comprehensive examples of how to configure this method,
+    please review the snowflake_spec_loader.get_privileges_from_snowflake_server
+    method
+
+    DO NOT UPDATE as this will cause breaking changes to all generate_<object>_grants
+    tests. Consider developing a function scoped version for specific tests
+    """
+
     roles = {
         "functional_role": {
             "usage": {
@@ -251,67 +261,6 @@ class TestSnowflakeGrants:
         assert (
             "revoke monitor on warehouse warehouse_1 from role functional_role"
             in warehouse_lower_list
-        )
-
-    @pytest.mark.parametrize("ignore_memberships", [True, False])
-    def test_generate_database_grants(
-        self,
-        test_grants_to_role,
-        test_roles_granted_to_user,
-        test_role_config,
-        test_user_config,
-        test_shared_dbs,
-        test_spec_dbs,
-        ignore_memberships,
-    ):
-        # Generation of database grants should be identical while ignoring or not ignoring memberships
-        generator = SnowflakeGrantsGenerator(
-            test_grants_to_role,
-            test_roles_granted_to_user,
-            ignore_memberships=ignore_memberships,
-        )
-
-        database_command_list = generator.generate_database_grants(
-            "functional_role",
-            test_role_config["functional_role"]["privileges"]["databases"],
-            test_shared_dbs,
-            test_spec_dbs,
-        )
-
-        database_lower_list = [
-            cmd.get("sql", "").lower() for cmd in database_command_list
-        ]
-        print(database_lower_list)
-
-        assert (
-            "grant usage on database database_2 to role functional_role"
-            in database_lower_list
-        )
-        assert (
-            "grant usage, monitor, create schema on database database_3 to role functional_role"
-            in database_lower_list
-        )
-        assert (
-            "revoke usage on database database_1 from role functional_role"
-            in database_lower_list
-        )
-        assert (
-            "revoke monitor, create schema on database database_1 from role functional_role"
-            in database_lower_list
-        )
-        assert (
-            "revoke monitor, create schema on database database_2 from role functional_role"
-            in database_lower_list
-        )
-
-        # Shared DBs
-        assert (
-            "grant imported privileges on database shared_database_2 to role functional_role"
-            in database_lower_list
-        )
-        assert (
-            "revoke imported privileges on database shared_database_1 from role functional_role"
-            in database_lower_list
         )
 
 
@@ -1314,3 +1263,235 @@ class TestGenerateSchemaRevokeGrants:
         schemas_list_sql.sort()
 
         assert schemas_list_sql == expected
+
+
+class TestGenerateDatabaseGrants:
+    def single_r_database_config(mocker):
+        """
+        Provides read access on DATABASE_1 database.
+        """
+        config = {
+            "read": ["database_1"],
+            "write": [],
+        }
+
+        expected = [
+            "GRANT usage ON database database_1 TO ROLE functional_role",
+            "REVOKE imported privileges ON database shared_database_1 FROM ROLE functional_role",
+            "REVOKE monitor, create schema ON database database_1 FROM ROLE functional_role",
+            "REVOKE monitor, create schema ON database database_2 FROM ROLE functional_role",
+            "REVOKE usage ON database database_2 FROM ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def single_rw_database_config(mocker):
+        """
+        Provides read/write access on DATABASE_1 database.
+        """
+        config = {
+            "read": ["database_1"],
+            "write": ["database_1"],
+        }
+
+        expected = [
+            "GRANT usage ON database database_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create schema ON database database_1 TO ROLE functional_role",
+            "REVOKE imported privileges ON database shared_database_1 FROM ROLE functional_role",
+            "REVOKE monitor, create schema ON database database_2 FROM ROLE functional_role",
+            "REVOKE usage ON database database_2 FROM ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def multi_r_database_config(mocker):
+        """
+        Provides read access on DATABASE_1, DATABASE_2 databases.
+        """
+        config = {
+            "read": ["database_1", "database_2"],
+            "write": [],
+        }
+
+        expected = [
+            "GRANT usage ON database database_1 TO ROLE functional_role",
+            "GRANT usage ON database database_2 TO ROLE functional_role",
+            "REVOKE imported privileges ON database shared_database_1 FROM ROLE functional_role",
+            "REVOKE monitor, create schema ON database database_1 FROM ROLE functional_role",
+            "REVOKE monitor, create schema ON database database_2 FROM ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def multi_rw_database_config(mocker):
+        """
+        Provides read/write access on DATABASE_1, DATABASE_2 databases.
+        """
+        config = {
+            "read": ["database_1", "database_2"],
+            "write": ["database_1", "database_2"],
+        }
+
+        expected = [
+            "GRANT usage ON database database_1 TO ROLE functional_role",
+            "GRANT usage ON database database_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create schema ON database database_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create schema ON database database_2 TO ROLE functional_role",
+            "REVOKE imported privileges ON database shared_database_1 FROM ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def multi_diff_rw_database_config(mocker):
+        """
+        Provides read/write access on DATABASE_1 database
+        and read access on DATABASE_2 database.
+        """
+        config = {
+            "read": ["database_1", "database_2"],
+            "write": ["database_1"],
+        }
+
+        expected = [
+            "GRANT usage ON database database_1 TO ROLE functional_role",
+            "GRANT usage ON database database_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create schema ON database database_1 TO ROLE functional_role",
+            "REVOKE imported privileges ON database shared_database_1 FROM ROLE functional_role",
+            "REVOKE monitor, create schema ON database database_2 FROM ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def multi_shared_db_rw_database_config(mocker):
+        """
+        Provides read/write access on
+        DATABASE_1, DATABASE_2, SHARED_DATABASE_1 databases.
+        """
+        config = {
+            "read": ["database_1", "database_2", "shared_database_1"],
+            "write": ["database_1", "database_2", "shared_database_1"],
+        }
+
+        expected = [
+            "GRANT imported privileges ON database shared_database_1 TO ROLE functional_role",
+            "GRANT imported privileges ON database shared_database_1 TO ROLE functional_role",
+            "GRANT usage ON database database_1 TO ROLE functional_role",
+            "GRANT usage ON database database_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create schema ON database database_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create schema ON database database_2 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    @pytest.mark.parametrize("ignore_memberships", [True, False])
+    def test_generate_database_grants(
+        self,
+        test_grants_to_role,
+        test_roles_granted_to_user,
+        test_role_config,
+        test_user_config,
+        test_shared_dbs,
+        test_spec_dbs,
+        ignore_memberships,
+    ):
+        # Generation of database grants should be identical while ignoring or not ignoring memberships
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
+        )
+
+        database_command_list = generator.generate_database_grants(
+            "functional_role",
+            test_role_config["functional_role"]["privileges"]["databases"],
+            test_shared_dbs,
+            test_spec_dbs,
+        )
+
+        database_lower_list = [
+            cmd.get("sql", "").lower() for cmd in database_command_list
+        ]
+        print(database_lower_list)
+
+        assert (
+            "grant usage on database database_2 to role functional_role"
+            in database_lower_list
+        )
+        assert (
+            "grant usage, monitor, create schema on database database_3 to role functional_role"
+            in database_lower_list
+        )
+        assert (
+            "revoke usage on database database_1 from role functional_role"
+            in database_lower_list
+        )
+        assert (
+            "revoke monitor, create schema on database database_1 from role functional_role"
+            in database_lower_list
+        )
+        assert (
+            "revoke monitor, create schema on database database_2 from role functional_role"
+            in database_lower_list
+        )
+
+        # Shared DBs
+        assert (
+            "grant imported privileges on database shared_database_2 to role functional_role"
+            in database_lower_list
+        )
+        assert (
+            "revoke imported privileges on database shared_database_1 from role functional_role"
+            in database_lower_list
+        )
+
+    @pytest.mark.parametrize("ignore_memberships", [True, False])
+    @pytest.mark.parametrize(
+        "config",
+        [
+            single_r_database_config,
+            single_rw_database_config,
+            multi_r_database_config,
+            multi_rw_database_config,
+            multi_diff_rw_database_config,
+            multi_shared_db_rw_database_config,
+        ],
+    )
+    def test_generate_database_grants_v2(
+        self,
+        test_shared_dbs,
+        test_spec_dbs,
+        test_grants_to_role,
+        test_roles_granted_to_user,
+        mocker,
+        config,
+        ignore_memberships,
+    ):
+
+        # Generation of database grants should be identical while ignoring or not
+        # ignoring memberships
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
+        )
+
+        mock_connector, test_database_config, expected = config(mocker)
+
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+
+        # mocker.patch(
+        #     "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_schemas",
+        #     mock_connector.show_schemas,
+        # )
+
+        database_list = generator.generate_database_grants(
+            "functional_role",
+            test_database_config,
+            set(test_shared_dbs),
+            set(test_spec_dbs),
+        )
+
+        database_list_sql = []
+        for sql_dict in database_list:
+            for k, v in sql_dict.items():
+                if k == "sql":
+                    database_list_sql.append(v)
+
+        # Sort list of SQL queries for readability
+        database_list_sql.sort()
+
+        assert database_list_sql == expected

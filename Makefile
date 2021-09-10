@@ -15,6 +15,9 @@ dev-help:
 	@echo 'requirements.txt -> pins dependency versions in `requirements.txt`'
 	@echo "prod-image -> builds gitlab-data/permifrost which is an all-in-one production image"
 	@echo "test -> runs pytest"
+	@echo "local-lint -> runs local linting suite to refactor code"
+	@echo "local-show-lint -> shows linting suite results"
+	@echo "show-coverage -> runs pytest coverage report inside docker instance when permifrost local initiated"
 
 #########################################################
 ################### Development #########################
@@ -93,7 +96,7 @@ local-show-lint:
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
 	${FLAKE8_RUN}
 
-local-show-coverage:
+show-coverage:
 	pytest --disable-pytest-warnings --cov-report term-missing --cov permifrost
 
 #########################################################
