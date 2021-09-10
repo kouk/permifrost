@@ -719,7 +719,7 @@ class TestGenerateSchemaGrants:
     def multi_diff_shared_db_rw_schema_config(mocker):
         """
         Permissions at the schema level for a shared database
-        are not allowed so permissions should only be for 
+        are not allowed so permissions should only be for
         read/write on DATABASE_1.SCHEMA_1
         """
         config = {
@@ -925,3 +925,324 @@ class TestGenerateSchemaGrants:
         schemas_list_sql.sort()
 
         assert schemas_list_sql == expected
+
+
+class TestGenerateTableAndViewRevokeGrants:
+    def revoke_single_r_table_config(mocker):
+        """
+        REVOKE read on DATABASE_1.SCHEMA_1.TABLE_1 table
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {"select": {"table": ["database_1.schema_1.table_1"]}},
+        }
+
+        expected = [
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_w_table_config(mocker):
+        """
+        REVOKE write on DATABASE_1.SCHEMA_1.TABLE_1 table
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {"insert": {"table": ["database_1.schema_1.table_1"]}},
+        }
+
+        expected = [
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role"
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_rw_table_config(mocker):
+        """
+        REVOKE read/write on DATABASE_1.SCHEMA_1.TABLE_1 table
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "insert": {"table": ["database_1.schema_1.table_1"]},
+                "select": {"table": ["database_1.schema_1.table_1"]},
+            },
+        }
+
+        expected = [
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_rw_view_config(mocker):
+        """
+        REVOKE read/write on DATABASE_1.SCHEMA_1.VIEW_1 view
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "select": {"view": ["database_1.schema_1.view_1"]},
+            },
+        }
+
+        expected = [
+            "REVOKE select ON view database_1.schema_1.view_1 FROM ROLE functional_role"
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_shared_db_single_r_table_config(mocker):
+        """
+        Should not generate read REVOKE statements
+        on SHARED_DATABASE_1.SCHEMA_1.TABLE_1 table as it is
+        in shared database
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "select": {"table": ["shared_database_1.schema_1.table_1"]},
+            },
+        }
+
+        expected = []
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_shared_db_single_rw_table_config(mocker):
+        """
+        Should not generate read/write REVOKE statements
+        on SHARED_DATABASE_1.SCHEMA_1.TABLE_1 table as it is
+        in shared database
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "select": {"table": ["shared_database_1.schema_1.table_1"]},
+                "insert": {"table": ["shared_database_1.schema_1.table_1"]},
+            },
+        }
+
+        expected = []
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_multi_rw_table_config(mocker):
+        """
+        Generates read/write REVOKE statements
+        for multiple tables
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "select": {
+                    "table": [
+                        "database_1.schema_1.table_1",
+                        "database_1.schema_1.table_2",
+                    ]
+                },
+                "insert": {
+                    "table": [
+                        "database_1.schema_1.table_1",
+                        "database_1.schema_1.table_2",
+                    ]
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_2 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_2 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_multi_rw_table_view_config(mocker):
+        """
+        Generates read/write REVOKE statements
+        for multiple tables and views
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "select": {
+                    "table": [
+                        "database_1.schema_1.table_1",
+                        "database_1.schema_1.table_2",
+                    ],
+                    "view": ["database_1.schema_1.view_1"],
+                },
+                # Not possible to insert on a VIEW
+                "insert": {
+                    "table": [
+                        "database_1.schema_1.table_1",
+                        "database_1.schema_1.table_2",
+                    ]
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_2 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_2 FROM ROLE functional_role",
+            "REVOKE select ON view database_1.schema_1.view_1 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_r_schema_config(mocker):
+        """
+        Generates read REVOKE statements SCHEMA_1
+        """
+        test_tables_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "usage": {
+                    "schema": ["database_1.schema_1"],
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_2 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
+            "REVOKE select ON table database_1.schema_1.table_2 FROM ROLE functional_role",
+            "REVOKE select ON view database_1.schema_1.view_1 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_tables_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            revoke_single_r_table_config,
+            revoke_single_w_table_config,
+            revoke_single_rw_table_config,
+            revoke_single_rw_view_config,
+            revoke_shared_db_single_r_table_config,
+            revoke_shared_db_single_rw_table_config,
+            revoke_multi_rw_table_config,
+            revoke_multi_rw_table_view_config,
+        ],
+    )
+    def test_generate_table_view_revokes(
+        self,
+        test_shared_dbs,
+        test_spec_dbs,
+        test_roles_granted_to_user,
+        mocker,
+        config,
+    ):
+
+        test_tables_config, test_grants_to_role, expected = config(mocker)
+
+        # Generation of database grants should be identical while
+        # ignoring or not ignoring memberships
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role,
+            test_roles_granted_to_user,
+        )
+
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+
+        tables_list = generator.generate_table_and_view_grants(
+            role="functional_role",
+            tables=test_tables_config,
+            shared_dbs=set(test_shared_dbs),
+            spec_dbs=set(test_spec_dbs),
+        )
+
+        tables_list_sql = []
+        for sql_dict in tables_list:
+            for k, v in sql_dict.items():
+                if k == "sql":
+                    tables_list_sql.append(v)
+
+        # Sort list of SQL queries for readability
+        tables_list_sql.sort()
+
+        # breakpoint()
+        assert tables_list_sql == expected
+
+
+class TestGenerateSchemaRevokeGrants:
