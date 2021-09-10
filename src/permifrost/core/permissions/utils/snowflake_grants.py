@@ -854,6 +854,7 @@ class SnowflakeGrantsGenerator:
         sql_commands.extend(read_commands)
         read_grant_schemas.extend(read_grants)
 
+        # Get Schema Write Commands
         write_schemas = schemas.get("write", [])
         write_commands, write_grants = self._generate_schema_write_grants(
             write_schemas, shared_dbs, role
@@ -1037,12 +1038,9 @@ class SnowflakeGrantsGenerator:
                     read_grant_tables_full.append(future_table)
                     read_grant_views_full.append(future_view)
 
-                    table_already_granted = False
-
-                    if self.is_granted_privilege(
+                    table_already_granted = self.is_granted_privilege(
                         role, read_privileges, "table", future_table
-                    ):
-                        table_already_granted = True
+                    )
 
                     # Grant future on all tables
                     sql_commands.append(
@@ -1058,12 +1056,9 @@ class SnowflakeGrantsGenerator:
                         }
                     )
 
-                    view_already_granted = False
-
-                    if self.is_granted_privilege(
+                    view_already_granted = self.is_granted_privilege(
                         role, read_privileges, "view", future_view
-                    ):
-                        view_already_granted = True
+                    )
 
                     # Grant future on all views
                     sql_commands.append(
@@ -1095,9 +1090,9 @@ class SnowflakeGrantsGenerator:
             # We have this loop b/c we explicitly grant to each table
             # Instead of doing grant to all tables/views in schema
             for db_table in read_grant_tables:
-                already_granted = False
-                if self.is_granted_privilege(role, read_privileges, "table", db_table):
-                    already_granted = True
+                already_granted = self.is_granted_privilege(
+                    role, read_privileges, "table", db_table
+                )
 
                 sql_commands.append(
                     {
@@ -1113,9 +1108,9 @@ class SnowflakeGrantsGenerator:
 
             # Grant privileges to all flagged views
             for db_view in read_grant_views:
-                already_granted = False
-                if self.is_granted_privilege(role, read_privileges, "view", db_view):
-                    already_granted = True
+                already_granted = self.is_granted_privilege(
+                    role, read_privileges, "view", db_view
+                )
 
                 sql_commands.append(
                     {
@@ -1236,14 +1231,11 @@ class SnowflakeGrantsGenerator:
                     write_grant_tables_full.append(future_table)
                     write_grant_views_full.append(future_view)
 
-                    table_already_granted = True
-
                     for privilege in write_privileges_array:
                         # If any of the privileges are not granted, set already_granted to False
-                        if not self.is_granted_privilege(
+                        table_already_granted = not self.is_granted_privilege(
                             role, privilege, "table", future_table
-                        ):
-                            table_already_granted = False
+                        )
 
                     # Grant future on all tables
                     sql_commands.append(
@@ -1335,117 +1327,74 @@ class SnowflakeGrantsGenerator:
 
         return (sql_commands, write_grant_tables_full, write_grant_views_full)
 
-    def _generate_revoke_privs(
+    def _generate_revoke_select_privs(
         self,
-        role,
-        shared_dbs,
-        spec_dbs,
-        all_grant_tables,
-        all_grant_views,
-        write_grant_tables_full,
-    ):
-        read_privileges = "select"
-        write_partial_privileges = "insert, update, delete, truncate, references"
+        role: str,
+        all_grant_resources: List[str],
+        shared_dbs: Set[Any],
+        spec_dbs: Set[Any],
+        privilege_set: str,
+        resource_type: str,
+        granted_resources: Optional[List] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Generates REVOKE privileges for tables/views known as resources here
 
+        role: Snowflake role to revoke the resource from
+        all_grant_resources: All the GRANTS applied
+        shared_dbs: Shared databases to be skipped
+        spec_dbs: Databases to apply REVOKE statements on
+        privilege_set: Privileges to revoke (i.e. SELECT, INSERT, etc.)
+        resource_type: Database object to revoke (i.e. table, view, etc.)
+        granted_resources: List of GRANTS to filter through
+
+        Returns a list of REVOKE statements
+        """
         sql_commands = []
-        # REVOKES
 
-        # Read Privileges
-        # The "select" privilege is consistent across read and write.
-        # Compare granted usage to full read/write set and revoke missing ones
-        for granted_table in list(
-            set(self.grants_to_role.get(role, {}).get("select", {}).get("table", []))
-        ):
-            table_split = granted_table.split(".")
-            database_name = table_split[0]
+        if not granted_resources:
+            granted_resources = list(
+                set(
+                    self.grants_to_role.get(role, {})
+                    .get("select", {})
+                    .get(resource_type, [])
+                )
+            )
+
+        for granted_resource in granted_resources:
+            resource_split = granted_resource.split(".")
+            database_name = resource_split[0]
+            schema_name = resource_split[1] if 1 < len(resource_split) else None
 
             # For future grants at the database level
-            if len(table_split) == 2:
-                future_table = f"{database_name}.<table>"
+            if len(resource_split) == 2 or (
+                len(resource_split) == 3 and schema_name == "*"
+            ):
+                future_resource = f"{database_name}.<{resource_type}>"
                 grouping_type = "database"
                 grouping_name = database_name
             else:
-                schema_name = table_split[1]
-                future_table = f"{database_name}.{schema_name}.<table>"
+                future_resource = f"{database_name}.{schema_name}.<{resource_type}>"
                 grouping_type = "schema"
                 grouping_name = f"{database_name}.{schema_name}"
 
-            if granted_table not in all_grant_tables and (
+            if granted_resource not in all_grant_resources and (
                 database_name in shared_dbs or database_name not in spec_dbs
             ):
                 # No privileges to revoke on imported db. Done at database level
                 # Don't revoke on privileges on databases not defined in spec.
                 continue
-            elif (  # If future privilege is granted in Snowflake but not in grant list
-                granted_table == future_table and future_table not in all_grant_tables
-            ):
-                sql_commands.append(
-                    {
-                        "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
-                            privileges=read_privileges,
-                            resource_type="table",
-                            grouping_type=grouping_type,
-                            grouping_name=SnowflakeConnector.snowflaky(grouping_name),
-                            role=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
             elif (
-                granted_table not in all_grant_tables
-                and future_table not in all_grant_tables
+                granted_resource == future_resource
+                and future_resource not in all_grant_resources
             ):
-                # Covers case where table is granted in Snowflake
-                # But it's not in the grant list and it's not explicitly granted as a future grant
-                sql_commands.append(
-                    {
-                        "already_granted": False,
-                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
-                            privileges=read_privileges,
-                            resource_type="table",
-                            resource_name=SnowflakeConnector.snowflaky(granted_table),
-                            role=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
-
-        # SELECT is the only privilege for views so this covers both the read
-        # and write case since we have "all_grant_views" defined.
-        for granted_view in list(
-            set(self.grants_to_role.get(role, {}).get("select", {}).get("view", []))
-        ):
-            view_split = granted_view.split(".")
-            database_name = view_split[0]
-
-            # For future grants at the database level
-            # TODO: Not sure what is happenign with table split here, it
-            # may posibly be unbound
-            if len(view_split) == 2 or (
-                len(table_split) == 3 and table_split[1] == "*"
-            ):
-                future_view = f"{database_name}.<view>"
-                grouping_type = "database"
-                grouping_name = database_name
-            else:
-                schema_name = view_split[1]
-                future_view = f"{database_name}.{schema_name}.<view>"
-                grouping_type = "schema"
-                grouping_name = f"{database_name}.{schema_name}"
-
-            if granted_view not in all_grant_views and (
-                database_name in shared_dbs or database_name not in spec_dbs
-            ):
-                # No privileges to revoke on imported db. Done at database level
-                # Don't revoke on privileges on databases not defined in spec.
-                continue
-            elif granted_view == future_view and future_view not in all_grant_views:
                 # If future privilege is granted in Snowflake but not in grant list
                 sql_commands.append(
                     {
                         "already_granted": False,
                         "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
-                            privileges=read_privileges,
-                            resource_type="view",
+                            privileges=privilege_set,
+                            resource_type=resource_type,
                             grouping_type=grouping_type,
                             grouping_name=SnowflakeConnector.snowflaky(grouping_name),
                             role=SnowflakeConnector.snowflaky(role),
@@ -1453,27 +1402,61 @@ class SnowflakeGrantsGenerator:
                     }
                 )
             elif (
-                granted_view not in all_grant_views
-                and future_view not in all_grant_views
+                granted_resource not in all_grant_resources
+                and future_resource not in all_grant_resources
             ):
-                # Covers case where view is granted in Snowflake
+                # Covers case where resource is granted in Snowflake
                 # But it's not in the grant list and it's not explicitly granted as a future grant
                 sql_commands.append(
                     {
                         "already_granted": False,
                         "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
-                            privileges=read_privileges,
-                            resource_type="view",
-                            resource_name=SnowflakeConnector.snowflaky(granted_view),
+                            privileges=privilege_set,
+                            resource_type=resource_type,
+                            resource_name=SnowflakeConnector.snowflaky(
+                                granted_resource
+                            ),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
                 )
+        return sql_commands
 
-        # Write Privileges
-        # Only need to revoke write privileges for tables since SELECT is the
-        # only privilege available for views
-        for granted_table in list(
+    def generate_revoke_privs(
+        self,
+        role: str,
+        shared_dbs: Set[Any],
+        spec_dbs: Set[Any],
+        all_grant_tables: List[str],
+        all_grant_views: List[str],
+        write_grant_tables_full: List[str],
+    ) -> List[Dict[str, Any]]:
+        read_privileges = "select"
+        write_partial_privileges = "insert, update, delete, truncate, references"
+        sql_commands = []
+
+        sql_commands.extend(
+            self._generate_revoke_select_privs(
+                role=role,
+                all_grant_resources=all_grant_tables,
+                shared_dbs=shared_dbs,
+                spec_dbs=spec_dbs,
+                privilege_set=read_privileges,
+                resource_type="table",
+            )
+        )
+        sql_commands.extend(
+            self._generate_revoke_select_privs(
+                role=role,
+                all_grant_resources=all_grant_views,
+                shared_dbs=shared_dbs,
+                spec_dbs=spec_dbs,
+                privilege_set=read_privileges,
+                resource_type="view",
+            )
+        )
+
+        granted_tables = list(
             set(
                 self.grants_to_role.get(role, {}).get("insert", {}).get("table", [])
                 + self.grants_to_role.get(role, {}).get("update", {}).get("table", [])
@@ -1483,63 +1466,21 @@ class SnowflakeGrantsGenerator:
                 .get("references", {})
                 .get("table", [])
             )
-        ):
-            table_split = granted_table.split(".")
-            database_name = table_split[0]
-
-            # For future grants at the database level
-            if len(table_split) == 2 or (
-                len(table_split) == 3 and table_split[1] == "*"
-            ):
-                future_table = f"{database_name}.<table>"
-                grouping_type = "database"
-                grouping_name = database_name
-            else:
-                schema_name = table_split[1]
-                future_table = f"{database_name}.{schema_name}.<table>"
-                grouping_type = "schema"
-                grouping_name = f"{database_name}.{schema_name}"
-
-            if granted_table not in write_grant_tables_full and (
-                database_name in shared_dbs or database_name not in spec_dbs
-            ):
-                # No privileges to revoke on imported db. Done at database level
-                # Don't revoke on privileges on databases not defined in spec.
-                continue
-            elif (
-                granted_table == future_table
-                and future_table not in write_grant_tables_full
-            ):
-                # If future privilege is granted in Snowflake but not in grant list
-                sql_commands.append(
-                    {
-                        "already_granted": False,
-                        "sql": REVOKE_FUTURE_PRIVILEGES_TEMPLATE.format(
-                            privileges=write_partial_privileges,
-                            resource_type="table",
-                            grouping_type=grouping_type,
-                            grouping_name=SnowflakeConnector.snowflaky(grouping_name),
-                            role=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
-            elif (
-                granted_table not in write_grant_tables_full
-                and future_table not in write_grant_tables_full
-            ):
-                # Covers case where table is granted in Snowflake
-                # But it's not in the grant list and it's not explicitly granted as a future grant
-                sql_commands.append(
-                    {
-                        "already_granted": False,
-                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
-                            privileges=write_partial_privileges,
-                            resource_type="table",
-                            resource_name=SnowflakeConnector.snowflaky(granted_table),
-                            role=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
+        )
+        # Write Privileges
+        # Only need to revoke write privileges for tables since SELECT is the
+        # only privilege available for views
+        sql_commands.extend(
+            self._generate_revoke_select_privs(
+                role=role,
+                all_grant_resources=write_grant_tables_full,
+                shared_dbs=shared_dbs,
+                spec_dbs=spec_dbs,
+                privilege_set=write_partial_privileges,
+                resource_type="table",
+                granted_resources=granted_tables,
+            )
+        )
 
         return sql_commands
 
@@ -1591,7 +1532,7 @@ class SnowflakeGrantsGenerator:
         all_grant_views = read_grant_views_full + write_grant_views_full
 
         sql_commands.extend(
-            self._generate_revoke_privs(
+            self.generate_revoke_privs(
                 role,
                 shared_dbs,
                 spec_dbs,
