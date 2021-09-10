@@ -465,7 +465,8 @@ class SnowflakeSpecLoader:
         )
         return sql_commands
 
-    def remove_duplicate_queries(self, sql_commands: List[Dict]) -> List[Dict]:
+    @staticmethod
+    def remove_duplicate_queries(sql_commands: List[Dict]) -> List[Dict]:
         grants = []
         revokes = []
 

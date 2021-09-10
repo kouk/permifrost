@@ -891,3 +891,16 @@ class TestSnowflakeSpecLoader:
                     mock_get_user_privileges_from_snowflake_server.assert_called_with(
                         conn=test_roles_mock_connector, **arguments
                     )
+
+
+def test_remove_duplicate_queries():
+
+    sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
+    sql_command_2 = sql_command_1.copy()
+    sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
+    sql_command_4 = sql_command_3.copy()
+
+    result = SnowflakeSpecLoader.remove_duplicate_queries(
+        [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
+    )
+    assert result == [sql_command_1, sql_command_3]

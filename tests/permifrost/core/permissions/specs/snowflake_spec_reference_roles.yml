@@ -1,9 +1,12 @@
 version: "1.0"
+require-owner: true
 
 # Databases
 databases:
   - demo:
       shared: no
+  - shared_demo:
+      shared: yes
 
 # Roles
 roles:
@@ -31,34 +34,44 @@ roles:
         - transforming
         - reporting
       member_of:
-        - demo
+        include:
+          - "*"
+        exclude:
+          - accountadmin
+
+
 
   - demo:
       warehouses:
         - demo
       owns:
         schemas:
-          - demo.*
-          - demo.*
+          - demodb.*
         tables:
-          - demo.*.*
-          - demo.*.*
+          - demodb.*.*
       privileges:
         databases:
           read:
-            - demo
+            - demodb
+            - demodb2
           write:
-            - demo
+            - demodb
         schemas:
           read:
-            - demo.*
+            - demodb.*
+            - demodb2.*
+            - demodb3.read_only_schema
           write:
-            - demo.*
+            - demodb.*
+            - demodb4.write_schema
         tables:
           read:
-            - demo.*.*
+            - demodb.*.*
+            - demodb2.*
+            - demodb5.demo_schema.demo_table
           write:
-            - demo.*.*
+            - demodb.*.*
+            - demodb6.demo_schema.demo_table
 
 # Users
 users:
