@@ -142,28 +142,27 @@ class EntityGenerator:
         ]
         self.entities["require_owner"] = require_owner == [True]
 
-        self.generate_implicit_schema_refs()
-        self.generate_implicit_table_refs()
+        self.generate_implicit_refs_from_schemas()
+        self.generate_implicit_refs_from_tables()
         # Add implicit references to DBs and Schemas.
         #  e.g. RAW.MYSCHEMA.TABLE references also DB RAW and Schema MYSCHEMA
 
         return self.entities
 
-    def generate_implicit_schema_refs(self):
+    def generate_implicit_refs_from_schemas(self):
+        """Adds implicit database refs from schemas"""
         for schema in self.entities["schema_refs"]:
             name_parts = schema.split(".")
-            # Add the Database in the database refs
             if name_parts[0] != "*":
                 self.entities["database_refs"].add(name_parts[0])
 
-    def generate_implicit_table_refs(self):
+    def generate_implicit_refs_from_tables(self):
+        """Adds implicit db/schema refs from tables"""
         for table in self.entities["table_refs"]:
             name_parts = table.split(".")
-            # Add the Database in the database refs
             if name_parts[0] != "*":
                 self.entities["database_refs"].add(name_parts[0])
 
-            # Add the Schema in the schema refs
             if name_parts[1] != "*":
                 self.entities["schema_refs"].add(f"{name_parts[0]}.{name_parts[1]}")
 
