@@ -465,7 +465,9 @@ class SnowflakeSpecLoader:
         )
         return sql_commands
 
-    def remove_duplicate_ownership_queries(self, sql_commands: List[Dict]) -> List[Dict]:
+    def remove_duplicate_ownership_queries(
+        self, sql_commands: List[Dict]
+    ) -> List[Dict]:
         grants = []
         revokes = []
 

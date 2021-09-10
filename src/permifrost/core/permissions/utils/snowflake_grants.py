@@ -1331,8 +1331,8 @@ class SnowflakeGrantsGenerator:
         self,
         role: str,
         all_grant_resources: List[str],
-        shared_dbs: List[str],
-        spec_dbs: List[str],
+        shared_dbs: Set[Any],
+        spec_dbs: Set[Any],
         privilege_set: str,
         resource_type: str,
         granted_resources: Optional[List] = None,
@@ -1425,8 +1425,8 @@ class SnowflakeGrantsGenerator:
     def generate_revoke_privs(
         self,
         role: str,
-        shared_dbs: List[str],
-        spec_dbs: List[str],
+        shared_dbs: Set[Any],
+        spec_dbs: Set[Any],
         all_grant_tables: List[str],
         all_grant_views: List[str],
         write_grant_tables_full: List[str],
@@ -1478,7 +1478,7 @@ class SnowflakeGrantsGenerator:
                 spec_dbs=spec_dbs,
                 privilege_set=write_partial_privileges,
                 resource_type="table",
-                granted_resources=granted_tables
+                granted_resources=granted_tables,
             )
         )
 
