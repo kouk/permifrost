@@ -33,7 +33,7 @@ class EntityGenerator:
             "users": set(),
             "warehouses": set(),
             "warehouse_refs": set(),
-            "require_owner": False,
+            "require-owner": False,
         }
         self.error_messages: List[str] = []
 
@@ -138,9 +138,9 @@ class EntityGenerator:
         require_owner = [
             entry
             for entity_type, entry in entities_by_type
-            if entity_type == "require_owner"
+            if entity_type == "require-owner"
         ]
-        self.entities["require_owner"] = require_owner == [True]
+        self.entities["require-owner"] = require_owner == [True]
 
         self.generate_implicit_schema_refs()
         self.generate_implicit_table_refs()
@@ -247,7 +247,7 @@ class EntityGenerator:
         """
         error_messages = []
 
-        if entities["require_owner"]:
+        if entities["require-owner"]:
             error_messages.extend(self.check_entities_define_owner())
 
         return error_messages

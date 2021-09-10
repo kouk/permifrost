@@ -126,7 +126,7 @@ Future grants on tables and views are granted on the database level.
 
 ### New
 * [#28](https://gitlab.com/gitlab-data/permifrost/-/issues/28) Add owner field
-  to all objects and the `require_owner` property
+  to all objects and the `require-owner` property
 
 ### Changes
 * [#39](https://gitlab.com/gitlab-data/permifrost/-/issues/39) Improve

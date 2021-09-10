@@ -215,10 +215,10 @@ All settings are declared here with their default values and are described
 below. These can be added to your spec.yaml file.
 
 ```yaml
-require_owner: false
+require-owner: false
 ```
 
-`require_owner`: Set to true to force having to set the `owner` property on all
+`require-owner`: Set to true to force having to set the `owner` property on all
 objects defined.
 
 ## --diff
