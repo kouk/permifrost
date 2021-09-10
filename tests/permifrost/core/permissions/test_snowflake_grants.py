@@ -1161,37 +1161,6 @@ class TestGenerateTableAndViewRevokeGrants:
             expected,
         ]
 
-    def revoke_single_r_schema_config(mocker):
-        """
-        Generates read REVOKE statements SCHEMA_1
-        """
-        test_tables_config = {
-            "read": [],
-            "write": [],
-        }
-
-        test_grants_to_role = {
-            "functional_role": {
-                "usage": {
-                    "schema": ["database_1.schema_1"],
-                },
-            },
-        }
-
-        expected = [
-            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
-            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_2 FROM ROLE functional_role",
-            "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
-            "REVOKE select ON table database_1.schema_1.table_2 FROM ROLE functional_role",
-            "REVOKE select ON view database_1.schema_1.view_1 FROM ROLE functional_role",
-        ]
-
-        return [
-            test_tables_config,
-            test_grants_to_role,
-            expected,
-        ]
-
     @pytest.mark.parametrize(
         "config",
         [
@@ -1246,4 +1215,129 @@ class TestGenerateTableAndViewRevokeGrants:
 
 
 class TestGenerateSchemaRevokeGrants:
-    pass
+    def revoke_single_r_schema_config(mocker):
+        """
+        Generates read REVOKE statements SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "usage": {
+                    "schema": ["database_1.schema_1"],
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE usage ON schema database_1.schema_1 FROM ROLE functional_role"
+        ]
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_r_schema_config(mocker):
+        """
+        Generates read REVOKE statements for SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "usage": {
+                    "schema": ["database_1.schema_1"],
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE usage ON schema database_1.schema_1 FROM ROLE functional_role"
+        ]
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_rw_schema_config(mocker):
+        """
+        Generates read/write REVOKE statements for SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "usage": {
+                    "schema": ["database_1.schema_1"],
+                },
+                "create table": {
+                    "schema": ["database_1.schema_1"],
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1 FROM ROLE functional_role",
+            "REVOKE usage ON schema database_1.schema_1 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    @pytest.mark.parametrize(
+        "config",
+        [revoke_single_r_schema_config, revoke_single_rw_schema_config],
+    )
+    def test_generate_schema_revokes(
+        self,
+        test_shared_dbs,
+        test_spec_dbs,
+        test_roles_granted_to_user,
+        mocker,
+        config,
+    ):
+
+        test_schemas_config, test_grants_to_role, expected = config(mocker)
+
+        # Generation of database grants should be identical while
+        # ignoring or not ignoring memberships
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role,
+            test_roles_granted_to_user,
+        )
+
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+
+        schemas_list = generator.generate_schema_grants(
+            role="functional_role",
+            schemas=test_schemas_config,
+            shared_dbs=set(test_shared_dbs),
+            spec_dbs=set(test_spec_dbs),
+        )
+
+        schemas_list_sql = []
+        for sql_dict in schemas_list:
+            for k, v in sql_dict.items():
+                if k == "sql":
+                    schemas_list_sql.append(v)
+
+        # Sort list of SQL queries for readability
+        schemas_list_sql.sort()
+
+        assert schemas_list_sql == expected
