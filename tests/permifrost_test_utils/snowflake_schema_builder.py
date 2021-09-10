@@ -79,8 +79,8 @@ class SnowflakeSchemaBuilder:
         self.settings.append({"name": name, "value": value})
         return self
 
-    def require_owner(self):
-        self.add_setting("require_owner", "true")
+    def require-owner(self):
+        self.add_setting("require-owner", "true")
         return self
 
     def build_from_file(self, schemas_dir, file_name):

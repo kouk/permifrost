@@ -16,7 +16,7 @@ class EntitySchema(TypedDict):
     users: Set[str]
     warehouses: Set[str]
     warehouse_refs: Set[str]
-    require_owner: bool
+    require-owner: bool
 
 
 class EntityGenerator:
@@ -33,7 +33,7 @@ class EntityGenerator:
             "users": set(),
             "warehouses": set(),
             "warehouse_refs": set(),
-            "require_owner": False,
+            "require-owner": False,
         }
         self.error_messages: List[str] = []
 
@@ -135,12 +135,12 @@ class EntityGenerator:
         )
 
         # Filter the owner requirement and set it to True or False
-        require_owner = [
+        require-owner = [
             entry
             for entity_type, entry in entities_by_type
-            if entity_type == "require_owner"
+            if entity_type == "require-owner"
         ]
-        self.entities["require_owner"] = require_owner == [True]
+        self.entities["require-owner"] = require-owner == [True]
 
         self.generate_implicit_schema_refs()
         self.generate_implicit_table_refs()
@@ -243,11 +243,11 @@ class EntityGenerator:
         self, entities: EntitySchema
     ) -> List[str]:
         """
-        Make sure that the spec is valid based on conditional settings such as require_owner
+        Make sure that the spec is valid based on conditional settings such as require-owner
         """
         error_messages = []
 
-        if entities["require_owner"]:
+        if entities["require-owner"]:
             error_messages.extend(self.check_entities_define_owner())
 
         return error_messages
@@ -266,7 +266,7 @@ class EntityGenerator:
                 for entity_name, config in entity_dict.items():
                     if "owner" not in config.keys():
                         error_messages.append(
-                            f"Spec Error: Owner not defined for {entity_type} {entity_name} and require_owner is set!"
+                            f"Spec Error: Owner not defined for {entity_type} {entity_name} and require-owner is set!"
                         )
 
         return error_messages

@@ -8,7 +8,7 @@ SNOWFLAKE_SPEC_SCHEMA = """
         type: string
         required: False
 
-    require_owner:
+    require-owner:
         type: boolean
         required: False
         default: False

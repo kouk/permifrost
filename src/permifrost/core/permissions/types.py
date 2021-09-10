@@ -69,4 +69,4 @@ class PermifrostSpecSchemaBase(TypedDict):
 
 class PermifrostSpecSchema(PermifrostSpecSchemaBase, total=False):
     version: str
-    require_owner: bool
+    require-owner: bool
