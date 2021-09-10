@@ -430,7 +430,7 @@ class SnowflakeSpecLoader:
                             )
                         )
 
-        return self.remove_duplicate_ownership_queries(sql_commands)
+        return self.remove_duplicate_queries(sql_commands)
 
     # TODO: These functions are part of a refactor of the previous module,
     # but this still requires a fair bit of attention to cleanup
