@@ -1242,33 +1242,6 @@ class TestGenerateSchemaRevokeGrants:
             expected,
         ]
 
-    def revoke_single_r_schema_config(mocker):
-        """
-        Generates read REVOKE statements for SCHEMA_1
-        """
-        test_schemas_config = {
-            "read": [],
-            "write": [],
-        }
-
-        test_grants_to_role = {
-            "functional_role": {
-                "usage": {
-                    "schema": ["database_1.schema_1"],
-                },
-            },
-        }
-
-        expected = [
-            "REVOKE usage ON schema database_1.schema_1 FROM ROLE functional_role"
-        ]
-
-        return [
-            test_schemas_config,
-            test_grants_to_role,
-            expected,
-        ]
-
     def revoke_single_rw_schema_config(mocker):
         """
         Generates read/write REVOKE statements for SCHEMA_1
