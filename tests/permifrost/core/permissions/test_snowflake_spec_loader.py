@@ -3,6 +3,7 @@ import os
 
 from permifrost.core.permissions import SpecLoadingError
 from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
+from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 from permifrost_test_utils.snowflake_schema_builder import SnowflakeSchemaBuilder
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 
@@ -913,9 +914,52 @@ class TestSpecFileLoading:
         )
         mock_connector.get_current_user.assert_called()
 
-    def test_edge_case_entities_load_correctly(self, test_dir, mocker, mock_connector):
-        mocker.patch.object(mock_connector, "show_warehouses")
-        SnowflakeSpecLoader(
+    def test_edge_case_entities_generate_correct_statements(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(
+            SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
+        )
+        mocker.patch(
+            "permifrost.core.permissions.utils.snowflake_connector.SnowflakeConnector",
+            MockSnowflakeConnector,
+        )
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+        spec_loader = SnowflakeSpecLoader(
             os.path.join(test_dir, "specs", "snowflake_spec_edge_cases.yml"),
             mock_connector,
         )
+        mocker.patch.object(
+            SnowflakeConnector,
+            "show_tables",
+            return_value=[],
+        )
+        mocker.patch.object(
+            SnowflakeConnector,
+            "show_views",
+            return_value=[],
+        )
+
+        expected = [
+            "ALTER USER first.last SET DISABLED = FALSE",
+            "GRANT OWNERSHIP ON database database_1 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON database shared_database_1 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON schema database_1.schema_1 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON table database_1.schema_1.table_1 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT ROLE test_role TO user first.last",
+            "GRANT monitor ON warehouse warehouse_1 TO ROLE test_role",
+            "GRANT operate ON warehouse warehouse_1 TO ROLE test_role",
+            "GRANT usage ON database database_1 TO ROLE test_role",
+            "GRANT usage ON schema database_1.read_only_schema TO ROLE test_role",
+            "GRANT usage ON schema database_1.write_schema TO ROLE test_role",
+            "GRANT usage ON warehouse warehouse_1 TO ROLE test_role",
+            "GRANT usage, monitor, create schema ON database database_1 TO ROLE test_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.write_schema TO ROLE test_role",
+        ]
+
+        mocker.patch.object(SnowflakeConnector, "show_views", return_value=[])
+        sql_queries = spec_loader.generate_permission_queries()
+        results = [cmd.get("sql", "") for cmd in sql_queries]
+        results.sort()
+
+        assert results == expected

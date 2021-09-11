@@ -39,10 +39,10 @@ roles:
             - database_1.write_schema
         tables:
           read:
-            - database_1.read_only_schema.*
-            - database_1.write_schema.*
+            - database_1.read_only_schema.table_1
+            - database_1.write_schema.table_1
           write:
-            - database_1.write_schema.*
+            - database_1.write_schema.table_1
 
 # Users
 users:
@@ -52,6 +52,7 @@ users:
       member_of:
         - test_role
       owner: test_role
+      
 
 # Warehouses
 warehouses:

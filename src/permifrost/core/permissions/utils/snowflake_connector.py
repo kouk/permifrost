@@ -330,7 +330,7 @@ class SnowflakeConnector:
         Permission granted to use snowflaky as a verb.
         """
         if name[0] == '"' and name[-1] == '"':
-            return name
+            return (f'"{name}"').upper()
         else:
             name_parts = name.split(".")
             new_name_parts = []
