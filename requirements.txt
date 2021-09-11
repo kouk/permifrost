@@ -16,6 +16,7 @@ chardet==4.0.0
 charset-normalizer==2.0.4
 click==8.0.1
 click-default-group==1.2.2
+colorama==0.4.4
 coverage==5.5
 cryptography==3.4.8
 flake8==3.9.2
