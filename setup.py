@@ -25,6 +25,7 @@ dev_requires = [
     "flake8",
     "isort",
     "mypy",
+    "pre-commit",
     "pytest",
     "pytest-cov",
     "pytest-mock",

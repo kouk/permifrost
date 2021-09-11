@@ -110,6 +110,7 @@ requirements.txt: setup.py
 
 install-dev:
 	pip install -e '.[dev]'
+	pre-commit install && pre-commit install -t pre-push
 
 # Release
 ifdef type

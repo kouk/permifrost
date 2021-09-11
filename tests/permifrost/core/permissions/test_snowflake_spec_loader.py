@@ -105,95 +105,6 @@ def test_roles_mock_connector(mocker):
 
 
 class TestSnowflakeSpecLoader:
-    def test_check_entities_on_snowflake_server_no_warehouses(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_warehouses")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.show_warehouses.assert_not_called()
-
-    def test_check_entities_on_snowflake_server_no_databases(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_databases")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.show_databases.assert_not_called()
-
-    def test_check_entities_on_snowflake_server_no_schemas(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_schemas")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.show_schemas.assert_not_called()
-
-    def test_check_entities_on_snowflake_server_no_tables(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_tables")
-        mocker.patch.object(mock_connector, "show_views")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.show_tables.assert_not_called()
-        mock_connector.show_views.assert_not_called()
-
-    def test_check_entities_on_snowflake_server_no_roles(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_roles")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.show_roles.assert_not_called()
-
-    def test_check_entities_on_snowflake_server_no_users(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_users")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.show_users.assert_not_called()
-
-    def test_check_permissions_on_snowflake_server_as_securityadmin(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(
-            MockSnowflakeConnector, "get_current_role", return_value="securityadmin"
-        )
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.get_current_role.assert_called()
-
-    def test_check_permissions_on_snowflake_server_not_as_securityadmin(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(
-            MockSnowflakeConnector, "get_current_role", return_value="notsecurityadmin"
-        )
-        with pytest.raises(SpecLoadingError):
-            SnowflakeSpecLoader(
-                os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"),
-                mock_connector,
-            )
-            mock_connector.get_current_role.assert_called()
-
-    def test_check_permissions_on_snowflake_server_gets_current_user_info(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "get_current_user")
-        SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-        mock_connector.get_current_user.assert_called()
-
     @pytest.mark.parametrize(
         "spec_file_data,method,return_value",
         [
@@ -892,16 +803,6 @@ class TestSnowflakeSpecLoader:
                         conn=test_roles_mock_connector, **arguments
                     )
 
-    def test_entities_load_correctly(
-        self, test_dir, mocker, mock_connector
-    ):
-        mocker.patch.object(mock_connector, "show_warehouses")
-        spec_loader = SnowflakeSpecLoader(
-            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
-        )
-
-        
-
     def test_remove_duplicate_queries(self):
 
         sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
@@ -913,3 +814,108 @@ class TestSnowflakeSpecLoader:
             [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
         )
         assert result == [sql_command_1, sql_command_3]
+
+
+class TestSpecFileLoading:
+    # @pytest.mark.parametrize(
+    #     ""
+    # )
+    def test_check_entities_on_snowflake_server_no_warehouses(
+        self, test_dir, mocker, mock_connector
+    ):
+        """"""
+        mocker.patch.object(mock_connector, "show_warehouses")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_warehouses.assert_not_called()
+
+    def test_check_entities_on_snowflake_server_no_databases(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_databases")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_databases.assert_not_called()
+
+    def test_check_entities_on_snowflake_server_no_schemas(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_schemas")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_schemas.assert_not_called()
+
+    def test_check_entities_on_snowflake_server_no_tables(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_tables")
+        mocker.patch.object(mock_connector, "show_views")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_tables.assert_not_called()
+        mock_connector.show_views.assert_not_called()
+
+    def test_check_entities_on_snowflake_server_no_roles(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_roles")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_roles.assert_not_called()
+
+    def test_check_entities_on_snowflake_server_no_users(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_users")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_users.assert_not_called()
+
+    def test_check_permissions_on_snowflake_server_as_securityadmin(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(
+            MockSnowflakeConnector, "get_current_role", return_value="securityadmin"
+        )
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.get_current_role.assert_called()
+
+    def test_check_permissions_on_snowflake_server_not_as_securityadmin(
+        self, test_dir, mocker, mock_connector
+    ):
+        """
+        Validates that an error is raised if not using SECURITYADMIN
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector, "get_current_role", return_value="notsecurityadmin"
+        )
+        with pytest.raises(SpecLoadingError):
+            SnowflakeSpecLoader(
+                os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"),
+                mock_connector,
+            )
+            mock_connector.get_current_role.assert_called()
+
+    def test_check_permissions_on_snowflake_server_gets_current_user_info(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "get_current_user")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.get_current_user.assert_called()
+
+    def test_edge_case_entities_load_correctly(self, test_dir, mocker, mock_connector):
+        mocker.patch.object(mock_connector, "show_warehouses")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_edge_cases.yml"),
+            mock_connector,
+        )

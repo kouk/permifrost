@@ -1,0 +1,30 @@
+repos:
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.3.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-aws-credentials
+      - id: detect-private-key
+      - id: requirements-txt-fixer
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: linting
+        name: Run linting suite
+        language: system
+        entry: make local-lint
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: tests
+        name: Run test suite (Unit + Integration)
+        language: system
+        entry: make test
+        pass_filenames: false
+        stages:
+          - push

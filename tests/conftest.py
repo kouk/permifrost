@@ -2,6 +2,7 @@ import pytest
 import os
 import logging
 from colorama import init, Fore, Style
+
 init()
 
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +18,7 @@ def concurrency():
         "cases": int(os.getenv("PYTEST_CONCURRENCY_CASES", 64)),
     }
 
+
 def pytest_itemcollected(item):
     """
     Brought in for docstring output:
@@ -24,7 +26,9 @@ def pytest_itemcollected(item):
     """
     par = item.parent.obj
     node = item.obj
-    pref = par.__doc__.strip() + ' ' if par.__doc__ else ''
-    suf = node.__doc__.strip() if node.__doc__ else ''
+    pref = par.__doc__.strip() + " " if par.__doc__ else ""
+    suf = node.__doc__.strip() if node.__doc__ else ""
     if pref or suf:
-        item._nodeid = Fore.YELLOW + ''.join((pref, suf)) + '\n' + Style.RESET_ALL + item._nodeid
+        item._nodeid = (
+            Fore.YELLOW + "".join((pref, suf)) + "\n" + Style.RESET_ALL + item._nodeid
+        )
