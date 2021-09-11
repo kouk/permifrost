@@ -892,15 +892,24 @@ class TestSnowflakeSpecLoader:
                         conn=test_roles_mock_connector, **arguments
                     )
 
+    def test_entities_load_correctly(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_warehouses")
+        spec_loader = SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
 
-def test_remove_duplicate_queries():
+        
 
-    sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
-    sql_command_2 = sql_command_1.copy()
-    sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
-    sql_command_4 = sql_command_3.copy()
+    def test_remove_duplicate_queries(self):
 
-    result = SnowflakeSpecLoader.remove_duplicate_queries(
-        [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
-    )
-    assert result == [sql_command_1, sql_command_3]
+        sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
+        sql_command_2 = sql_command_1.copy()
+        sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
+        sql_command_4 = sql_command_3.copy()
+
+        result = SnowflakeSpecLoader.remove_duplicate_queries(
+            [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
+        )
+        assert result == [sql_command_1, sql_command_3]

@@ -329,16 +329,19 @@ class SnowflakeConnector:
         Pronounced /snəʊfleɪkɪ/ like saying very fast snowflak[e and clarif]y
         Permission granted to use snowflaky as a verb.
         """
-        name_parts = name.split(".")
-        new_name_parts = []
+        if name[0] == '"' and name[-1] == '"':
+            return name
+        else:
+            name_parts = name.split(".")
+            new_name_parts = []
 
-        for part in name_parts:
-            if (
-                re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
-                and re.match('^".*"$', part) is None  # Already quoted
-            ):
-                new_name_parts.append(f'"{part}"')
-            else:
-                new_name_parts.append(part)
+            for part in name_parts:
+                if (
+                    re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
+                    and re.match('^".*"$', part) is None  # Already quoted
+                ):
+                    new_name_parts.append(f'"{part}"')
+                else:
+                    new_name_parts.append(part)
 
-        return ".".join(new_name_parts)
+            return ".".join(new_name_parts)
