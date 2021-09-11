@@ -198,7 +198,7 @@ roles:
         owns:
             schemas:
                 - analytics.jurbanc_scratch
-        
+
     - target_snowflake:
         warehouses:
             - reporting
@@ -235,7 +235,7 @@ users:
             - sysadmin
             - transformer
             - eburke
-           
+
     - eeastwood:
         can_login: yes
         member_of:
@@ -259,7 +259,7 @@ users:
             - transformer
             - sysadmin
             - iroussos
-    
+
     - jurbanc:
         can_login: yes
         member_of:

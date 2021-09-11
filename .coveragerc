@@ -1,5 +1,5 @@
 [paths]
-source = 
+source =
   src/permifrost
   **/site-packages/permifrost
   **/site-packages/permifrost*/permifrost

@@ -1,30 +1,21 @@
 repos:
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.3.0
+    rev: v4.0.1
     hooks:
+      - id: no-commit-to-branch
+      - id: name-tests-test
+        args: ['--django']
       - id: check-yaml
-      - id: end-of-file-fixer
+      - id: debug-statements
       - id: trailing-whitespace
-      - id: detect-aws-credentials
       - id: detect-private-key
-      - id: requirements-txt-fixer
       - id: check-merge-conflict
 
   - repo: local
     hooks:
       - id: linting
-        name: Run linting suite
+        name: Run linting suite consisting of (flake8, isort, mypy, black)
         language: system
         entry: make local-lint
         pass_filenames: false
-
-  - repo: local
-    hooks:
-      - id: tests
-        name: Run test suite (Unit + Integration)
-        language: system
-        entry: make test
-        pass_filenames: false
-        stages:
-          - push
