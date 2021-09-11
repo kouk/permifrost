@@ -21,6 +21,7 @@ dev_requires = [
     "black",
     "bumpversion",
     "changelog-cli",
+    "colorama",
     "coverage",
     "flake8",
     "isort",

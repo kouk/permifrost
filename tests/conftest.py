@@ -2,6 +2,7 @@ import pytest
 import os
 import logging
 from colorama import init, Fore, Style
+import inspect
 
 init()
 
@@ -27,7 +28,29 @@ def pytest_itemcollected(item):
     par = item.parent.obj
     node = item.obj
     pref = par.__doc__.strip() + " " if par.__doc__ else ""
-    suf = node.__doc__.strip() if node.__doc__ else ""
+    try:
+        suf = ""
+        if node.__doc__:
+            suf = node.__doc__.strip()
+            mark_list = item._nodeid.split("[")[-1][:-1].split("-")
+            for pytest_mark in node.pytestmark:
+                if pytest_mark.name == "parametrize":
+                    for param in pytest_mark.args[1]:
+                        if param.__name__ in mark_list:
+                            clean_doc = param.__doc__.strip()
+                            clean_doc = " ".join(clean_doc.split())
+                            suf += clean_doc + " "
+        else:
+            mark_list = item._nodeid.split("[")[-1][:-1].split("-")
+            for pytest_mark in node.pytestmark:
+                if pytest_mark.name == "parametrize":
+                    for param in pytest_mark.args[1]:
+                        if param.__name__ in mark_list:
+                            clean_doc = param.__doc__.strip()
+                            clean_doc = " ".join(clean_doc.split())
+                            suf += clean_doc + " "
+    except Exception as e:
+        suf = node.__doc__.strip() + " " if node.__doc__ else ""
     if pref or suf:
         item._nodeid = (
             Fore.YELLOW + "".join((pref, suf)) + "\n" + Style.RESET_ALL + item._nodeid
