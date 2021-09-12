@@ -43,10 +43,8 @@ def pytest_itemcollected(item):
                         clean_doc = " ".join(clean_doc.split())
                         suf += clean_doc + " "
     except AttributeError as e:
-        logging.exception(e)
         suf = node.__doc__.strip() + " " if node.__doc__ else ""
     except Exception as e:
-        logging.exception(e)
         suf = node.__doc__.strip() + " " if node.__doc__ else ""
     if pref or suf:
         item._nodeid = (
