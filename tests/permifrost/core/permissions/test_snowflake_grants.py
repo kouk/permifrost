@@ -509,7 +509,6 @@ class TestGenerateTableAndViewGrants:
         mocker,
         config,
     ):
-
         # Generation of database grants should be identical while ignoring or not ignoring memberships
         generator = SnowflakeGrantsGenerator(
             test_grants_to_role,

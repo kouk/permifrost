@@ -818,9 +818,6 @@ class TestSnowflakeSpecLoader:
 
 
 class TestSpecFileLoading:
-    # @pytest.mark.parametrize(
-    #     ""
-    # )
     def test_check_entities_on_snowflake_server_no_warehouses(
         self, test_dir, mocker, mock_connector
     ):
