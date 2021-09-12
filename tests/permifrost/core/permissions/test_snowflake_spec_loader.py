@@ -610,147 +610,179 @@ class TestSnowflakeSpecLoader:
         ]
         assert results == expected_results
 
+    def test_remove_duplicate_queries(self):
+
+        sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
+        sql_command_2 = sql_command_1.copy()
+        sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
+        sql_command_4 = sql_command_3.copy()
+
+        result = SnowflakeSpecLoader.remove_duplicate_queries(
+            [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
+        )
+        assert result == [sql_command_1, sql_command_3]
+
+
+class TestGetPrivilegesFromSnowflakeServer:
+    def users_with_users_roles_run_list():
+        """Only users with full run_list"""
+        users = ["testusername", "testuser"]
+        roles = []
+        run_list = ["roles", "users"]
+        expected_calls = [
+            ("get_role_privileges_from_snowflake_server", 1, {}),
+            (
+                "get_user_privileges_from_snowflake_server",
+                1,
+                {"users": ["testusername", "testuser"]},
+            ),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def roles_with_users_roles_run_list():
+        """Only Roles passed with full run_list"""
+        users = []
+        roles = ["primary"]
+        run_list = ["roles", "users"]
+        expected_calls = [
+            (
+                "get_role_privileges_from_snowflake_server",
+                1,
+                {"roles": ["primary"], "ignore_memberships": False},
+            ),
+            ("get_user_privileges_from_snowflake_server", 1, {"users": []}),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def users_roles_with_users_run_list():
+        """Users and roles passed but roles not in run_list"""
+        users = ["testusername", "testuser"]
+        roles = ["primary"]
+        run_list = ["users"]
+        expected_calls = [
+            ("get_role_privileges_from_snowflake_server", 0, {}),
+            (
+                "get_user_privileges_from_snowflake_server",
+                1,
+                {"users": ["testusername", "testuser"]},
+            ),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def users_roles_with_roles_run_list():
+        """Users and roles passed but users not in run_list"""
+        users = ["testusername", "testuser"]
+        roles = ["primary"]
+        run_list = ["roles"]
+        expected_calls = [
+            (
+                "get_role_privileges_from_snowflake_server",
+                1,
+                {"roles": ["primary"], "ignore_memberships": False},
+            ),
+            ("get_user_privileges_from_snowflake_server", 0, {}),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def users_with_users_run_list():
+        """Only Users passed with only users in run_list"""
+        users = ["testusername", "testuser"]
+        roles = []
+        run_list = ["users"]
+        expected_calls = [
+            ("get_role_privileges_from_snowflake_server", 0, {}),
+            (
+                "get_user_privileges_from_snowflake_server",
+                1,
+                {"users": ["testusername", "testuser"]},
+            ),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def roles_with_roles_run_list():
+        """Only Roles passed with only roles in run_list"""
+        users = []
+        roles = ["primary"]
+        run_list = ["roles"]
+        expected_calls = [
+            (
+                "get_role_privileges_from_snowflake_server",
+                1,
+                {"roles": ["primary"], "ignore_memberships": False},
+            ),
+            ("get_user_privileges_from_snowflake_server", 0, {}),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def users_roles_with_users_roles_run_list():
+        """Users and Roles passed with users and roles in run_list"""
+        users = ["testusername", "testuser"]
+        roles = ["primary"]
+        run_list = ["roles", "users"]
+        expected_calls = [
+            (
+                "get_role_privileges_from_snowflake_server",
+                1,
+                {"roles": ["primary"], "ignore_memberships": False},
+            ),
+            (
+                "get_user_privileges_from_snowflake_server",
+                1,
+                {"users": ["testusername", "testuser"]},
+            ),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def users_roles_with_empty_run_list():
+        """Users and Roles passed with empty list run_list"""
+        users = ["testusername", "testuser"]
+        roles = ["primary"]
+        run_list = []
+        expected_calls = [
+            (
+                "get_role_privileges_from_snowflake_server",
+                1,
+                {"roles": ["primary"], "ignore_memberships": False},
+            ),
+            (
+                "get_user_privileges_from_snowflake_server",
+                1,
+                {"users": ["testusername", "testuser"]},
+            ),
+        ]
+        return [users, roles, run_list, expected_calls]
+
+    def users_and_roles_with_none_run_list():
+        """Users and Roles passed and run_list == None"""
+        users = ["testusername", "testuser"]
+        roles = ["primary"]
+        run_list = None
+        expected_calls = [
+            (
+                "get_role_privileges_from_snowflake_server",
+                1,
+                {"roles": ["primary"], "ignore_memberships": False},
+            ),
+            (
+                "get_user_privileges_from_snowflake_server",
+                1,
+                {"users": ["testusername", "testuser"]},
+            ),
+        ]
+        return [users, roles, run_list, expected_calls]
+
     @pytest.mark.parametrize(
-        "users,roles,run_list,expected_calls",
+        "config",
         [
-            # Only users with full run_list
-            (
-                ["testusername", "testuser"],
-                [],
-                ["roles", "users"],
-                [
-                    ("get_role_privileges_from_snowflake_server", 1, {}),
-                    (
-                        "get_user_privileges_from_snowflake_server",
-                        1,
-                        {"users": ["testusername", "testuser"]},
-                    ),
-                ],
-            ),
-            # Only Roles passed with full run_list
-            (
-                [],
-                ["primary"],
-                ["roles", "users"],
-                [
-                    (
-                        "get_role_privileges_from_snowflake_server",
-                        1,
-                        {"roles": ["primary"], "ignore_memberships": False},
-                    ),
-                    ("get_user_privileges_from_snowflake_server", 1, {"users": []}),
-                ],
-            ),
-            # Users and roles passed but roles not in run_list
-            (
-                ["testusername", "testuser"],
-                ["primary"],
-                ["users"],
-                [
-                    ("get_role_privileges_from_snowflake_server", 0, {}),
-                    (
-                        "get_user_privileges_from_snowflake_server",
-                        1,
-                        {"users": ["testusername", "testuser"]},
-                    ),
-                ],
-            ),
-            # Users and roles passed but users not in run_list
-            (
-                ["testusername", "testuser"],
-                ["primary"],
-                ["roles"],
-                [
-                    (
-                        "get_role_privileges_from_snowflake_server",
-                        1,
-                        {"roles": ["primary"], "ignore_memberships": False},
-                    ),
-                    ("get_user_privileges_from_snowflake_server", 0, {}),
-                ],
-            ),
-            # Only Users passed with only users in run_list
-            (
-                ["testusername", "testuser"],
-                [],
-                ["users"],
-                [
-                    ("get_role_privileges_from_snowflake_server", 0, {}),
-                    (
-                        "get_user_privileges_from_snowflake_server",
-                        1,
-                        {"users": ["testusername", "testuser"]},
-                    ),
-                ],
-            ),
-            # Only Roles passed with only roles in run_list
-            (
-                [],
-                ["primary"],
-                ["roles"],
-                [
-                    (
-                        "get_role_privileges_from_snowflake_server",
-                        1,
-                        {"roles": ["primary"], "ignore_memberships": False},
-                    ),
-                    ("get_user_privileges_from_snowflake_server", 0, {}),
-                ],
-            ),
-            # Users and Roles passed with users and roles in run_list
-            (
-                ["testusername", "testuser"],
-                ["primary"],
-                ["roles", "users"],
-                [
-                    (
-                        "get_role_privileges_from_snowflake_server",
-                        1,
-                        {"roles": ["primary"], "ignore_memberships": False},
-                    ),
-                    (
-                        "get_user_privileges_from_snowflake_server",
-                        1,
-                        {"users": ["testusername", "testuser"]},
-                    ),
-                ],
-            ),
-            # Users and Roles passed with empty list run_list
-            (
-                ["testusername", "testuser"],
-                ["primary"],
-                [],
-                [
-                    (
-                        "get_role_privileges_from_snowflake_server",
-                        1,
-                        {"roles": ["primary"], "ignore_memberships": False},
-                    ),
-                    (
-                        "get_user_privileges_from_snowflake_server",
-                        1,
-                        {"users": ["testusername", "testuser"]},
-                    ),
-                ],
-            ),
-            # Users and Roles passed with None run_list
-            (
-                ["testusername", "testuser"],
-                ["primary"],
-                None,
-                [
-                    (
-                        "get_role_privileges_from_snowflake_server",
-                        1,
-                        {"roles": ["primary"], "ignore_memberships": False},
-                    ),
-                    (
-                        "get_user_privileges_from_snowflake_server",
-                        1,
-                        {"users": ["testusername", "testuser"]},
-                    ),
-                ],
-            ),
+            users_with_users_roles_run_list,
+            roles_with_users_roles_run_list,
+            users_roles_with_users_run_list,
+            users_roles_with_roles_run_list,
+            users_with_users_run_list,
+            roles_with_roles_run_list,
+            users_roles_with_users_roles_run_list,
+            users_roles_with_empty_run_list,
+            users_and_roles_with_none_run_list,
         ],
     )
     def test_get_privileges_from_snowflake_server(
@@ -758,13 +790,10 @@ class TestSnowflakeSpecLoader:
         mocker,
         test_roles_mock_connector,
         test_roles_spec_file,
-        users,
-        roles,
-        run_list,
-        expected_calls,
+        config,
     ):
-        """Verify correct calls when getting privs from server"""
-
+        """Verify correct calls when getting privs from server:"""
+        users, roles, run_list, expected_calls = config()
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
         mock_get_role_privileges_from_snowflake_server = mocker.patch.object(
@@ -803,18 +832,6 @@ class TestSnowflakeSpecLoader:
                     mock_get_user_privileges_from_snowflake_server.assert_called_with(
                         conn=test_roles_mock_connector, **arguments
                     )
-
-    def test_remove_duplicate_queries(self):
-
-        sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
-        sql_command_2 = sql_command_1.copy()
-        sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
-        sql_command_4 = sql_command_3.copy()
-
-        result = SnowflakeSpecLoader.remove_duplicate_queries(
-            [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
-        )
-        assert result == [sql_command_1, sql_command_3]
 
 
 class TestSpecFileLoading:
