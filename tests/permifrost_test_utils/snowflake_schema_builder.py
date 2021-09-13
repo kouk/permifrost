@@ -67,11 +67,17 @@ class SnowflakeSchemaBuilder:
         self.roles.append({"name": name, "owner": owner, "member_of": member_of})
         return self
 
-    def add_user(self, name="testusername", owner=None):
+    def add_user(self, name: str = "testusername", owner: str = None):
+        """
+        Adds user to spec file
+        """
         self.users.append({"name": name, "owner": owner})
         return self
 
     def add_db(self, name="testdb", owner=None):
+        """
+        Adds database to spec file with optional owner
+        """
         self.dbs.append({"name": name, "owner": owner})
         return self
 

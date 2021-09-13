@@ -284,10 +284,33 @@ See [Snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy#k
 Contributing to Permifrost is easy, and most commands to do so are available
 within the Makefile.
 
-The easiest way to start developing is to run `make permifrost`, this will open
+The easiest way to start developing is to run `make initial-setup` to install all the necessary packages to develop on the project. Next run `make permifrost` in a second terminal, this will open
 a shell in a docker container with the local version of Permifrost installed.
+
 You can now make changes to the files in your editor and it will be reflected in
 the commands that you run from the docker shell.
 
-For code checking, you can use `make test`, `make lint`,and `make typecheck`.
-See the Makefile for more details.
+To check code quality prior to committing changes, you can use `make local-lint`.
+
+See the [Makefile](Makefile) for more details.
+
+**WARNING**
+
+This project has [pre-commit hooks](https://github.com/pre-commit/pre-commit-hooks) installed to maintain the existing code quality. As such, we strongly recommend you use a terminal to **commit** and **push** code changes. Specifically, avoid using git integrations on IDEs to make **commits** or **pushes**. **Adding** files through the IDE git integrations are okay, but do not **commit** through the IDE. Use the terminal to commit changes because it will show the output of each of the pre-commit checks to allow you to make changes as needed.
+
+For committing work-in-progress changes use `git commit --no-verify -m "WIP: <message>"`.
+
+For committing finalized changes, the below workflow will identify errors and allow for easier development:
+* Make your changes and `git add <file name(s)>`
+* `git commit` to identify/format errors in the changed files
+    * Repeat the following steps until all checks pass
+    * `git add <file name(s)>`
+    * `git commit`
+* Add message at the prompt and save/exit the commit file
+* When you are ready to push changes to the remote host, run `git push origin <branch name>`. This will perform additional linting/formatting checks.
+    * Repeat the following steps until all checks pass
+    * `git push origin <branch name>`
+    * `git add <file name(s)>`
+    * `git commit`
+* Add message at the prompt and save/exit the commit file
+* `git push origin <branch name>` until all checks pass
