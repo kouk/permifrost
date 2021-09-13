@@ -109,7 +109,7 @@ class TestSnowflakeSpecLoader:
     # test_check_entities_on_snowflake_server_checks_role_owner
     def enforce_owner_role():
         """
-        TBD
+        SnowflakeSchemaBuilder loads correctly with only role and owner attr
         """
         spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
         method = "show_roles"
@@ -120,7 +120,7 @@ class TestSnowflakeSpecLoader:
     # test_check_entities_on_snowflake_server_checks_role_owner
     def empty_spec_file():
         """
-        TBD
+        SnowflakeSchemaBuilder loads correctly with empty spec file
         """
         spec_file_data = SnowflakeSchemaBuilder().set_version("1.0").build()
         method = "show_roles"
@@ -421,57 +421,118 @@ class TestSnowflakeSpecLoader:
 
         mock_open.assert_called_once_with(filepath, "r")
 
+    def load_spec_with_owner_case_one():
+        """
+        SnowflakeSpecLoader loads without error for database with owner
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_db(owner="user").build()
+        method = "show_databases"
+        return_value = ["testdb"]
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_two():
+        """
+        SnowflakeSpecLoader loads without error for role with owner
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        method = "show_roles"
+        return_value = {"testrole": "user"}
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_three():
+        """
+        SnowflakeSpecLoader loads without error for user with owner
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_user(owner="user").build()
+        method = "show_users"
+        return_value = ["testusername"]
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_four():
+        """
+        SnowflakeSpecLoader loads without error for warehouse with owner
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_warehouse(owner="user").build()
+        method = "show_warehouses"
+        return_value = ["testwarehouse"]
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_five():
+        """
+        SnowflakeSpecLoader loads without error for database with owner
+        and require-owner: True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder().require_owner().add_db(owner="user").build()
+        )
+        method = "show_databases"
+        return_value = ["testdb"]
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_six():
+        """
+        SnowflakeSpecLoader loads without error for role with owner
+        and require-owner: True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder().require_owner().add_role(owner="user").build()
+        )
+        method = "show_roles"
+        return_value = {"testrole": "user"}
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_seven():
+        """
+        SnowflakeSpecLoader loads without error for user with owner
+        and require-owner: True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder().require_owner().add_user(owner="user").build()
+        )
+        method = "show_users"
+        return_value = ["testusername"]
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_eight():
+        """
+        SnowflakeSpecLoader loads without error for warehouse with owner
+        and require-owner: True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder().require_owner().add_warehouse(owner="user").build()
+        )
+        method = "show_warehouses"
+        return_value = ["testwarehouse"]
+
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
-        "spec_file_data,method,return_value",
+        "config",
         [
-            (
-                SnowflakeSchemaBuilder().add_db(owner="user").build(),
-                "show_databases",
-                ["testdb"],
-            ),
-            (
-                SnowflakeSchemaBuilder().add_role(owner="user").build(),
-                "show_roles",
-                {"testrole": "user"},
-            ),
-            (
-                SnowflakeSchemaBuilder().add_user(owner="user").build(),
-                "show_users",
-                ["testusername"],
-            ),
-            (
-                SnowflakeSchemaBuilder().add_warehouse(owner="user").build(),
-                "show_warehouses",
-                ["testwarehouse"],
-            ),
-            (
-                SnowflakeSchemaBuilder().require_owner().add_db(owner="user").build(),
-                "show_databases",
-                ["testdb"],
-            ),
-            (
-                SnowflakeSchemaBuilder().require_owner().add_role(owner="user").build(),
-                "show_roles",
-                {"testrole": "user"},
-            ),
-            (
-                SnowflakeSchemaBuilder().require_owner().add_user(owner="user").build(),
-                "show_users",
-                ["testusername"],
-            ),
-            (
-                SnowflakeSchemaBuilder()
-                .require_owner()
-                .add_warehouse(owner="user")
-                .build(),
-                "show_warehouses",
-                ["testwarehouse"],
-            ),
+            load_spec_with_owner_case_one,
+            load_spec_with_owner_case_two,
+            load_spec_with_owner_case_three,
+            load_spec_with_owner_case_four,
+            load_spec_with_owner_case_five,
+            load_spec_with_owner_case_six,
+            load_spec_with_owner_case_seven,
+            load_spec_with_owner_case_eight,
         ],
     )
     def test_load_spec_with_owner(
-        self, spec_file_data, method, return_value, mocker, mock_connector
+        self,
+        config,
+        mocker,
+        mock_connector,
     ):
+        spec_file_data, method, return_value = config()
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
@@ -479,7 +540,7 @@ class TestSnowflakeSpecLoader:
         SnowflakeSpecLoader("", mock_connector)
 
     # test_load_spec_owner_required_with_no_owner
-    def load_spec_file_case_one():
+    def load_spec_file_error_case_one():
         """
         Raise 'Owner not defined' error on show_databases
         with no owner and require-owner = True
@@ -490,7 +551,7 @@ class TestSnowflakeSpecLoader:
         return [spec_file_data, method, return_value]
 
     # test_load_spec_owner_required_with_no_owner
-    def load_spec_file_case_two():
+    def load_spec_file_error_case_two():
         """
         Raise 'Owner not defined' error on show_roles
         with no owner and require-owner = True
@@ -501,7 +562,7 @@ class TestSnowflakeSpecLoader:
         return [spec_file_data, method, return_value]
 
     # test_load_spec_owner_required_with_no_owner
-    def load_spec_file_case_three():
+    def load_spec_file_error_case_three():
         """
         Raise 'Owner not defined' error on show_users
         with no owner and require-owner = True
@@ -512,7 +573,7 @@ class TestSnowflakeSpecLoader:
         return [spec_file_data, method, return_value]
 
     # test_load_spec_owner_required_with_no_owner
-    def load_spec_file_case_four():
+    def load_spec_file_error_case_four():
         """
         Raise 'Owner not defined' error on show_warehouses
         with no owner and require-owner = True
@@ -525,17 +586,21 @@ class TestSnowflakeSpecLoader:
         return [spec_file_data, method, return_value]
 
     @pytest.mark.parametrize(
-        "spec_file_data,method,return_value",
+        "config",
         [
-            load_spec_file_case_one(),
-            load_spec_file_case_two(),
-            load_spec_file_case_three(),
-            load_spec_file_case_four(),
+            load_spec_file_error_case_one,
+            load_spec_file_error_case_two,
+            load_spec_file_error_case_three,
+            load_spec_file_error_case_four,
         ],
     )
     def test_load_spec_owner_required_with_no_owner(
-        self, spec_file_data, method, return_value, mocker, mock_connector
+        self,
+        config,
+        mocker,
+        mock_connector,
     ):
+        spec_file_data, method, return_value = config()
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
@@ -548,31 +613,38 @@ class TestSnowflakeSpecLoader:
     def test_generate_permission_queries_with_requires_owner(
         self, mocker, mock_connector
     ):
+        """
+        Generate no permissions for empty spec with require-owner: True
+        """
         spec_file_data = (
             SnowflakeSchemaBuilder().set_version("1.0").require_owner().build()
         )
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
-        loader = SnowflakeSpecLoader("", mock_connector)
-        queries = loader.generate_permission_queries()
+        spec_loader = SnowflakeSpecLoader("", mock_connector)
+        queries = spec_loader.generate_permission_queries()
 
         assert [] == queries
 
     def test_role_filter(self, mocker, test_roles_mock_connector, test_roles_spec_file):
-        """Make sure that the grant queries list can be filtered by role."""
+        """GRANT queries list filtered by role."""
 
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
         spec_loader = SnowflakeSpecLoader(spec_path="", conn=test_roles_mock_connector)
-        assert spec_loader.generate_permission_queries(
+        results = spec_loader.generate_permission_queries(
             roles=["primary"], run_list=["roles"]
-        ) == [{"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}]
+        )
+        expected = [
+            {"already_granted": False, "sql": "GRANT ROLE testrole TO role primary"}
+        ]
+        assert results == expected
 
     def test_role_filter_multiple(
         self, mocker, test_roles_mock_connector, test_roles_spec_file
     ):
-        """Make sure that the grant queries list can be filtered by multiple roles."""
+        """Make sure that the GRANT queries list can be filtered by multiple roles."""
 
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
@@ -589,7 +661,10 @@ class TestSnowflakeSpecLoader:
     def test_role_filter_and_user_filter(
         self, mocker, test_roles_mock_connector, test_roles_spec_file
     ):
-        """Make sure that the grant queries list can be filtered by multiple roles and a single user ignores the user"""
+        """
+        Make sure that the grant queries list can be filtered by
+        multiple roles and a single user ignores the user
+        """
 
         print(f"Spec File Data is:\n{test_roles_spec_file}")
         mocker.patch("builtins.open", mocker.mock_open(read_data=test_roles_spec_file))
