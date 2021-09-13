@@ -72,6 +72,9 @@ class SnowflakeSchemaBuilder:
         return self
 
     def add_db(self, name="testdb", owner=None):
+        """
+        Adds database to spec file with optional owner
+        """
         self.dbs.append({"name": name, "owner": owner})
         return self
 

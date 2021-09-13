@@ -106,68 +106,116 @@ def test_roles_mock_connector(mocker):
 
 
 class TestSnowflakeSpecLoader:
+    # test_check_entities_on_snowflake_server_checks_role_owner
+    def enforce_owner_role():
+        """
+        TBD
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        method = "show_roles"
+        return_value = {"testrole": "user"}
+
+        return [spec_file_data, method, return_value]
+
+    # test_check_entities_on_snowflake_server_checks_role_owner
+    def empty_spec_file():
+        """
+        TBD
+        """
+        spec_file_data = SnowflakeSchemaBuilder().set_version("1.0").build()
+        method = "show_roles"
+        return_value = {"testrole": "none"}
+
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
-        "spec_file_data,method,return_value",
+        "config",
         [
-            (
-                SnowflakeSchemaBuilder().add_role(owner="user").build(),
-                "show_roles",
-                {"testrole": "user"},
-            ),
-            (
-                SnowflakeSchemaBuilder().set_version("1.0").build(),
-                "show_roles",
-                {"testrole": "none"},
-            ),
+            enforce_owner_role,
+            empty_spec_file,
         ],
     )
     def test_check_entities_on_snowflake_server_checks_role_owner(
-        self, spec_file_data, method, return_value, mocker, mock_connector
+        self, config, mocker, mock_connector
     ):
+        spec_file_data, method, return_value = config()
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
         mocker.patch.object(mock_connector, method, return_value=return_value)
         SnowflakeSpecLoader("", mock_connector)
 
+    # test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match
+    def require_owner_error_handling_case_one():
+        """
+        Raise error when role owner on Snowflake is different than
+        role owner in spec
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        method = "show_roles"
+        return_value = {"testrole": "testuser"}
+        expected_error = "Role testrole has owner testuser on snowflake, but has owner user defined in the spec file"
+
+        return [spec_file_data, method, return_value, expected_error]
+
+    def require_owner_error_handling_case_two():
+        """
+        Role in spec missing on Snowflake
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        method = "show_roles"
+        return_value = {"some-other-role": "none"}
+        expected_error = (
+            "Missing Entity Error: Role testrole was not found on Snowflake Server"
+        )
+
+        return [spec_file_data, method, return_value, expected_error]
+
+    def require_owner_error_handling_case_three():
+        """
+        Role in spec missing on Snowflake
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_role().build()
+        method = "show_roles"
+        return_value = {}
+        expected_error = (
+            "Missing Entity Error: Role testrole was not found on Snowflake Server"
+        )
+
+        return [spec_file_data, method, return_value, expected_error]
+
+    def require_owner_error_handling_case_four():
+        """
+        Role in spec missing on Snowflake
+        """
+        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        method = "show_roles"
+        return_value = {}
+        expected_error = (
+            "Missing Entity Error: Role testrole was not found on Snowflake Server"
+        )
+
+        return [spec_file_data, method, return_value, expected_error]
+
     @pytest.mark.parametrize(
-        "spec_file_data,method,return_value,expected_error",
+        "config",
         [
-            (
-                SnowflakeSchemaBuilder().add_role(owner="user").build(),
-                "show_roles",
-                {"testrole": "testuser"},
-                "Role testrole has owner testuser on snowflake, but has owner user defined in the spec file",
-            ),
-            (
-                SnowflakeSchemaBuilder().add_role(owner="user").build(),
-                "show_roles",
-                {"some-other-role": "none"},
-                "Missing Entity Error: Role testrole was not found on Snowflake Server",
-            ),
-            (
-                SnowflakeSchemaBuilder().add_role().build(),
-                "show_roles",
-                {},
-                "Missing Entity Error: Role testrole was not found on Snowflake Server",
-            ),
-            (
-                SnowflakeSchemaBuilder().add_role(owner="user").build(),
-                "show_roles",
-                {},
-                "Missing Entity Error: Role testrole was not found on Snowflake Server",
-            ),
+            require_owner_error_handling_case_one,
+            require_owner_error_handling_case_two,
+            require_owner_error_handling_case_three,
+            require_owner_error_handling_case_four,
         ],
     )
     def test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match(
         self,
-        spec_file_data,
-        method,
-        return_value,
+        config,
         mocker,
         mock_connector,
-        expected_error,
     ):
+        spec_file_data, method, return_value, expected_error = config()
+        """
+        Error handling for owner functionality:
+        """
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
@@ -177,48 +225,62 @@ class TestSnowflakeSpecLoader:
 
         assert expected_error in str(context.value)
 
+    # test_check_entities_on_snowflake_server_filters_grants_to_role_to_items_defined_in_config
+    def generate_grants_for_spec_roles_case_one():
+        """
+        Shows FUTURE GRANTS to be applied to the testrole found in the
+        tests/permifrost/core/permissions/specs folder which should
+        filter out secondarydb grant references as only primarydb is
+        cited in the spec file
+        """
+        mock_method = "show_future_grants"
+        spec_file_data = get_spec_from_file(
+            "snowflake_server_filters_grants_to_role_to_items_defined_in_config.yml"
+        )
+        return_value = SnowflakeSchemaBuilder().build_from_file(
+            SCHEMA_FILE_DIR,
+            "snowflake_server_filters_grants_to_role_to_items_defined_in_config_future_grants.json",
+        )
+        expected_value = SnowflakeSchemaBuilder().build_from_file(
+            SCHEMA_FILE_DIR,
+            "snowflake_server_filters_grants_to_role_to_items_defined_in_config_future_grants_expected_values.json",
+        )
+        return [mock_method, return_value, [spec_file_data, expected_value]]
+
+    # test_check_entities_on_snowflake_server_filters_grants_to_role_to_items_defined_in_config
+    def generate_grants_for_spec_roles_case_two():
+        """
+        Shows GRANTS to be applied to the testrole found in the
+        tests/permifrost/core/permissions/specs folder which should
+        filter out secondarydb grant references as only primarydb is
+        cited in the spec file
+        """
+
+        mock_method = "show_grants_to_role"
+        spec_file_data = get_spec_from_file(
+            "snowflake_server_filters_grants_to_role_to_items_defined_in_config.yml"
+        )
+        return_value = SnowflakeSchemaBuilder().build_from_file(
+            SCHEMA_FILE_DIR,
+            "snowflake_server_filters_grants_to_role_to_items_defined_in_config_grants_to_role.json",
+        )
+        expected_value = SnowflakeSchemaBuilder().build_from_file(
+            SCHEMA_FILE_DIR,
+            "snowflake_server_filters_grants_to_role_to_items_defined_in_config_grants_to_role_expected_values.json",
+        )
+        return [mock_method, return_value, [spec_file_data, expected_value]]
+
     @pytest.mark.parametrize(
-        "mock_method,spec_file_data,return_value,expected_value",
+        "mock_method,return_value,config",
         [
-            (
-                "show_future_grants",
-                get_spec_from_file(
-                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config.yml"
-                ),
-                SnowflakeSchemaBuilder().build_from_file(
-                    SCHEMA_FILE_DIR,
-                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_future_grants.json",
-                ),
-                SnowflakeSchemaBuilder().build_from_file(
-                    SCHEMA_FILE_DIR,
-                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_future_grants_expected_values.json",
-                ),
-            ),
-            (
-                "show_grants_to_role",
-                get_spec_from_file(
-                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config.yml"
-                ),
-                SnowflakeSchemaBuilder().build_from_file(
-                    SCHEMA_FILE_DIR,
-                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_grants_to_role.json",
-                ),
-                SnowflakeSchemaBuilder().build_from_file(
-                    SCHEMA_FILE_DIR,
-                    "snowflake_server_filters_grants_to_role_to_items_defined_in_config_grants_to_role_expected_values.json",
-                ),
-            ),
+            generate_grants_for_spec_roles_case_one(),
+            generate_grants_for_spec_roles_case_two(),
         ],
     )
     def test_check_entities_on_snowflake_server_filters_grants_to_role_to_items_defined_in_config(
-        self,
-        test_grants_roles_mock_connection,
-        mocker,
-        mock_method,
-        spec_file_data,
-        return_value,
-        expected_value,
+        self, test_grants_roles_mock_connection, mocker, mock_method, config
     ):
+        spec_file_data, expected_value = config
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
         spec_loader = SnowflakeSpecLoader(
             spec_path="", conn=test_grants_roles_mock_connection
@@ -416,29 +478,59 @@ class TestSnowflakeSpecLoader:
         mocker.patch.object(mock_connector, method, return_value=return_value)
         SnowflakeSpecLoader("", mock_connector)
 
+    # test_load_spec_owner_required_with_no_owner
+    def load_spec_file_case_one():
+        """
+        Raise 'Owner not defined' error on show_databases
+        with no owner and require-owner = True
+        """
+        spec_file_data = SnowflakeSchemaBuilder().require_owner().add_db().build()
+        method = "show_databases"
+        return_value = ["testdb"]
+        return [spec_file_data, method, return_value]
+
+    # test_load_spec_owner_required_with_no_owner
+    def load_spec_file_case_two():
+        """
+        Raise 'Owner not defined' error on show_roles
+        with no owner and require-owner = True
+        """
+        spec_file_data = SnowflakeSchemaBuilder().require_owner().add_role().build()
+        method = "show_roles"
+        return_value = ["testrole"]
+        return [spec_file_data, method, return_value]
+
+    # test_load_spec_owner_required_with_no_owner
+    def load_spec_file_case_three():
+        """
+        Raise 'Owner not defined' error on show_users
+        with no owner and require-owner = True
+        """
+        spec_file_data = SnowflakeSchemaBuilder().require_owner().add_user().build()
+        method = "show_users"
+        return_value = ["testusername"]
+        return [spec_file_data, method, return_value]
+
+    # test_load_spec_owner_required_with_no_owner
+    def load_spec_file_case_four():
+        """
+        Raise 'Owner not defined' error on show_warehouses
+        with no owner and require-owner = True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder().require_owner().add_warehouse().build()
+        )
+        method = "show_warehouses"
+        return_value = ["testwarehouse"]
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
         "spec_file_data,method,return_value",
         [
-            (
-                SnowflakeSchemaBuilder().require_owner().add_db().build(),
-                "show_databases",
-                ["testdb"],
-            ),
-            (
-                SnowflakeSchemaBuilder().require_owner().add_role().build(),
-                "show_roles",
-                ["testrole"],
-            ),
-            (
-                SnowflakeSchemaBuilder().require_owner().add_user().build(),
-                "show_users",
-                ["testusername"],
-            ),
-            (
-                SnowflakeSchemaBuilder().require_owner().add_warehouse().build(),
-                "show_warehouses",
-                ["testwarehouse"],
-            ),
+            load_spec_file_case_one(),
+            load_spec_file_case_two(),
+            load_spec_file_case_three(),
+            load_spec_file_case_four(),
         ],
     )
     def test_load_spec_owner_required_with_no_owner(
@@ -838,7 +930,6 @@ class TestSpecFileLoading:
     def test_check_entities_on_snowflake_server_no_warehouses(
         self, test_dir, mocker, mock_connector
     ):
-        """"""
         mocker.patch.object(mock_connector, "show_warehouses")
         SnowflakeSpecLoader(
             os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector

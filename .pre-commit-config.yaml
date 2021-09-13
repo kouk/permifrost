@@ -9,8 +9,6 @@ repos:
       - id: detect-private-key
       - id: check-yaml
       - id: check-ast
-      - id: name-tests-test
-        args: ['--django']
       - id: debug-statements
 
   - repo: https://github.com/psf/black
