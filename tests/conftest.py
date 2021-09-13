@@ -38,6 +38,7 @@ def pytest_itemcollected(item):
         for pytest_mark in node.pytestmark:
             if pytest_mark.name == "parametrize":
                 for param in pytest_mark.args[1]:
+                    # Works for functions passed into mark.parametrize
                     if param.__name__ in mark_list:
                         clean_doc = param.__doc__.strip()
                         clean_doc = " ".join(clean_doc.split())
