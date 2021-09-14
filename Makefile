@@ -86,17 +86,24 @@ show-lint: compose-build
 	@docker-compose run permifrost /bin/bash -c "make local-show-lint"
 
 local-lint:
-	pre-commit run
+	pre-commit run --hook-stage pre-push
 	${BLACK_RUN}
 	${ISORT_RUN}
 	${MYPY_RUN}
 	${FLAKE8_RUN}
 
 local-show-lint:
-	pre-commit run
+	pre-commit run --hook-stage pre-push
 	${BLACK_RUN} --check --diff
 	${ISORT_RUN} --check
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
+	${FLAKE8_RUN}
+
+ci-lint:
+	pre-commit run --hook-stage merge-commit
+	${BLACK_RUN}
+	${ISORT_RUN}
+	${MYPY_RUN}
 	${FLAKE8_RUN}
 
 show-coverage:
@@ -116,7 +123,8 @@ install-dev:
 
 initial-setup:
 	pip install -e '.[dev]'
-	pre-commit install && pre-commit install -t pre-push
+	pre-commit install -f -t pre-commit
+	pre-commit install -t -f pre-push
 
 # Release
 ifdef type

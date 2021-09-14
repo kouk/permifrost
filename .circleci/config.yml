@@ -30,7 +30,7 @@ jobs:
           pkg-manager: pip
       - run:
           name: Run linters
-          command: make local-lint
+          command: make ci-lint
 
 
 workflows:
