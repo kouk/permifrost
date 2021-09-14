@@ -1735,35 +1735,6 @@ class TestGenerateSchemaRevokes:
             expected,
         ]
 
-    def revoke_single_w_shared_schema_config(mocker):
-        """
-        Generates empty read/write REVOKE statement for
-        SHARED_DATABASE_1.SHARED_SCHEMA_1
-        """
-        test_schemas_config = {
-            "read": [],
-            "write": [],
-        }
-
-        test_grants_to_role = {
-            "functional_role": {
-                "create table": {
-                    "schema": ["shared_database_1.shared_schema_1"],
-                },
-                "usage": {
-                    "schema": ["shared_database_1.shared_schema_1"],
-                },
-            },
-        }
-
-        expected = []
-
-        return [
-            test_schemas_config,
-            test_grants_to_role,
-            expected,
-        ]
-
     def revoke_multi_diff_rw_shared_schema_config(mocker):
         """
         Generates empty read/write REVOKE statement for
