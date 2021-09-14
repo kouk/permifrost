@@ -419,6 +419,8 @@ class TestGenerateTableAndViewGrants:
             "GRANT select ON FUTURE tables IN schema raw.public_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN database raw TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema raw.public_1 TO ROLE functional_role",
             "GRANT select ON table raw.public.table_1 TO ROLE functional_role",
             "GRANT select ON table raw.public.table_1 TO ROLE functional_role",
@@ -428,8 +430,18 @@ class TestGenerateTableAndViewGrants:
             "GRANT select ON table raw.public_1.table_3 TO ROLE functional_role",
             "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
             "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
+            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
+            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN database raw TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema raw.public_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE views IN database raw TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_2 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_2 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON table raw.public_1.table_3 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON table raw.public_1.table_3 TO ROLE functional_role",
         ]
 
         return [MockSnowflakeConnector, config, expected]

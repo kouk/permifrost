@@ -1209,7 +1209,7 @@ class SnowflakeGrantsGenerator:
                 write_table_list.extend(conn.show_tables(schema=schema))
                 write_view_list.extend(conn.show_views(schema=schema))
 
-            if name_parts[1] != "*" and name_parts[2] == "*":
+            if name_parts[2] == "*":
                 # If <schema_name>.* then you add all tables to grant list and then grant future
                 # If *.* was provided then we're still ok as the full_schema_list
                 # Would fetch all schemas and we'd still iterate through each
