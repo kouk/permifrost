@@ -453,7 +453,7 @@ class TestSnowflakeSpecLoader:
             "permifrost.core.permissions.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
             return_value=None,
         )
-        spec_loader = SnowflakeSpecLoader("", mock_connector)
+        SnowflakeSpecLoader("", mock_connector)
 
     def test_remove_duplicate_queries(self):
 
