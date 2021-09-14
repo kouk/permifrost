@@ -574,7 +574,7 @@ class SnowflakeGrantsGenerator:
         for granted_database in self.grants_to_role.get(role, {}).get(
             "monitor", {}
         ).get("database", []) + self.grants_to_role.get(role, {}).get(
-            "create_schema", {}
+            "create schema", {}
         ).get(
             "database", []
         ):
