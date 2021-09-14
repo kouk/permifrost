@@ -1209,6 +1209,33 @@ class TestGenerateSchemaRevokes:
             expected,
         ]
 
+    def revoke_single_w_schema_config(mocker):
+        """
+        Generates write REVOKE statements for SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "create table": {
+                    "schema": ["database_1.schema_1"],
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1 FROM ROLE functional_role"
+        ]
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
     def revoke_single_rw_schema_config(mocker):
         """
         Generates read/write REVOKE statements for SCHEMA_1
@@ -1240,9 +1267,132 @@ class TestGenerateSchemaRevokes:
             expected,
         ]
 
+    def revoke_single_r_shared_schema_config(mocker):
+        """
+        Generates empty read REVOKE statement for
+        SHARED_DATABASE_1.SHARED_SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "usage": {
+                    "schema": ["shared_database_1.shared_schema_1"],
+                }
+            },
+        }
+
+        expected = []
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_w_shared_schema_config(mocker):
+        """
+        Generates empty write REVOKE statement for
+        SHARED_DATABASE_1.SHARED_SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "create table": {
+                    "schema": ["shared_database_1.shared_schema_1"],
+                }
+            },
+        }
+
+        expected = []
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
+    def revoke_single_w_shared_schema_config(mocker):
+        """
+        Generates empty read/write REVOKE statement for
+        SHARED_DATABASE_1.SHARED_SCHEMA_1
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "create table": {
+                    "schema": ["shared_database_1.shared_schema_1"],
+                },
+                "usage": {
+                    "schema": ["shared_database_1.shared_schema_1"],
+                },
+            },
+        }
+
+        expected = []
+
+    def revoke_multi_diff_rw_shared_schema_config(mocker):
+        """
+        Generates empty read/write REVOKE statement for
+        SHARED_DATABASE_1.SHARED_SCHEMA_1, read/write for SCHEMA_1,
+        read for SCHEMA_2
+        """
+        test_schemas_config = {
+            "read": [],
+            "write": [],
+        }
+
+        test_grants_to_role = {
+            "functional_role": {
+                "create table": {
+                    "schema": [
+                        "shared_database_1.shared_schema_1",
+                        "database_1.schema_1",
+                        "database_2.schema_2",
+                    ],
+                },
+                "usage": {
+                    "schema": [
+                        "shared_database_1.shared_schema_1",
+                        "database_1.schema_1",
+                    ],
+                },
+            },
+        }
+
+        expected = [
+            "REVOKE monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1 FROM ROLE functional_role",
+            "REVOKE monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_2.schema_2 FROM ROLE functional_role",
+            "REVOKE usage ON schema database_1.schema_1 FROM ROLE functional_role",
+        ]
+
+        return [
+            test_schemas_config,
+            test_grants_to_role,
+            expected,
+        ]
+
     @pytest.mark.parametrize(
         "config",
-        [revoke_single_r_schema_config, revoke_single_rw_schema_config],
+        [
+            revoke_single_r_schema_config,
+            revoke_single_w_schema_config,
+            revoke_single_rw_schema_config,
+            revoke_single_r_shared_schema_config,
+            revoke_single_w_shared_schema_config,
+            revoke_multi_diff_rw_shared_schema_config,
+        ],
     )
     def test_generate_schema_revokes(
         self,
@@ -1255,14 +1405,14 @@ class TestGenerateSchemaRevokes:
 
         test_schemas_config, test_grants_to_role, expected = config(mocker)
 
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+
         # Generation of database grants should be identical while
         # ignoring or not ignoring memberships
         generator = SnowflakeGrantsGenerator(
             test_grants_to_role,
             test_roles_granted_to_user,
         )
-
-        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
 
         schemas_list = generator.generate_schema_grants(
             role="functional_role",
@@ -1331,7 +1481,7 @@ class TestGenerateDatabaseRevokes:
 
         test_grants_to_role = {
             "functional_role": {
-                "create_schema": {"database": ["database_1"]},
+                "create schema": {"database": ["database_1"]},
                 "monitor": {"database": ["database_1"]},
             }
         }
@@ -1398,7 +1548,7 @@ class TestGenerateDatabaseRevokes:
 
         test_grants_to_role = {
             "functional_role": {
-                "create_schema": {"database": ["shared_database_1"]},
+                "create schema": {"database": ["shared_database_1"]},
             }
         }
 
@@ -1419,7 +1569,7 @@ class TestGenerateDatabaseRevokes:
 
         test_grants_to_role = {
             "functional_role": {
-                "create_schema": {"database": ["shared_database_1"]},
+                "create schema": {"database": ["shared_database_1"]},
                 "usage": {"database": ["shared_database_1"]},
             }
         }
@@ -1466,7 +1616,7 @@ class TestGenerateDatabaseRevokes:
         test_grants_to_role = {
             "functional_role": {
                 "usage": {"database": ["database_1", "database_2"]},
-                "create_schema": {"database": ["database_1"]},
+                "create schema": {"database": ["database_1"]},
             }
         }
 
@@ -1490,7 +1640,7 @@ class TestGenerateDatabaseRevokes:
         test_grants_to_role = {
             "functional_role": {
                 "usage": {"database": ["database_1", "shared_database_1"]},
-                "create_schema": {"database": ["database_1", "shared_database_1"]},
+                "create schema": {"database": ["database_1", "shared_database_1"]},
             }
         }
 
