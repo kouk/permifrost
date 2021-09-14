@@ -40,19 +40,19 @@ roles:
         tables:
           read:
             - database_1.read_only_schema.table_1
+            - database_1.read_only_schema."TableOne" # Pascal case table names
             - database_1.write_schema.table_1
           write:
             - database_1.write_schema.table_1
 
 # Users
 users:
-  # User with dot in the name
-  - "first.last":
+  - "first.last": # User with dot in the name
       can_login: yes
       member_of:
         - test_role
       owner: test_role
-      
+
 
 # Warehouses
 warehouses:
