@@ -574,7 +574,7 @@ class SnowflakeGrantsGenerator:
         for granted_database in self.grants_to_role.get(role, {}).get(
             "monitor", {}
         ).get("database", []) + self.grants_to_role.get(role, {}).get(
-            "create_schema", {}
+            "create schema", {}
         ).get(
             "database", []
         ):
@@ -947,10 +947,13 @@ class SnowflakeGrantsGenerator:
             # Split the table identifier into parts {DB_NAME}.{SCHEMA_NAME}.{TABLE_NAME}
             # so that we can check and use each one
             name_parts = table.split(".")
+            database_name = name_parts[0] if 0 < len(name_parts) else None
+            schema_name = name_parts[1] if 1 < len(name_parts) else None
+            table_view_name = name_parts[2] if 2 < len(name_parts) else None
 
             # Do nothing if this is a table inside a shared database:
             # "Granting individual privileges on imported databases is not allowed."
-            if name_parts[0] in shared_dbs:
+            if database_name in shared_dbs:
                 continue
 
             # Gather the tables/views that privileges will be granted to
@@ -962,23 +965,15 @@ class SnowflakeGrantsGenerator:
             read_table_list = []
             read_view_list = []
 
-            fetched_schemas = conn.full_schema_list(f"{name_parts[0]}.{name_parts[1]}")
+            fetched_schemas = conn.full_schema_list(f"{database_name}.{schema_name}")
 
-            # For future grants at the database level
-            future_database_table = "{database}.<table>".format(database=name_parts[0])
-            future_database_view = "{database}.<view>".format(database=name_parts[0])
-
+            # For future grants at the database level for tables
+            future_database_table = "{database}.<table>".format(database=database_name)
             table_already_granted = self.is_granted_privilege(
                 role, read_privileges, "table", future_database_table
             )
-
-            view_already_granted = self.is_granted_privilege(
-                role, read_privileges, "view", future_database_view
-            )
-
             read_grant_tables_full.append(future_database_table)
-
-            if name_parts[1] == "*" and name_parts[2] == "*":
+            if schema_name == "*" and table_view_name == "*":
                 sql_commands.append(
                     {
                         "already_granted": table_already_granted,
@@ -986,15 +981,19 @@ class SnowflakeGrantsGenerator:
                             privileges=read_privileges,
                             resource_type="table",
                             grouping_type="database",
-                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
                 )
 
+            # For future grants at the database level for views
+            future_database_view = "{database}.<view>".format(database=database_name)
+            view_already_granted = self.is_granted_privilege(
+                role, read_privileges, "view", future_database_view
+            )
             read_grant_views_full.append(future_database_view)
-
-            if name_parts[1] == "*" and name_parts[2] == "*":
+            if schema_name == "*" and table_view_name == "*":
                 sql_commands.append(
                     {
                         "already_granted": view_already_granted,
@@ -1002,7 +1001,7 @@ class SnowflakeGrantsGenerator:
                             privileges=read_privileges,
                             resource_type="view",
                             grouping_type="database",
-                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -1016,7 +1015,7 @@ class SnowflakeGrantsGenerator:
                 read_table_list.extend(conn.show_tables(schema=schema))
                 read_view_list.extend(conn.show_views(schema=schema))
 
-            if name_parts[2] == "*":
+            if table_view_name == "*":
                 # If <schema_name>.* then you add all tables to grant list and then grant future
                 # If *.* was provided then we're still ok as the full_schema_list
                 # Would fetch all schemas and we'd still iterate through each
@@ -1136,10 +1135,13 @@ class SnowflakeGrantsGenerator:
             # Split the table identifier into parts {DB_NAME}.{SCHEMA_NAME}.{TABLE_NAME}
             #  so that we can check and use each one
             name_parts = table.split(".")
+            database_name = name_parts[0] if 0 < len(name_parts) else None
+            schema_name = name_parts[1] if 1 < len(name_parts) else None
+            table_view_name = name_parts[2] if 2 < len(name_parts) else None
 
             # Do nothing if this is a table inside a shared database:
             #  "Granting individual privileges on imported databases is not allowed."
-            if name_parts[0] in shared_dbs:
+            if database_name in shared_dbs:
                 continue
 
             # Gather the tables/views that privileges will be granted to
@@ -1150,11 +1152,11 @@ class SnowflakeGrantsGenerator:
             write_table_list = []
             write_view_list = []
 
-            fetched_schemas = conn.full_schema_list(f"{name_parts[0]}.{name_parts[1]}")
+            fetched_schemas = conn.full_schema_list(f"{database_name}.{name_parts[1]}")
 
             # For future grants at the database level
-            future_database_table = "{database}.<table>".format(database=name_parts[0])
-            future_database_view = "{database}.<view>".format(database=name_parts[0])
+            future_database_table = "{database}.<table>".format(database=database_name)
+            future_database_view = "{database}.<view>".format(database=database_name)
 
             table_already_granted = False
             view_already_granted = False
@@ -1166,7 +1168,7 @@ class SnowflakeGrantsGenerator:
 
             write_grant_tables_full.append(future_database_table)
 
-            if name_parts[1] == "*" and name_parts[2] == "*":
+            if schema_name == "*" and table_view_name == "*":
                 sql_commands.append(
                     {
                         "already_granted": table_already_granted,
@@ -1174,7 +1176,7 @@ class SnowflakeGrantsGenerator:
                             privileges=write_privileges,
                             resource_type="table",
                             grouping_type="database",
-                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -1187,7 +1189,7 @@ class SnowflakeGrantsGenerator:
 
             write_grant_views_full.append(future_database_view)
 
-            if name_parts[1] == "*" and name_parts[2] == "*":
+            if schema_name == "*" and table_view_name == "*":
                 sql_commands.append(
                     {
                         "already_granted": view_already_granted,
@@ -1195,7 +1197,7 @@ class SnowflakeGrantsGenerator:
                             privileges=write_privileges,
                             resource_type="view",
                             grouping_type="database",
-                            grouping_name=SnowflakeConnector.snowflaky(name_parts[0]),
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
                             role=SnowflakeConnector.snowflaky(role),
                         ),
                     }
@@ -1209,7 +1211,7 @@ class SnowflakeGrantsGenerator:
                 write_table_list.extend(conn.show_tables(schema=schema))
                 write_view_list.extend(conn.show_views(schema=schema))
 
-            if name_parts[2] == "*":
+            if table_view_name == "*":
                 # If <schema_name>.* then you add all tables to grant list and then grant future
                 # If *.* was provided then we're still ok as the full_schema_list
                 # Would fetch all schemas and we'd still iterate through each

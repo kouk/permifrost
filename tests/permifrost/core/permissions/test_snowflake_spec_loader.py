@@ -412,7 +412,64 @@ class TestSnowflakeSpecLoader:
         }
         spec_loader.filter_to_database_refs(grant_on=grant_on, filter_set=filter_set)
 
+    def load_spec_file_case_one():
+        """
+        Load a table with PascalCase from Snowflake
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_db(name="database_1")
+            .add_role(
+                tables=["database_1.schema_1.TableOne"],
+                permission_set=["read", "write"],
+            )
+            .build()
+        )
+        # breakpoint()
+        method = "show_tables"
+        return_value = ["database_1.schema_1.TableOne"]
+        return [spec_file_data, method, return_value]
+
+    # TODO: Develop functionality for PascalCase object names
+    @pytest.mark.parametrize(
+        "config",
+        [
+            load_spec_file_case_one,
+        ],
+    )
+    def skip_load_spec_with_edge_case_tables(
+        self,
+        config,
+        mocker,
+        mock_connector,
+    ):
+        spec_file_data, method, return_value = config()
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        mocker.patch.object(mock_connector, method, return_value=return_value)
+        mocker.patch(
+            "permifrost.core.permissions.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
+            return_value=None,
+        )
+        SnowflakeSpecLoader("", mock_connector)
+
+    def test_remove_duplicate_queries(self):
+
+        sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
+        sql_command_2 = sql_command_1.copy()
+        sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
+        sql_command_4 = sql_command_3.copy()
+
+        result = SnowflakeSpecLoader.remove_duplicate_queries(
+            [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
+        )
+        assert result == [sql_command_1, sql_command_3]
+
     def test_load_spec_loads_file(self, mocker, mock_connector):
+        """
+        Load empty file without errors
+        """
         mock_open = mocker.patch(
             "builtins.open", mocker.mock_open(read_data="""version: "1.0" """)
         )
@@ -421,6 +478,8 @@ class TestSnowflakeSpecLoader:
 
         mock_open.assert_called_once_with(filepath, "r")
 
+
+class TestSnowflakeSpecLoaderWithOwner:
     def load_spec_with_owner_case_one():
         """
         SnowflakeSpecLoader loads without error for database with owner
@@ -627,6 +686,8 @@ class TestSnowflakeSpecLoader:
 
         assert [] == queries
 
+
+class TestSnowflakeSpecLoaderUserRoleFilters:
     def test_role_filter(self, mocker, test_roles_mock_connector, test_roles_spec_file):
         """GRANT queries list filtered by role."""
 
@@ -776,18 +837,6 @@ class TestSnowflakeSpecLoader:
             },
         ]
         assert results == expected_results
-
-    def test_remove_duplicate_queries(self):
-
-        sql_command_1 = {"sql": "GRANT OWNERSHIP ON SCHEMA PIZZA TO ROLE LIZZY"}
-        sql_command_2 = sql_command_1.copy()
-        sql_command_3 = {"sql": "REVOKE ALL PRIVILEGES ON SCHEMA PIZZA FROM ROLE LIZZY"}
-        sql_command_4 = sql_command_3.copy()
-
-        result = SnowflakeSpecLoader.remove_duplicate_queries(
-            [sql_command_1, sql_command_2, sql_command_3, sql_command_4]
-        )
-        assert result == [sql_command_1, sql_command_3]
 
 
 class TestGetPrivilegesFromSnowflakeServer:
