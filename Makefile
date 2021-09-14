@@ -116,11 +116,7 @@ install-dev:
 
 initial-setup:
 	pip install -e '.[dev]'
-	pre-commit install && pre-commit install -t pre-push && pre-commit install --hook-type post-merge
-
-initial-setup:
-	pip install -e '.[dev]'
-	pre-commit install && pre-commit install -t pre-push && pre-commit install --hook-type post-merge
+	pre-commit install && pre-commit install -t pre-push
 
 # Release
 ifdef type
