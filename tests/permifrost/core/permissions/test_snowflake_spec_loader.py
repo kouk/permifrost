@@ -430,14 +430,13 @@ class TestSnowflakeSpecLoader:
         return_value = ["database_1.schema_1.TableOne"]
         return [spec_file_data, method, return_value]
 
+    # TODO: Develop functionality for PascalCase object names
     @pytest.mark.parametrize(
         "config",
         [
             load_spec_file_case_one,
         ],
     )
-
-    # TODO: Develop functionality for PascalCase object names
     def skip_load_spec_with_edge_case_tables(
         self,
         config,
