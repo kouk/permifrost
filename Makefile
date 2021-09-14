@@ -86,14 +86,14 @@ show-lint: compose-build
 	@docker-compose run permifrost /bin/bash -c "make local-show-lint"
 
 local-lint:
-	pre-commit run --hook-stage pre-push
+	pre-commit run --hook-stage push
 	${BLACK_RUN}
 	${ISORT_RUN}
 	${MYPY_RUN}
 	${FLAKE8_RUN}
 
 local-show-lint:
-	pre-commit run --hook-stage pre-push
+	pre-commit run --hook-stage push
 	${BLACK_RUN} --check --diff
 	${ISORT_RUN} --check
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
