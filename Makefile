@@ -118,6 +118,10 @@ initial-setup:
 	pip install -e '.[dev]'
 	pre-commit install && pre-commit install -t pre-push && pre-commit install --hook-type post-merge
 
+initial-setup:
+	pip install -e '.[dev]'
+	pre-commit install && pre-commit install -t pre-push && pre-commit install --hook-type post-merge
+
 # Release
 ifdef type
   override type := --$(type)

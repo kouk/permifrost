@@ -9,11 +9,11 @@ from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 def test_database_config():
     config = {
         "databases": {
-            "database_1": {"shared": False},
-            "database_2": {"shared": False},
+            "database_1": {"shared": False, "owner": "owner1"},
+            "database_2": {"shared": False, "owner": "owner2"},
             "database_3": {"shared": False},
-            "shared_database_1": {"shared": True},
-            "shared_database_2": {"shared": True},
+            "shared_database_1": {"shared": True, "owner": "owner1"},
+            "shared_database_2": {"shared": True, "owner": "owner2"},
         }
     }
 
@@ -42,6 +42,17 @@ def test_role_config():
         "functional_role": {
             "warehouses": ["warehouse_2", "warehouse_3"],
             "member_of": ["object_role_2", "object_role_3"],
+            "owns": {
+                "databases": ["database_2", "database_3"],
+                "schemas": [
+                    "database_1.schemas_1",
+                    "database_2.schemas_2",
+                ],
+                "tables": [
+                    "database_1.schemas_1.tables_1",
+                    "database_2.schemas_1.tables_2",
+                ],
+            },
             "privileges": {
                 "databases": {
                     "read": ["database_2", "shared_database_2"],
@@ -170,7 +181,6 @@ class TestSnowflakeGrants:
         test_grants_to_role,
         test_roles_granted_to_user,
         test_role_config,
-        test_user_config,
     ):
         generator = SnowflakeGrantsGenerator(
             test_grants_to_role, test_roles_granted_to_user
@@ -207,7 +217,6 @@ class TestSnowflakeGrants:
         test_grants_to_role,
         test_roles_granted_to_user,
         test_role_config,
-        test_user_config,
         ignore_memberships,
     ):
         generator = SnowflakeGrantsGenerator(
@@ -840,7 +849,6 @@ class TestGenerateSchemaGrants:
         mocker,
         config,
     ):
-
         # Generation of database grants should be identical while ignoring or not ignoring memberships
         generator = SnowflakeGrantsGenerator(
             test_grants_to_role,
@@ -1494,3 +1502,65 @@ class TestGenerateDatabaseGrants:
         database_list_sql.sort()
 
         assert database_list_sql == expected
+
+
+class TestSnowflakeOwnershipGrants:
+    def generate_ownership_on_warehouse(self, entity, entity_name):
+        """
+        Test that SnowflakeSpecLoader generates ownership grant for an entity
+        """
+        grants_to_role = {"test_role": {}}
+        roles_granted_to_user = {"user_name": ["test_role"]}
+        role = "test_role"
+        spec = {"owns": {entity: [entity_name]}}
+        expectation = f"GRANT OWNERSHIP ON {entity[:-1]} {entity_name} TO ROLE test_role COPY CURRENT GRANTS"
+
+        return spec, role, grants_to_role, roles_granted_to_user, expectation
+
+    @pytest.mark.parametrize(
+        "entity",
+        [
+            ("databases", "database_1"),
+            ("schemas", "database_1.schema_1"),
+            ("tables", "database_1.schema_1.table1"),
+        ],
+    )
+    def test_generate_ownership_grants(self, entity):
+        """Test that SnowflakeGrantsGenerator generates ownership grants for a single entity"""
+        (
+            spec,
+            role,
+            grants_to_role,
+            roles_granted_to_user,
+            expectation,
+        ) = self.generate_ownership_on_warehouse(entity[0], entity[1])
+        generator = SnowflakeGrantsGenerator(grants_to_role, roles_granted_to_user)
+
+        sql_commands = generator.generate_grant_ownership(role, spec)
+
+        assert sql_commands[0]["sql"] == expectation
+
+    def test_generate_database_ownership_grants(
+        self, test_grants_to_role, test_roles_granted_to_user, test_role_config
+    ):
+        """Test that SnowflakeGrantsGenerator generates ownership grants for for multiple grant definitions"""
+
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user, test_role_config
+        )
+        sql_commands = generator.generate_grant_ownership(
+            "test_role", test_role_config["functional_role"]
+        )
+
+        expected_sql = {
+            "GRANT OWNERSHIP ON database database_2 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON database database_3 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON schema database_1.schemas_1 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON schema database_2.schemas_2 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON table database_1.schemas_1.tables_1 TO ROLE test_role COPY CURRENT GRANTS",
+            "GRANT OWNERSHIP ON table database_2.schemas_1.tables_2 TO ROLE test_role COPY CURRENT GRANTS",
+        }
+
+        sql_commands = [sql["sql"] for sql in sql_commands]
+
+        assert set(sql_commands) == set(expected_sql)

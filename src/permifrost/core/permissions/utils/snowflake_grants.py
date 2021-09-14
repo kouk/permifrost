@@ -22,11 +22,7 @@ REVOKE_FUTURE_PRIVILEGES_TEMPLATE = "REVOKE {privileges} ON FUTURE {resource_typ
 
 ALTER_USER_TEMPLATE = "ALTER USER {user_name} SET {privileges}"
 
-GRANT_OWNERSHIP_TEMPLATE = (
-    "GRANT OWNERSHIP"
-    " ON {resource_type} {resource_name}"
-    " TO ROLE {role_name} COPY CURRENT GRANTS"
-)
+GRANT_OWNERSHIP_TEMPLATE = "GRANT OWNERSHIP ON {resource_type} {resource_name} TO ROLE {role_name} COPY CURRENT GRANTS"
 
 
 class SnowflakeGrantsGenerator:
@@ -52,6 +48,7 @@ class SnowflakeGrantsGenerator:
         self.grants_to_role = grants_to_role
         self.roles_granted_to_user = roles_granted_to_user
         self.ignore_memberships = ignore_memberships
+        self.conn = SnowflakeConnector()
 
     def is_granted_privilege(
         self, role: str, privilege: str, entity_type: str, entity_name: str
@@ -1576,7 +1573,105 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
-    # TODO: This method is too complex, consider refactoring
+    def _generate_ownership_grant_database(
+        self, role: str, database_refs: List[str]
+    ) -> List[Dict]:
+        sql_commands = []
+        for database in database_refs:
+            already_granted = self.is_granted_privilege(
+                role, "ownership", "database", database
+            )
+
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_OWNERSHIP_TEMPLATE.format(
+                        resource_type="database",
+                        resource_name=SnowflakeConnector.snowflaky(database),
+                        role_name=SnowflakeConnector.snowflaky(role),
+                    ),
+                }
+            )
+        return sql_commands
+
+    def _generate_ownership_grant_schema(self, conn, role, schema_refs) -> List[Dict]:
+        sql_commands = []
+        for schema in schema_refs:
+            name_parts = schema.split(".")
+            info_schema = f"{name_parts[0]}.information_schema"
+
+            schemas = []
+
+            if name_parts[1] == "*":
+                db_schemas = conn.show_schemas(name_parts[0])
+
+                for db_schema in db_schemas:
+                    if db_schema != info_schema:
+                        schemas.append(db_schema)
+            else:
+                schemas = [schema]
+
+            for db_schema in schemas:
+                already_granted = self.is_granted_privilege(
+                    role, "ownership", "schema", db_schema
+                )
+
+                sql_commands.append(
+                    {
+                        "already_granted": already_granted,
+                        "sql": GRANT_OWNERSHIP_TEMPLATE.format(
+                            resource_type="schema",
+                            resource_name=SnowflakeConnector.snowflaky(db_schema),
+                            role_name=SnowflakeConnector.snowflaky(role),
+                        ),
+                    }
+                )
+        return sql_commands
+
+    def _generate_ownership_grant_table(self, conn, role, table_refs) -> List[Dict]:
+        sql_commands = []
+
+        tables = []
+
+        for table in table_refs:
+            name_parts = table.split(".")
+            info_schema = f"{name_parts[0]}.information_schema"
+
+            if name_parts[2] == "*":
+                schemas = []
+
+                if name_parts[1] == "*":
+                    db_schemas = conn.show_schemas(name_parts[0])
+
+                    for schema in db_schemas:
+                        if schema != info_schema:
+                            schemas.append(schema)
+                else:
+                    schemas = [f"{name_parts[0]}.{name_parts[1]}"]
+
+                for schema in schemas:
+                    tables.extend(conn.show_tables(schema=schema))
+            else:
+                tables.append(table)
+
+        # And then grant ownership to all tables
+        for db_table in tables:
+            already_granted = self.is_granted_privilege(
+                role, "ownership", "table", db_table
+            )
+
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_OWNERSHIP_TEMPLATE.format(
+                        resource_type="table",
+                        resource_name=SnowflakeConnector.snowflaky(db_table),
+                        role_name=SnowflakeConnector.snowflaky(role),
+                    ),
+                }
+            )
+        return sql_commands
+
     def generate_grant_ownership(  # noqa
         self, role: str, config: Dict[str, Any]
     ) -> List[Dict]:
@@ -1590,120 +1685,22 @@ class SnowflakeGrantsGenerator:
         """
         sql_commands = []
 
-        try:
-            for database in config["owns"]["databases"]:
-                if self.is_granted_privilege(role, "ownership", "database", database):
-                    already_granted = True
-                else:
-                    already_granted = False
+        db_refs = config.get("owns", {}).get("databases")
+        if db_refs:
+            db_ownership_grants = self._generate_ownership_grant_database(role, db_refs)
+            sql_commands.extend(db_ownership_grants)
 
-                sql_commands.append(
-                    {
-                        "already_granted": already_granted,
-                        "sql": GRANT_OWNERSHIP_TEMPLATE.format(
-                            resource_type="database",
-                            resource_name=SnowflakeConnector.snowflaky(database),
-                            role_name=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
-        except KeyError:
-            logging.debug(
-                "`owns.databases` not found for role {}, skipping generation of database ownership statements.".format(
-                    role
-                )
+        schema_refs = config.get("owns", {}).get("schemas")
+        if schema_refs:
+            schema_ownership_grants = self._generate_ownership_grant_schema(
+                self.conn, role, schema_refs
             )
+            sql_commands.extend(schema_ownership_grants)
 
-        try:
-            for schema in config["owns"]["schemas"]:
-                name_parts = schema.split(".")
-                info_schema = f"{name_parts[0]}.information_schema"
-
-                schemas = []
-
-                if name_parts[1] == "*":
-                    conn = SnowflakeConnector()
-                    db_schemas = conn.show_schemas(name_parts[0])
-
-                    for db_schema in db_schemas:
-                        if db_schema != info_schema:
-                            schemas.append(db_schema)
-                else:
-                    schemas = [schema]
-
-                for db_schema in schemas:
-                    if self.is_granted_privilege(
-                        role, "ownership", "schema", db_schema
-                    ):
-                        already_granted = True
-                    else:
-                        already_granted = False
-
-                    sql_commands.append(
-                        {
-                            "already_granted": already_granted,
-                            "sql": GRANT_OWNERSHIP_TEMPLATE.format(
-                                resource_type="schema",
-                                resource_name=SnowflakeConnector.snowflaky(db_schema),
-                                role_name=SnowflakeConnector.snowflaky(role),
-                            ),
-                        }
-                    )
-        except KeyError:
-            logging.debug(
-                "`owns.schemas` not found for role {}, skipping generation of SCHEMA ownership statements.".format(
-                    role
-                )
+        table_refs = config.get("owns", {}).get("tables")
+        if table_refs:
+            table_ownership_grants = self._generate_ownership_grant_table(
+                self.conn, role, table_refs
             )
-
-        try:
-            # Gather the tables that ownership will be granted to
-            tables = []
-
-            for table in config["owns"]["tables"]:
-                name_parts = table.split(".")
-                info_schema = f"{name_parts[0]}.information_schema"
-
-                if name_parts[2] == "*":
-                    schemas = []
-                    conn = SnowflakeConnector()
-
-                    if name_parts[1] == "*":
-                        db_schemas = conn.show_schemas(name_parts[0])
-
-                        for schema in db_schemas:
-                            if schema != info_schema:
-                                schemas.append(schema)
-                    else:
-                        schemas = [f"{name_parts[0]}.{name_parts[1]}"]
-
-                    for schema in schemas:
-                        tables.extend(conn.show_tables(schema=schema))
-                else:
-                    tables = [table]
-
-            # And then grant ownership to all tables
-            for db_table in tables:
-                if self.is_granted_privilege(role, "ownership", "table", db_table):
-                    already_granted = True
-                else:
-                    already_granted = False
-
-                sql_commands.append(
-                    {
-                        "already_granted": already_granted,
-                        "sql": GRANT_OWNERSHIP_TEMPLATE.format(
-                            resource_type="table",
-                            resource_name=SnowflakeConnector.snowflaky(db_table),
-                            role_name=SnowflakeConnector.snowflaky(role),
-                        ),
-                    }
-                )
-        except KeyError:
-            logging.debug(
-                "`owns.tables` not found for role {}, skipping generation of TABLE ownership statements.".format(
-                    role
-                )
-            )
-
+            sql_commands.extend(table_ownership_grants)
         return sql_commands

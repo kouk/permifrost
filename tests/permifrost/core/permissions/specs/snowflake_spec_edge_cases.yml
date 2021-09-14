@@ -52,7 +52,7 @@ users:
       member_of:
         - test_role
       owner: test_role
-
+      
 
 # Warehouses
 warehouses:
