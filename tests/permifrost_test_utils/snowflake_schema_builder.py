@@ -23,12 +23,12 @@ class SnowflakeSchemaBuilder:
         for setting in self.settings:
             spec_yaml.append(f"{setting['name']}: {setting['value']}")
 
-        if len(self.warehouses) > 0:
-            spec_yaml.append("warehouses:")
-        for warehouse in self.warehouses:
-            spec_yaml.extend([f"  - {warehouse['name']}:", "      size: x-small"])
-            if warehouse["owner"] is not None:
-                spec_yaml.append(f"      owner: {warehouse['owner']}")
+        if len(self.dbs) > 0:
+            spec_yaml.append("databases:")
+        for db in self.dbs:
+            spec_yaml.extend([f"  - {db['name']}:", "      shared: no"])
+            if db["owner"] is not None:
+                spec_yaml.append(f"      owner: {db['owner']}")
 
         if len(self.roles) > 0:
             spec_yaml.append("roles:")
@@ -37,13 +37,111 @@ class SnowflakeSchemaBuilder:
             spec_yaml.extend([f"        - {member}" for member in role["member_of"]])
             if role["owner"] is not None:
                 spec_yaml.append(f"      owner: {role['owner']}")
+            if role["tables"] != []:
+                # Table permissions
+                spec_yaml.extend(["      privileges:", "        tables:"])
+                if role["permission_set"] == ["read"]:
+                    spec_yaml.extend(["          read:"])
+                    spec_yaml.extend(
+                        [
+                            f"            - {full_table_name}"
+                            for full_table_name in role["tables"]
+                        ]
+                    )
+                elif role["permission_set"] == ["write"]:
+                    spec_yaml.extend(["          write:"])
+                    spec_yaml.extend(
+                        [
+                            f"            - {full_table_name}"
+                            for full_table_name in role["tables"]
+                        ]
+                    )
+                elif role["permission_set"] == ["read", "write"] or role[
+                    "permission_set"
+                ] == ["write", "read"]:
+                    spec_yaml.extend(["          read:"])
+                    spec_yaml.extend(
+                        [
+                            f"            - {full_table_name}"
+                            for full_table_name in role["tables"]
+                        ]
+                    )
+                    spec_yaml.extend(["          write:"])
+                    spec_yaml.extend(
+                        [
+                            f"            - {full_table_name}"
+                            for full_table_name in role["tables"]
+                        ]
+                    )
+                # schema permissions
+                spec_yaml.extend(["        schemas:"])
+                if role["permission_set"] == ["read"]:
+                    spec_yaml.extend(["          read:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        schema_name = name_parts[1] if 1 < len(name_parts) else None
+                        spec_yaml.extend(
+                            [f"            - {database_name}.{schema_name}"]
+                        )
+                elif role["permission_set"] == ["write"]:
+                    spec_yaml.extend(["          write:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        schema_name = name_parts[1] if 1 < len(name_parts) else None
+                        spec_yaml.extend(
+                            [f"            - {database_name}.{schema_name}"]
+                        )
+                elif role["permission_set"] == ["read", "write"] or role[
+                    "permission_set"
+                ] == ["write", "read"]:
+                    spec_yaml.extend(["          read:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        schema_name = name_parts[1] if 1 < len(name_parts) else None
+                        spec_yaml.extend(
+                            [f"            - {database_name}.{schema_name}"]
+                        )
+                    spec_yaml.extend(["          write:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        schema_name = name_parts[1] if 1 < len(name_parts) else None
+                        spec_yaml.extend(
+                            [f"            - {database_name}.{schema_name}"]
+                        )
+                # database permissions
+                spec_yaml.extend(["        databases:"])
+                if role["permission_set"] == ["read"]:
+                    spec_yaml.extend(["          read:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        spec_yaml.extend([f"            - {database_name}"])
+                elif role["permission_set"] == ["write"]:
+                    spec_yaml.extend(["          write:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        spec_yaml.extend([f"            - {database_name}"])
+                elif role["permission_set"] == ["read", "write"] or role[
+                    "permission_set"
+                ] == ["write", "read"]:
+                    spec_yaml.extend(["          read:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        spec_yaml.extend([f"            - {database_name}"])
+                    spec_yaml.extend(["          write:"])
+                    for full_table_name in role["tables"]:
+                        name_parts = full_table_name.split(".")
+                        database_name = name_parts[0] if 0 < len(name_parts) else None
+                        spec_yaml.extend([f"            - {database_name}"])
 
-        if len(self.dbs) > 0:
-            spec_yaml.append("databases:")
-        for db in self.dbs:
-            spec_yaml.extend([f"  - {db['name']}:", "      shared: no"])
-            if db["owner"] is not None:
-                spec_yaml.append(f"      owner: {db['owner']}")
+                else:
+                    raise ValueError("Must set the permission_set for table generation")
 
         if len(self.users) > 0:
             spec_yaml.append("users:")
@@ -51,6 +149,13 @@ class SnowflakeSchemaBuilder:
             spec_yaml.extend([f"  - {user['name']}:", "      can_login: yes"])
             if user["owner"] is not None:
                 spec_yaml.append(f"      owner: {user['owner']}")
+        if len(self.warehouses) > 0:
+            spec_yaml.append("warehouses:")
+
+        for warehouse in self.warehouses:
+            spec_yaml.extend([f"  - {warehouse['name']}:", "      size: x-small"])
+            if warehouse["owner"] is not None:
+                spec_yaml.append(f"      owner: {warehouse['owner']}")
 
         spec_yaml.append("")
         return str.join("\n", spec_yaml)
@@ -63,8 +168,23 @@ class SnowflakeSchemaBuilder:
         self.warehouses.append({"name": name, "owner": owner})
         return self
 
-    def add_role(self, name="testrole", owner=None, member_of=["testrole"]):
-        self.roles.append({"name": name, "owner": owner, "member_of": member_of})
+    def add_role(
+        self,
+        name="testrole",
+        owner=None,
+        member_of=["testrole"],
+        tables=[],
+        permission_set=None,
+    ):
+        self.roles.append(
+            {
+                "name": name,
+                "owner": owner,
+                "member_of": member_of,
+                "tables": tables,
+                "permission_set": permission_set,
+            }
+        )
         return self
 
     def add_user(self, name: str = "testusername", owner: str = None):
