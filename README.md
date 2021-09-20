@@ -221,7 +221,7 @@ See [Snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy#k
 
 Contributing to Permifrost is easy, and most commands to do so are available within the Makefile.
 
-The easiest way to start developing is to run `make permifrost`, this will open a shell in a docker container with the local version of Permifrost installed.
+The easiest way to start developing is to run `make permifrost`. This will open a shell in a docker container with the local version of Permifrost installed.
 You can now make changes to the files in your editor and it will be reflected in the commands that you run from the docker shell.
 
 For code checking, you can use `make test`, `make lint`,and `make typecheck`. See the Makefile for more details.
