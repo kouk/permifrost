@@ -43,8 +43,8 @@ ifdef DOCKER_REGISTRY
 base_image_tag = ${DOCKER_REGISTRY}/${DEFAULT_ORG}/permifrost/base
 prod_image_tag = ${DOCKER_REGISTRY}/${DEFAULT_ORG}/permifrost
 else
-base_image_tag = ${DEFAULT_ORG}/permifrost/base
-prod_image_tag = ${DEFAULT_ORG}/permifrost
+base_image_tag = gitlab-data/permifrost/base
+prod_image_tag = gitlab-data/permifrost
 endif
 
 # Testing
