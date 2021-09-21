@@ -40,8 +40,8 @@ permifrost: compose-down compose-build
 .PHONY: base-image prod-image lint show_lint test clean docker-images release
 
 ifdef DOCKER_REGISTRY
-base_image_tag = gitlab/gitlab-data/permifrost/base
-prod_image_tag = gitlab/gitlab-data/permifrost
+base_image_tag = ${DOCKER_REGISTRY}/${DEFAULT_ORG}/permifrost/base
+prod_image_tag = ${DOCKER_REGISTRY}/${DEFAULT_ORG}/permifrost
 else
 base_image_tag = ${DEFAULT_ORG}/permifrost/base
 prod_image_tag = ${DEFAULT_ORG}/permifrost
