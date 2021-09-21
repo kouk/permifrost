@@ -99,6 +99,13 @@ local-show-lint:
 	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
 	${FLAKE8_RUN}
 
+ci-show-lint:
+	pre-commit run --hook-stage merge-commit
+	${BLACK_RUN} --check --diff
+	${ISORT_RUN} --check
+	${MYPY_RUN} --show-error-context --show-column-numbers --pretty
+	${FLAKE8_RUN}
+
 ci-lint:
 	pre-commit run --hook-stage merge-commit
 	${BLACK_RUN}
