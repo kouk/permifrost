@@ -1,7 +1,6 @@
 # `permifrost`
 
-We welcome contributions, so please feel free to submit MRs or get in touch
-if you'd like to help in any way.
+We welcome contributions, so please feel free to submit MRs or [issues](https://gitlab.com/gitlab-data/permifrost/-/issues/new) if you'd like to help in any way.
 
 ## Installation
 
