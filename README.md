@@ -1,17 +1,20 @@
 # `permifrost`
 
-We welcome contributions, so please feel free to submit MRs or [issues](https://gitlab.com/gitlab-data/permifrost/-/issues/new) if you'd like to help in any way.
+We welcome contributions, so please feel free to submit MRs or [issues](https://gitlab.com/gitlab-data/permifrost/-/issues/new) if you'd like to help in any way. To get started with contributions read the [Contributing](#contributing) section at the bottom of this README to get started.
 
 ## Installation
 
-Install directly from Github using the following command:
+Install the most stable version using the following command:
 
 ```
-pip install git+https://github.com/hightouchio/permifrost-fork.git
+pip install permifrost
 ```
 
-Once we have pypi setup for our first release, those instructions will
-be added here.
+If you would like to work with the most up-to-date functionality in permifrost install directly from GitLab using the following command:
+
+```
+pip install git+https://gitlab.com/gitlab-data/permifrost.git
+```
 
 ## Usage
 
@@ -22,7 +25,7 @@ permifrost run <spec_file> [--role] [--dry] [--diff] [--user] [--ignore-membersh
 ```
 
 ```shell
-#>permifrost run --help
+#> permifrost run --help
 Usage: permifrost run [OPTIONS] SPEC
 
   Grant the permissions provided in the provided specification file for
@@ -288,7 +291,9 @@ To check code quality prior to committing changes, you can use `make local-lint`
 
 See the [Makefile](Makefile) for more details.
 
-**WARNING**
+**WARNINGS**
+
+DO NOT name git branches with forward slashes `/` as the current CI pipeline is unable to manage names like this. (i.e. `username/feature/feature-name` will break the CI pipeline so `username.feature.feature-name` should be used instead)
 
 This project has [pre-commit hooks](https://github.com/pre-commit/pre-commit-hooks) installed to maintain the existing code quality. As such, we strongly recommend you use a terminal to **commit** and **push** code changes. Specifically, avoid using git integrations on IDEs to make **commits** or **pushes**. **Adding** files through the IDE git integrations are okay, but do not **commit** through the IDE. Use the terminal to commit changes because it will show the output of each of the pre-commit checks to allow you to make changes as needed.
 
