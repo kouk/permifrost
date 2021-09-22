@@ -1,0 +1,61 @@
+version: "1.0"
+# Enforces that all listed databases have owner
+require-owner: true
+
+# Databases
+databases:
+  - database_1:
+      shared: no
+      owner: test_role
+  - shared_database_1:
+      shared: yes
+      owner: test_role
+
+# Roles
+roles:
+  - test_role:
+      owner: useradmin
+      warehouses:
+        - warehouse_1
+      owns:
+        databases:
+          - database_1
+          - shared_database_1
+        schemas:
+          - database_1.schema_1
+        tables:
+          - database_1.schema_1.table_1
+      privileges:
+        databases:
+          read:
+            - database_1
+          write:
+            - database_1
+        schemas:
+          read:
+            - database_1.read_only_schema
+            - database_1.write_schema
+          write:
+            - database_1.write_schema
+        tables:
+          read:
+            - database_1.read_only_schema.table_1
+            - database_1.read_only_schema."TableOne" # Pascal case table names
+            - database_1.write_schema.table_1
+          write:
+            - database_1.write_schema.table_1
+
+# Users
+users:
+  - "first.last": # User with dot in the name
+      can_login: yes
+      member_of:
+        - test_role
+      owner: test_role
+
+
+# Warehouses
+warehouses:
+  - warehouse_1:
+      size: x-small
+      owner: test_role

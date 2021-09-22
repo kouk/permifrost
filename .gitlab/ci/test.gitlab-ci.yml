@@ -11,13 +11,13 @@ lint:
   before_script:
     - pip install black
   script:
-    - make local-show-lint
+    - make ci-show-lint
 
 pytest:
   extends: .test
   script:
     - pytest -v --cov-report= --cov permifrost -m "$PYTEST_MARKERS"
-    - coverage combine .coverage
+    # - coverage combine .coverage
     - coverage report
     - coverage html
   artifacts:

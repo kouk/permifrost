@@ -1,9 +1,11 @@
-import click
 import sys
+
+import click
 
 from permifrost.core.permissions import SpecLoadingError
 from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
+
 from . import cli
 
 
@@ -32,7 +34,7 @@ def print_command(command, diff):
     click.secho(f"{diff_prefix}{run_prefix}{command['sql']};", fg=foreground_color)
 
 
-@cli.command()
+@cli.command()  # type: ignore
 @click.argument("spec")
 @click.option("--dry", help="Do not actually run, just check.", is_flag=True)
 @click.option(
@@ -111,9 +113,9 @@ def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_membership
                 status = None
                 if not query.get("already_granted"):
                     try:
-                        conn.run_query(query.get("sql"))
+                        conn.run_query(query.get("sql", ""))
                         status = True
-                    except:
+                    except Exception:
                         status = False
 
                     ran_query = query

@@ -1,5 +1,3 @@
-import pytest
-
 from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
 
 
@@ -21,11 +19,11 @@ class TestSnowflakePermission:
             "test_name", "test_type", ["priv 1", "priv 2"], False
         )
 
-        assert permission.contains_any(["priv 1"]) == True
+        assert permission.contains_any(["priv 1"]) is True
 
     def test_contains_any_contains_none(self):
         permission = SnowflakePermission(
             "test_name", "test_type", ["priv 1", "priv 2"], False
         )
 
-        assert permission.contains_any(["priv 3"]) == False
+        assert permission.contains_any(["priv 3"]) is False

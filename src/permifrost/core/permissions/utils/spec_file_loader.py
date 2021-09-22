@@ -1,9 +1,17 @@
+from typing import Dict, List, cast
+
 import cerberus
 import yaml
-from typing import Dict, List
 
+from permifrost.core.permissions.spec_schemas.snowflake import (
+    SNOWFLAKE_SPEC_DATABASE_SCHEMA,
+    SNOWFLAKE_SPEC_ROLE_SCHEMA,
+    SNOWFLAKE_SPEC_SCHEMA,
+    SNOWFLAKE_SPEC_USER_SCHEMA,
+    SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA,
+)
+from permifrost.core.permissions.types import PermifrostSpecSchema
 from permifrost.core.permissions.utils.error import SpecLoadingError
-from permifrost.core.permissions.spec_schemas.snowflake import *
 
 VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 
@@ -43,11 +51,10 @@ def ensure_valid_schema(spec: Dict) -> List[str]:
         "warehouses": cerberus.Validator(schema["warehouses"]),
     }
 
-    entities_by_type = [
-        (entity_type, entities)
-        for entity_type, entities in spec.items()
-        if entities and entity_type in ["databases", "roles", "users", "warehouses"]
-    ]
+    entities_by_type = []
+    for entity_type, entities in spec.items():
+        if entities and entity_type in ["databases", "roles", "users", "warehouses"]:
+            entities_by_type.append((entity_type, entities))
 
     for entity_type, entities in entities_by_type:
         for entity_dict in entities:
@@ -63,7 +70,7 @@ def ensure_valid_schema(spec: Dict) -> List[str]:
     return error_messages
 
 
-def load_spec(spec_path: str) -> Dict:
+def load_spec(spec_path: str) -> PermifrostSpecSchema:
     """
     Load a permissions specification from a file.
 
@@ -98,6 +105,6 @@ def load_spec(spec_path: str) -> Dict:
         elif isinstance(value, dict):
             return {k.lower(): lower_values(v) for k, v in value.items()}
 
-    lower_spec = lower_values(spec)
+    lower_spec = cast(PermifrostSpecSchema, lower_values(spec))
 
     return lower_spec

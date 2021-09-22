@@ -78,7 +78,7 @@ class TestSnowflakeRoleGrantChecker:
 
     def test_has_permission_no_role(self, grant_checker):
         permission = SnowflakePermission("*", "account", ["ownership"], True)
-        assert grant_checker.has_permission(None, permission) == True
+        assert grant_checker.has_permission(None, permission) is True
 
     @pytest.mark.parametrize(
         "permission,expected",
@@ -99,4 +99,4 @@ class TestSnowflakeRoleGrantChecker:
 
     def test_can_grant_permission_no_role(self, grant_checker):
         permission = SnowflakePermission("*", "account", ["ownership"], True)
-        assert grant_checker.can_grant_permission(None, permission) == True
+        assert grant_checker.can_grant_permission(None, permission) is True

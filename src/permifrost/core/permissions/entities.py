@@ -1,13 +1,28 @@
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Set, Tuple, TypedDict
 
+from permifrost.core.permissions.types import PermifrostSpecSchema
 from permifrost.core.permissions.utils.error import SpecLoadingError
 
 
+class EntitySchema(TypedDict):
+    databases: Set[str]
+    database_refs: Set[str]
+    shared_databases: Set[str]
+    schema_refs: Set[str]
+    table_refs: Set[str]
+    roles: Set[str]
+    role_refs: Set[str]
+    users: Set[str]
+    warehouses: Set[str]
+    warehouse_refs: Set[str]
+    require_owner: bool
+
+
 class EntityGenerator:
-    def __init__(self, spec):
+    def __init__(self, spec: PermifrostSpecSchema):
         self.spec = spec
-        self.entities = {
+        self.entities: EntitySchema = {
             "databases": set(),
             "database_refs": set(),
             "shared_databases": set(),
@@ -18,11 +33,11 @@ class EntityGenerator:
             "users": set(),
             "warehouses": set(),
             "warehouse_refs": set(),
-            "require-owner": False,
+            "require_owner": False,
         }
-        self.error_messages: List[Optional[str]] = []
+        self.error_messages: List[str] = []
 
-    def inspect_entities(self,) -> Dict:
+    def inspect_entities(self) -> EntitySchema:
         """
         Inspect a valid spec and make sure that no logic errors exist.
 
@@ -43,18 +58,54 @@ class EntityGenerator:
 
         return self.entities
 
-    def filter_by_type(self, entities_list: List, type: str):
+    @staticmethod
+    def filter_grouped_entities_by_type(grouped_entities: List, type: str) -> List:
+        """
+        Takes a list of grouped entities and filters them for a particular entity_type
+
+        For example:
+            filter_grouped_entities_by_type(grouped_entities, 'role') ->
+                {'accountadmin', 'demo', 'securityadmin', 'sysadmin', 'useradmin'}
+
+        """
         filtered_entities = [
-            entries for entity_type, entries in entities_list if entity_type == type
+            entries for entity_type, entries in grouped_entities if entity_type == type
         ]
 
         # Avoid returning a nested list if there are entities
-        if filtered_entities == []:
+        if not filtered_entities:
             return filtered_entities
         else:
             return filtered_entities[0]
 
-    def generate(self) -> Tuple[Dict, List[str]]:
+    @staticmethod
+    def group_spec_by_type(spec: PermifrostSpecSchema) -> List[Tuple[str, Any]]:
+        """
+        Takes as input the Permifrost Spec and converts it to a grouped list
+        For example:
+            [('databases',
+                [{'demo': {'shared': False}}]),
+            ('roles',
+                [
+                  {'accountadmin':
+                    {'warehouses': ['loading'],
+                     'member_of': ['sysadmin', 'securityadmin']}},
+                  {'securityadmin':
+                    {'warehouses': ['loading'],
+                    'member_of': ['useradmin']}},
+                ]
+            ...
+            ]
+
+        """
+        entities_by_type = [
+            (entity_type, entry)
+            for entity_type, entry in spec.items()
+            if entry and entity_type != "version"
+        ]
+        return entities_by_type
+
+    def generate(self) -> EntitySchema:
         """
         Generate and return a dictionary with all the entities defined or
         referenced in the permissions specification file.
@@ -69,18 +120,19 @@ class EntityGenerator:
         Returns a tuple (entities, error_messages) with all the entities defined
         in the spec and any errors found (e.g. a user not assigned their user role)
         """
-
-        # Filter out the `version` key and group by entity type
-        entities_by_type: List[Tuple[str, List[Dict]]] = [
-            (entity_type, entry)
-            for entity_type, entry in self.spec.items()
-            if entry and entity_type != "version"
-        ]
-
-        self.generate_roles(self.filter_by_type(entities_by_type, "roles"))
-        self.generate_databases(self.filter_by_type(entities_by_type, "databases"))
-        self.generate_warehouses(self.filter_by_type(entities_by_type, "warehouses"))
-        self.generate_users(self.filter_by_type(entities_by_type, "users"))
+        entities_by_type = self.group_spec_by_type(self.spec)
+        self.generate_roles(
+            self.filter_grouped_entities_by_type(entities_by_type, "roles")
+        )
+        self.generate_databases(
+            self.filter_grouped_entities_by_type(entities_by_type, "databases")
+        )
+        self.generate_warehouses(
+            self.filter_grouped_entities_by_type(entities_by_type, "warehouses")
+        )
+        self.generate_users(
+            self.filter_grouped_entities_by_type(entities_by_type, "users")
+        )
 
         # Filter the owner requirement and set it to True or False
         require_owner = [
@@ -88,29 +140,33 @@ class EntityGenerator:
             for entity_type, entry in entities_by_type
             if entity_type == "require-owner"
         ]
-        self.entities["require-owner"] = True if require_owner == [True] else False
+        self.entities["require_owner"] = require_owner == [True]
 
+        self.generate_implicit_refs_from_schemas()
+        self.generate_implicit_refs_from_tables()
         # Add implicit references to DBs and Schemas.
         #  e.g. RAW.MYSCHEMA.TABLE references also DB RAW and Schema MYSCHEMA
-        for schema in self.entities["schema_refs"]:
-            name_parts = schema.split(".")
-            # Add the Database in the database refs
-            if name_parts[0] != "*":
-                self.entities["database_refs"].add(name_parts[0])
-
-        for table in self.entities["table_refs"]:
-            name_parts = table.split(".")
-            # Add the Database in the database refs
-            if name_parts[0] != "*":
-                self.entities["database_refs"].add(name_parts[0])
-
-            # Add the Schema in the schema refs
-            if name_parts[1] != "*":
-                self.entities["schema_refs"].add(f"{name_parts[0]}.{name_parts[1]}")
 
         return self.entities
 
-    def ensure_valid_entity_names(self, entities: Dict) -> List[str]:
+    def generate_implicit_refs_from_schemas(self):
+        """Adds implicit database refs from schemas"""
+        for schema in self.entities["schema_refs"]:
+            name_parts = schema.split(".")
+            if name_parts[0] != "*":
+                self.entities["database_refs"].add(name_parts[0])
+
+    def generate_implicit_refs_from_tables(self):
+        """Adds implicit db/schema refs from tables"""
+        for table in self.entities["table_refs"]:
+            name_parts = table.split(".")
+            if name_parts[0] != "*":
+                self.entities["database_refs"].add(name_parts[0])
+
+            if name_parts[1] != "*":
+                self.entities["schema_refs"].add(f"{name_parts[0]}.{name_parts[1]}")
+
+    def ensure_valid_entity_names(self, entities: EntitySchema) -> List[str]:
         """
         Check that all entity names are valid.
 
@@ -150,7 +206,7 @@ class EntityGenerator:
 
         return error_messages
 
-    def ensure_valid_references(self, entities: Dict) -> List[str]:
+    def ensure_valid_references(self, entities: EntitySchema) -> List[str]:
         """
         Make sure that all references are well defined.
 
@@ -182,13 +238,15 @@ class EntityGenerator:
 
         return error_messages
 
-    def ensure_valid_spec_for_conditional_settings(self, entities: Dict) -> List[str]:
+    def ensure_valid_spec_for_conditional_settings(
+        self, entities: EntitySchema
+    ) -> List[str]:
         """
         Make sure that the spec is valid based on conditional settings such as require-owner
         """
         error_messages = []
 
-        if entities["require-owner"]:
+        if entities["require_owner"]:
             error_messages.extend(self.check_entities_define_owner())
 
         return error_messages
@@ -203,7 +261,7 @@ class EntityGenerator:
         ]
 
         for entity_type, entry in entities_by_type:
-            for entity_dict in entry:
+            for entity_dict in entry:  # type: ignore
                 for entity_name, config in entity_dict.items():
                     if "owner" not in config.keys():
                         error_messages.append(
@@ -212,12 +270,12 @@ class EntityGenerator:
 
         return error_messages
 
-    def generate_warehouses(self, warehouse_list: List[Dict[str, Dict]]) -> Tuple:
+    def generate_warehouses(self, warehouse_list: List[Dict[str, Dict]]) -> None:
         for warehouse_entry in warehouse_list:
             for warehouse_name, _ in warehouse_entry.items():
                 self.entities["warehouses"].add(warehouse_name)
 
-    def generate_databases(self, db_list: List[Dict[str, Dict]]) -> Tuple:
+    def generate_databases(self, db_list: List[Dict[str, Dict]]) -> None:
         for db_entry in db_list:
             for db_name, config in db_entry.items():
                 self.entities["databases"].add(db_name)
@@ -232,7 +290,175 @@ class EntityGenerator:
                             )
                         )
 
-    def generate_roles(self, role_list):
+    def generate_member_of_roles(self, config, role_name):
+        try:
+            if isinstance(config["member_of"], dict):
+                for member_role in config["member_of"].get("include", []):
+                    self.entities["roles"].add(member_role)
+                for member_role in config["member_of"].get("exclude", []):
+                    self.entities["roles"].add(member_role)
+
+            if isinstance(config["member_of"], list):
+                for member_role in config["member_of"]:
+                    self.entities["roles"].add(member_role)
+        except KeyError:
+            logging.debug(
+                "`member_of` not found for role {}, skipping Role Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_warehouse_roles(self, config, role_name):
+        try:
+            for warehouse in config["warehouses"]:
+                self.entities["warehouse_refs"].add(warehouse)
+        except KeyError:
+            logging.debug(
+                "`warehouses` not found for role {}, skipping Warehouse Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_database_roles(self, config, role_name):
+        try:
+            for schema in config["privileges"]["databases"]["read"]:
+                self.entities["database_refs"].add(schema)
+        except KeyError:
+            logging.debug(
+                "`privileges.databases.read` not found for role {}, skipping Database Reference generation.".format(
+                    role_name
+                )
+            )
+        try:
+            for schema in config["privileges"]["databases"]["write"]:
+                self.entities["database_refs"].add(schema)
+        except KeyError:
+            logging.debug(
+                "`privileges.databases.write` not found for role {}, skipping Database Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_read_write_database_names(self, config):
+        read_databases = (
+            config.get("privileges", {}).get("databases", {}).get("read", [])
+        )
+
+        write_databases = (
+            config.get("privileges", {}).get("databases", {}).get("write", [])
+        )
+        return (read_databases, write_databases)
+
+    def generate_schema_roles(self, config, role_name):
+        read_databases, write_databases = self.generate_read_write_database_names(
+            config
+        )
+
+        try:
+            for schema in config["privileges"]["schemas"]["read"]:
+                self.entities["schema_refs"].add(schema)
+                schema_db = schema.split(".")[0]
+                if schema_db not in read_databases:
+                    self.error_messages.append(
+                        f"Privilege Error: Database {schema_db} referenced in "
+                        "schema read privileges but not in database privileges "
+                        f"for role {role_name}"
+                    )
+        except KeyError:
+            logging.debug(
+                "`privileges.schemas.read` not found for role {}, skipping Schema Reference generation.".format(
+                    role_name
+                )
+            )
+
+        try:
+            for schema in config["privileges"]["schemas"]["write"]:
+                self.entities["schema_refs"].add(schema)
+                schema_db = schema.split(".")[0]
+                if schema_db not in write_databases:
+                    self.error_messages.append(
+                        f"Privilege Error: Database {schema_db} referenced in "
+                        "schema write privileges but not in database privileges "
+                        f"for role {role_name}"
+                    )
+        except KeyError:
+            logging.debug(
+                "`privileges.schemas.write` not found for role {}, skipping Schema Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_table_roles(self, config, role_name):
+        read_databases, write_databases = self.generate_read_write_database_names(
+            config
+        )
+
+        try:
+            for table in config["privileges"]["tables"]["read"]:
+                self.entities["table_refs"].add(table)
+                table_db = table.split(".")[0]
+                if table_db not in read_databases:
+                    self.error_messages.append(
+                        f"Privilege Error: Database {table_db} referenced in "
+                        "table read privileges but not in database privileges "
+                        f"for role {role_name}"
+                    )
+        except KeyError:
+            logging.debug(
+                "`privileges.tables.read` not found for role {}, skipping Table Reference generation.".format(
+                    role_name
+                )
+            )
+
+        try:
+            for table in config["privileges"]["tables"]["write"]:
+                self.entities["table_refs"].add(table)
+                table_db = table.split(".")[0]
+                if table_db not in write_databases:
+                    self.error_messages.append(
+                        f"Privilege Error: Database {table_db} referenced in "
+                        "table write privileges but not in database privileges "
+                        f"for role {role_name}"
+                    )
+        except KeyError:
+            logging.debug(
+                "`privileges.tables.write` not found for role {}, skipping Table Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_ownership_roles(self, config, role_name):
+        try:
+            for schema in config["owns"]["databases"]:
+                self.entities["database_refs"].add(schema)
+        except KeyError:
+            logging.debug(
+                "`owns.databases` not found for role {}, skipping Database Reference generation.".format(
+                    role_name
+                )
+            )
+
+        try:
+            for schema in config["owns"]["schemas"]:
+                self.entities["schema_refs"].add(schema)
+        except KeyError:
+            logging.debug(
+                "`owns.schemas` not found for role {}, skipping Schema Reference generation.".format(
+                    role_name
+                )
+            )
+
+        try:
+            for table in config["owns"]["tables"]:
+                self.entities["table_refs"].add(table)
+        except KeyError:
+            logging.debug(
+                "`owns.tables` not found for role {}, skipping Table Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_roles(self, role_list):  # noqa
         """
         Generate all of the role entities.
         Also can populate the role_refs, database_refs,
@@ -242,158 +468,23 @@ class EntityGenerator:
         for role_entry in role_list:
             for role_name, config in role_entry.items():
                 self.entities["roles"].add(role_name)
-                try:
-                    if isinstance(config["member_of"], dict):
-                        for member_role in config["member_of"].get("include", []):
-                            self.entities["roles"].add(member_role)
-                        for member_role in config["member_of"].get("exclude", []):
-                            self.entities["roles"].add(member_role)
+                self.generate_member_of_roles(config, role_name)
+                self.generate_warehouse_roles(config, role_name)
+                self.generate_database_roles(config, role_name)
+                self.generate_schema_roles(config, role_name)
+                self.generate_table_roles(config, role_name)
+                self.generate_ownership_roles(config, role_name)
 
-                    if isinstance(config["member_of"], list):
-                        for member_role in config["member_of"]:
-                            self.entities["roles"].add(member_role)
-                except KeyError:
-                    logging.debug(
-                        "`member_of` not found for role {}, skipping Role Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for warehouse in config["warehouses"]:
-                        self.entities["warehouse_refs"].add(warehouse)
-                except KeyError:
-                    logging.debug(
-                        "`warehouses` not found for role {}, skipping Warehouse Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for schema in config["privileges"]["databases"]["read"]:
-                        self.entities["database_refs"].add(schema)
-                except KeyError:
-                    logging.debug(
-                        "`privileges.databases.read` not found for role {}, skipping Database Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for schema in config["privileges"]["databases"]["write"]:
-                        self.entities["database_refs"].add(schema)
-                except KeyError:
-                    logging.debug(
-                        "`privileges.databases.write` not found for role {}, skipping Database Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                read_databases = (
-                    config.get("privileges", {}).get("databases", {}).get("read", [])
+    def generate_user_fn(self, config, key, ref, user_name):
+        if key in config:
+            for item in config[key]:
+                self.entities[ref].add(item)
+        else:
+            logging.debug(
+                "`{}` not found for user {}, skipping Role Reference generation.".format(
+                    key, user_name
                 )
-
-                write_databases = (
-                    config.get("privileges", {}).get("databases", {}).get("write", [])
-                )
-
-                try:
-                    for schema in config["privileges"]["schemas"]["read"]:
-                        self.entities["schema_refs"].add(schema)
-                        schema_db = schema.split(".")[0]
-                        if schema_db not in read_databases:
-                            self.error_messages.append(
-                                f"Privilege Error: Database {schema_db} referenced in "
-                                "schema read privileges but not in database privileges "
-                                f"for role {role_name}"
-                            )
-                except KeyError:
-                    logging.debug(
-                        "`privileges.schemas.read` not found for role {}, skipping Schema Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for schema in config["privileges"]["schemas"]["write"]:
-                        self.entities["schema_refs"].add(schema)
-                        schema_db = schema.split(".")[0]
-                        if schema_db not in write_databases:
-                            self.error_messages.append(
-                                f"Privilege Error: Database {schema_db} referenced in "
-                                "schema write privileges but not in database privileges "
-                                f"for role {role_name}"
-                            )
-                except KeyError:
-                    logging.debug(
-                        "`privileges.schemas.write` not found for role {}, skipping Schema Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for table in config["privileges"]["tables"]["read"]:
-                        self.entities["table_refs"].add(table)
-                        table_db = schema.split(".")[0]
-                        if table_db not in read_databases:
-                            self.error_messages.append(
-                                f"Privilege Error: Database {table_db} referenced in "
-                                "table read privileges but not in database privileges "
-                                f"for role {role_name}"
-                            )
-                except KeyError:
-                    logging.debug(
-                        "`privileges.tables.read` not found for role {}, skipping Table Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for table in config["privileges"]["tables"]["write"]:
-                        self.entities["table_refs"].add(table)
-                        table_db = schema.split(".")[0]
-                        if table_db not in write_databases:
-                            self.error_messages.append(
-                                f"Privilege Error: Database {table_db} referenced in "
-                                "table write privileges but not in database privileges "
-                                f"for role {role_name}"
-                            )
-                except KeyError:
-                    logging.debug(
-                        "`privileges.tables.write` not found for role {}, skipping Table Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for schema in config["owns"]["databases"]:
-                        self.entities["database_refs"].add(schema)
-                except KeyError:
-                    logging.debug(
-                        "`owns.databases` not found for role {}, skipping Database Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for schema in config["owns"]["schemas"]:
-                        self.entities["schema_refs"].add(schema)
-                except KeyError:
-                    logging.debug(
-                        "`owns.schemas` not found for role {}, skipping Schema Reference generation.".format(
-                            role_name
-                        )
-                    )
-
-                try:
-                    for table in config["owns"]["tables"]:
-                        self.entities["table_refs"].add(table)
-                except KeyError:
-                    logging.debug(
-                        "`owns.tables` not found for role {}, skipping Table Reference generation.".format(
-                            role_name
-                        )
-                    )
+            )
 
     def generate_users(self, user_list):
         """
@@ -404,43 +495,13 @@ class EntityGenerator:
         for user_entry in user_list:
             for user_name, config in user_entry.items():
                 self.entities["users"].add(user_name)
-
-                try:
-                    for member_role in config["member_of"]:
-                        self.entities["role_refs"].add(member_role)
-                except KeyError:
-                    logging.debug(
-                        "`member_of` not found for user {}, skipping Role Reference generation.".format(
-                            user_name
-                        )
-                    )
-
-                try:
-                    for schema in config["owns"]["databases"]:
-                        self.entities["database_refs"].add(schema)
-                except KeyError:
-                    logging.debug(
-                        "`owns.databases` not found for user {}, skipping Database Reference generation.".format(
-                            user_name
-                        )
-                    )
-
-                try:
-                    for schema in config["owns"]["schemas"]:
-                        self.entities["schema_refs"].add(schema)
-                except KeyError:
-                    logging.debug(
-                        "`owns.schemas` not found for user {}, skipping Schema Reference generation.".format(
-                            user_name
-                        )
-                    )
-
-                try:
-                    for table in config["owns"]["tables"]:
-                        self.entities["table_refs"].add(table)
-                except KeyError:
-                    logging.debug(
-                        "`owns.tables` not found for user {}, skipping Table Reference generation.".format(
-                            user_name
-                        )
-                    )
+                self.generate_user_fn(config, "member_of", "role_refs", user_name)
+                self.generate_user_fn(
+                    config.get("owns", {}), "database", "database_refs", user_name
+                )
+                self.generate_user_fn(
+                    config.get("owns", {}), "schemas", "schema_refs", user_name
+                )
+                self.generate_user_fn(
+                    config.get("owns", {}), "tables", "table_refs", user_name
+                )

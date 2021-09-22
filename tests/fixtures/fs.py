@@ -33,7 +33,6 @@ def pushd(request):
 @pytest.mark.meta
 def test_pushd(mkdtemp, pushd):
     temp = mkdtemp()
-    cwd = os.getcwd()
 
     os.makedirs(temp.joinpath("a"))
     os.makedirs(temp.joinpath("a/b"))

@@ -5,7 +5,7 @@ from typing import List
 @dataclass
 class SnowflakePermission:
     """
-    A data class that represents a snowflake permission. A permission is a set of 
+    A data class that represents a snowflake permission. A permission is a set of
     `privileges` (ie. select, insert, use) that can be performed on an entity.
     We represent an entity by its name and type.
 
