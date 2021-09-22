@@ -1,12 +1,12 @@
 # default Code Owners
-* @jjstark @paul_armstrong @blake-enyart @PedramNavid 
+* @jjstark @paul_armstrong @blake-enyart @PedramNavid
 
 # directories
-/.gitlab/            @jjstark @paul_armstrong
+/.gitlab/            @jjstark @paul_armstrong @blake-enyart
 /docker/             @jjstark @paul_armstrong
-/src/                @jjstark @paul_armstrong @blake-enyart 
-/src/permifrost/cli  @PedramNavid
+/src/                @jjstark @paul_armstrong @blake-enyart
+/tests/              @PedramNavid @paul_armstrong @blake-enyart
 
 
 # files
-/pre-commit-config.yaml @blake-enyart 
+/pre-commit-config.yaml @blake-enyart
