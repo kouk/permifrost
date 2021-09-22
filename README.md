@@ -1,11 +1,6 @@
-# `permifrost-fork`
+# `permifrost`
 
-This is a fork of the GitLab [permifrost](https://gitlab.com/gitlab-data/permifrost/)
-project. As the GitLab team is not currently maintaining the project, we've
-taken on maintenace of the project to allow for bug fixes and development,
-while maintaining the spirit of the project that has been loved and used by many.
-
-We welcome contributions, so please feel free to submit PRs or get in touch
+We welcome contributions, so please feel free to submit MRs or get in touch
 if you'd like to help in any way.
 
 ## Installation
