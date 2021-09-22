@@ -1,5 +1,5 @@
 # default Code Owners
-* @jjstark	@paul_armstrong
+* @jjstark @paul_armstrong @blake-enyart @PedramNavid 
 
 # directories
 /.gitlab/            @jjstark @paul_armstrong
