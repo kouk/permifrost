@@ -66,6 +66,8 @@ Permifrost generating the proper grants for each type of object. This includes
 shared databases which have simpler and more limited permissions than non-shared
 databases.
 
+According to the `read` vs. `write` permissions approach, you should be able to grant granular access like `read` permissions for usage of database and schema and `write` permissions to insert data into a specific table within that database and schema.
+
 Tables and views are listed under `tables` and handled properly behind the
 scenes.
 
