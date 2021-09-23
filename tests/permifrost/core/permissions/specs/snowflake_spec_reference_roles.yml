@@ -67,7 +67,7 @@ roles:
         tables:
           read:
             - demodb.*.*
-            - demodb2.*
+            - demodb2.*.*
             - demodb5.demo_schema.demo_table
           write:
             - demodb.*.*
