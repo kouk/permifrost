@@ -4,6 +4,7 @@ import os
 from permifrost.core.permissions import SpecLoadingError
 from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from permifrost.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
 from permifrost_test_utils.snowflake_schema_builder import SnowflakeSchemaBuilder
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 
@@ -128,11 +129,28 @@ class TestSnowflakeSpecLoader:
 
         return [spec_file_data, method, return_value]
 
+    # test_check_entities_on_snowflake_server_checks_role_owner
+    def member_of_star_file():
+        """
+        SnowflakeSchemaBuilder loads role with member_of * correctly
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .set_version("1.0")
+            .add_role(member_of=['"*"'])
+            .build()
+        )
+        method = "show_roles"
+        return_value = {"testrole": "none"}
+
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
         "config",
         [
             enforce_owner_role,
             empty_spec_file,
+            member_of_star_file,
         ],
     )
     def test_check_entities_on_snowflake_server_checks_role_owner(
@@ -425,7 +443,6 @@ class TestSnowflakeSpecLoader:
             )
             .build()
         )
-        # breakpoint()
         method = "show_tables"
         return_value = ["database_1.schema_1.TableOne"]
         return [spec_file_data, method, return_value]
@@ -1187,6 +1204,60 @@ class TestSpecFileLoading:
         ]
 
         mocker.patch.object(SnowflakeConnector, "show_views", return_value=[])
+        sql_queries = spec_loader.generate_permission_queries()
+        results = [cmd.get("sql", "") for cmd in sql_queries]
+        results.sort()
+
+        assert results == expected
+
+    def test_generate_grants_for_snowflake_spec_loader(
+        self,
+        mocker,
+        mock_connector,
+    ):
+        """
+        When a spec file includes a member_of: "*" it should generate a grant
+        statement for each role in the Snowflake instance
+        """
+        mocker.patch.object(
+            SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
+        )
+        mocker.patch.object(
+            SnowflakeGrantsGenerator,
+            "_generate_member_star_lists",
+            return_value=["role_1", "role_2", "role_3"],
+        )
+
+        mocker.patch(
+            "permifrost.core.permissions.utils.snowflake_connector.SnowflakeConnector",
+            MockSnowflakeConnector,
+        )
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+        mocker.patch.object(
+            SnowflakeConnector,
+            "show_tables",
+            return_value=[],
+        )
+        mocker.patch.object(
+            SnowflakeConnector,
+            "show_views",
+            return_value=[],
+        )
+
+        spec_file_data = SnowflakeSchemaBuilder().add_role(member_of=['"*"']).build()
+        method = "show_roles"
+        return_value = {}
+        expected = [
+            "GRANT ROLE role_1 TO role testrole",
+            "GRANT ROLE role_2 TO role testrole",
+            "GRANT ROLE role_3 TO role testrole",
+        ]
+
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        mocker.patch.object(mock_connector, method, return_value=return_value)
+        spec_loader = SnowflakeSpecLoader("", mock_connector)
         sql_queries = spec_loader.generate_permission_queries()
         results = [cmd.get("sql", "") for cmd in sql_queries]
         results.sort()
