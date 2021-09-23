@@ -9,8 +9,11 @@ Changelog](http://keepachangelog.com/).
 ## Unreleased ---
 
 ### New
-
 ### Changes
+* [#60](https://gitlab.com/gitlab-data/permifrost/-/issues/60)
+Adds ability to grant `write` privileges on schemas and/or tables while only granting `read` permissions on databases and/or schemas
+(i.e. if someone has `read` access on a database, they can have `read/write` access on the schemas and/or tables in that database. Also
+if someone has `read` access on a database and schema, they can have `read/write` access on the tables in that database/schema combo)
 
 ### Fixes
 * [#69](https://gitlab.com/gitlab-data/permifrost/-/issues/69) Adds quote_plus

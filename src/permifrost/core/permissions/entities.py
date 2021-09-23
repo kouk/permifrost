@@ -375,7 +375,7 @@ class EntityGenerator:
             for schema in config["privileges"]["schemas"]["write"]:
                 self.entities["schema_refs"].add(schema)
                 schema_db = schema.split(".")[0]
-                if schema_db not in write_databases:
+                if schema_db not in write_databases + read_databases:
                     self.error_messages.append(
                         f"Privilege Error: Database {schema_db} referenced in "
                         "schema write privileges but not in database privileges "
@@ -414,7 +414,7 @@ class EntityGenerator:
             for table in config["privileges"]["tables"]["write"]:
                 self.entities["table_refs"].add(table)
                 table_db = table.split(".")[0]
-                if table_db not in write_databases:
+                if table_db not in write_databases + read_databases:
                     self.error_messages.append(
                         f"Privilege Error: Database {table_db} referenced in "
                         "table write privileges but not in database privileges "

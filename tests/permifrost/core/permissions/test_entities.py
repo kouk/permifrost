@@ -26,6 +26,10 @@ def entities(test_dir):
 
 class TestEntityGenerator:
     def test_entity_databases(self, entities):
+        """
+        Expect only demo and shared_demo from databases section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {"demo", "shared_demo"}
         assert entities["databases"] == expected
 
@@ -33,10 +37,18 @@ class TestEntityGenerator:
         assert entities["require_owner"] is True
 
     def test_db_refs(self, entities):
+        """
+        Expect all actionable <database> references from the roles section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {"demodb", "demodb2", "demodb3", "demodb4", "demodb5", "demodb6"}
         assert entities["database_refs"] == expected
 
     def test_schema_refs(self, entities):
+        """
+        Expect all <database>.<schema> references from the roles section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {
             "demodb.*",
             "demodb2.*",
@@ -47,7 +59,24 @@ class TestEntityGenerator:
         }
         assert entities["schema_refs"] == expected
 
+    def test_table_refs(self, entities):
+        """
+        Expect all <database>.<schema>.<table> references from the roles section in
+        snowflake_spec_reference_roles.yml spec
+        """
+        expected = {
+            "demodb6.demo_schema.demo_table",
+            "demodb.*.*",
+            "demodb5.demo_schema.demo_table",
+            "demodb2.*.*",
+        }
+        assert entities["table_refs"] == expected
+
     def test_entity_roles(self, entities):
+        """
+        Expect all <roles> from the roles section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {
             "*",
             "accountadmin",
@@ -59,14 +88,26 @@ class TestEntityGenerator:
         assert entities["roles"] == expected
 
     def test_entity_role_refs(self, entities):
+        """
+        Expect all actionable <roles> from the roles section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {"demo"}
         assert entities["role_refs"] == expected
 
     def test_entity_users(self, entities):
+        """
+        Expect all actionable <users> from the users section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {"airflow_demo", "dbt_demo"}
         assert entities["users"] == expected
 
     def test_entity_warehouses(self, entities):
+        """
+        Expect all actionable <warehouses> from the warehouses section in
+        snowflake_spec_reference_roles.yml spec
+        """
         expected = {"demo", "loading", "transforming", "reporting"}
         assert entities["warehouses"] == expected
 
