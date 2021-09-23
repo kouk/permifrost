@@ -132,85 +132,6 @@ def test_roles_granted_to_user():
 
 
 class TestSnowflakeGrants:
-    def test_generate_grant_roles(
-        self,
-        test_grants_to_role,
-        test_roles_granted_to_user,
-        test_role_config,
-        test_user_config,
-    ):
-        generator = SnowflakeGrantsGenerator(
-            test_grants_to_role, test_roles_granted_to_user
-        )
-
-        role_command_list = generator.generate_grant_roles(
-            "roles", "functional_role", test_role_config["functional_role"]
-        )
-
-        role_lower_list = [cmd.get("sql", "").lower() for cmd in role_command_list]
-
-        assert "grant role object_role_2 to role functional_role" in role_lower_list
-        assert "grant role object_role_3 to role functional_role" in role_lower_list
-        assert "revoke role object_role_1 from role functional_role" in role_lower_list
-
-        user_command_list = generator.generate_grant_roles(
-            "users", "user_name", test_user_config["user_name"]
-        )
-
-        user_lower_list = [cmd.get("sql", "").lower() for cmd in user_command_list]
-
-        assert "grant role object_role to user user_name" in user_lower_list
-        assert "grant role user_role to user user_name" in user_lower_list
-        assert "revoke role functional_role from user user_name" in user_lower_list
-
-    def test_generate_grant_roles_ignore_membership(
-        self, test_grants_to_role, test_roles_granted_to_user
-    ):
-        generator = SnowflakeGrantsGenerator(
-            test_grants_to_role, test_roles_granted_to_user, ignore_memberships=True
-        )
-
-        role_command_list = generator.generate_grant_roles(
-            "roles", "functional_role", "no_config"
-        )
-
-        assert role_command_list == []
-
-    def test_revoke_with_no_member_of(
-        self,
-        test_grants_to_role,
-        test_roles_granted_to_user,
-        test_role_config,
-    ):
-        generator = SnowflakeGrantsGenerator(
-            test_grants_to_role, test_roles_granted_to_user
-        )
-
-        role_command_list = generator.generate_grant_roles(
-            "roles",
-            "role_without_member_of",
-            test_role_config["role_without_member_of"],
-        )
-
-        role_lower_list = [cmd.get("sql", "").lower() for cmd in role_command_list]
-
-        assert (
-            "revoke role object_role_1 from role role_without_member_of"
-            in role_lower_list
-        )
-
-    def test_no_revoke_with_no_member_of_but_ignore_membership(
-        self, test_grants_to_role, test_roles_granted_to_user
-    ):
-        generator = SnowflakeGrantsGenerator(
-            test_grants_to_role, test_roles_granted_to_user, ignore_memberships=True
-        )
-
-        role_command_list = generator.generate_grant_roles(
-            "roles", "role_without_member_of", "no_config"
-        )
-        assert role_command_list == []
-
     @pytest.mark.parametrize("ignore_memberships", [True, False])
     def test_generate_warehouse_grants(
         self,
@@ -271,6 +192,377 @@ class TestSnowflakeGrants:
             "revoke monitor on warehouse warehouse_1 from role functional_role"
             in warehouse_lower_list
         )
+
+
+class TestGenerateRoleGrants:
+    def generate_single_role_grant():
+        """
+        Generate GRANT for role_1 to have access to role_2
+        """
+        entity_type = "roles"
+        entity = "role_1"
+        test_grants_to_role = {
+            "member_of": ["role_2"],
+        }
+        test_roles_granted_to_user = {}
+        ignore_membership = False
+        expected = ["GRANT ROLE role_2 TO role role_1"]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ]
+
+    def generate_single_user_grant():
+        """
+        Generate GRANT for user_1 to have access to role_1
+        """
+        entity_type = "users"
+        entity = "user_1"
+        test_grants_to_role = {
+            "member_of": ["role_1"],
+        }
+        test_roles_granted_to_user = {"user_1": []}
+        ignore_membership = False
+        expected = ["GRANT ROLE role_1 TO user user_1"]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ]
+
+    def generate_multi_user_grants():
+        """
+        Generate GRANT for user_1 to have access to role_1, role_2
+        """
+        entity_type = "users"
+        entity = "user_1"
+        test_grants_to_role = {
+            "member_of": ["role_1", "role_2"],
+        }
+        test_roles_granted_to_user = {"user_1": []}
+        ignore_membership = False
+        expected = [
+            "GRANT ROLE role_1 TO user user_1",
+            "GRANT ROLE role_2 TO user user_1",
+        ]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ]
+
+    def generate_multi_role_grants():
+        """
+        Generate GRANT for role_1 to have access to role_2, role_3
+        """
+        entity_type = "roles"
+        entity = "role_1"
+        test_grants_to_role = {
+            "member_of": ["role_2", "role_3"],
+        }
+        test_roles_granted_to_user = {"user_1": []}
+        ignore_membership = False
+        expected = [
+            "GRANT ROLE role_2 TO role role_1",
+            "GRANT ROLE role_3 TO role role_1",
+        ]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ]
+
+    def generate_multi_user_grants_ignore():
+        """
+        Should not generate GRANT for user_1 to have access to role_1, role_2
+        """
+        entity_type = "users"
+        entity = "user_1"
+        test_grants_to_role = {
+            "member_of": ["role_1", "role_2"],
+        }
+        test_roles_granted_to_user = {"user_1": []}
+        ignore_membership = True
+        expected = []
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ]
+
+    def generate_multi_role_grants_ignore():
+        """
+        Should not generate GRANT for role_1 to have access to role_2, role_3
+        """
+        entity_type = "roles"
+        entity = "role_1"
+        test_grants_to_role = {
+            "member_of": ["role_2", "role_3"],
+        }
+        test_roles_granted_to_user = {"user_1": []}
+        ignore_membership = True
+
+        expected = []
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ]
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            generate_single_user_grant,
+            generate_single_role_grant,
+            generate_multi_user_grants,
+            generate_multi_role_grants,
+            generate_multi_user_grants_ignore,
+            generate_multi_role_grants_ignore,
+        ],
+    )
+    def test_generate_grant_roles(
+        self,
+        config,
+        mocker,
+    ):
+        (
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            expected,
+        ) = config()
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user, ignore_membership
+        )
+
+        role_command_list = generator.generate_grant_roles(
+            entity_type,
+            entity,
+            test_grants_to_role,
+        )
+
+        results = [cmd.get("sql", "") for cmd in role_command_list]
+        results.sort()
+
+        assert results == expected
+
+
+class TestGenerateRoleGrantRevokes:
+    def generate_single_role_revoke():
+        """
+        REVOKE for role_1 to have access to role_2
+        """
+        entity_type = "roles"
+        entity = "role_1"
+        test_grants_to_role = {"role_1": {"usage": {"role": ["role_2"]}}}
+        test_roles_granted_to_user = {}
+        ignore_membership = False
+        grants_spec = {}
+
+        expected = ["REVOKE ROLE role_2 FROM role role_1"]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ]
+
+    def generate_single_user_revoke():
+        """
+        REVOKE for user_1 to have access to role_1
+        """
+        entity_type = "users"
+        entity = "user_1"
+        test_grants_to_role = {}
+        test_roles_granted_to_user = {"user_1": ["role_1"]}
+        ignore_membership = False
+        grants_spec = {}
+        expected = ["REVOKE ROLE role_1 FROM user user_1"]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ]
+
+    def generate_multi_role_revokes():
+        """
+        REVOKE for role_1 to have access to role_2, role_3
+        """
+        entity_type = "roles"
+        entity = "role_1"
+        test_grants_to_role = {"role_1": {"usage": {"role": ["role_2", "role_3"]}}}
+        test_roles_granted_to_user = {}
+        ignore_membership = False
+        grants_spec = {}
+
+        expected = [
+            "REVOKE ROLE role_2 FROM role role_1",
+            "REVOKE ROLE role_3 FROM role role_1",
+        ]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ]
+
+    def generate_multi_user_revokes():
+        """
+        REVOKE for user_1 to have access to role_1, role_2
+        """
+        entity_type = "users"
+        entity = "user_1"
+        test_grants_to_role = {}
+        test_roles_granted_to_user = {"user_1": ["role_1", "role_2"]}
+
+        ignore_membership = False
+        grants_spec = {}
+
+        expected = [
+            "REVOKE ROLE role_1 FROM user user_1",
+            "REVOKE ROLE role_2 FROM user user_1",
+        ]
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ]
+
+    def generate_multi_role_revokes_ignore():
+        """
+        Should not generate REVOKE for role_1 to have access to role_2, role_3
+        """
+        entity_type = "roles"
+        entity = "role_1"
+        test_grants_to_role = {"role_1": {"usage": {"role": ["role_2", "role_3"]}}}
+        test_roles_granted_to_user = {}
+        ignore_membership = True
+        grants_spec = {}
+        expected = []
+
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ]
+
+    def generate_multi_user_revokes_ignore():
+        """
+        Should not generate REVOKE for user_1 to have access to role_1, role_2
+        """
+        entity_type = "users"
+        entity = "user_1"
+        test_grants_to_role = {}
+        test_roles_granted_to_user = {"user_1": ["role_1", "role_2"]}
+
+        ignore_membership = True
+        grants_spec = {}
+
+        expected = []
+        return [
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ]
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            generate_single_role_revoke,
+            generate_single_user_revoke,
+            generate_multi_role_revokes,
+            generate_multi_user_revokes,
+            generate_multi_role_revokes_ignore,
+            generate_multi_user_revokes_ignore,
+        ],
+    )
+    def test_generate_grant_roles_revokes(
+        self,
+        config,
+        mocker,
+    ):
+        (
+            entity_type,
+            entity,
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_membership,
+            grants_spec,
+            expected,
+        ) = config()
+        mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
+
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user, ignore_membership
+        )
+
+        role_command_list = generator.generate_grant_roles(
+            entity_type,
+            entity,
+            grants_spec,
+        )
+
+        results = [cmd.get("sql", "") for cmd in role_command_list]
+        results.sort()
+
+        assert results == expected
+
+    def test_no_revoke_with_no_member_of_but_ignore_membership(
+        self, test_grants_to_role, test_roles_granted_to_user
+    ):
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role, test_roles_granted_to_user, ignore_memberships=True
+        )
+
+        role_command_list = generator.generate_grant_roles(
+            "roles", "role_without_member_of", "no_config"
+        )
+        assert role_command_list == []
 
 
 class TestGenerateTableAndViewGrants:
