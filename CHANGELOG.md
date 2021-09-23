@@ -11,7 +11,9 @@ Changelog](http://keepachangelog.com/).
 ### New
 ### Changes
 * [#60](https://gitlab.com/gitlab-data/permifrost/-/issues/60)
-Adds flexibility to grant `write` privileges at schema and table level with having just `read` permissions on the database.
+Adds ability to grant `write` privileges on schemas and/or tables while only granting `read` permissions on databases and/or schemas
+(i.e. if someone has `read` access on a database, they can have `read/write` access on the schemas and/or tables in that database)
+
 ### Fixes
 * [#69](https://gitlab.com/gitlab-data/permifrost/-/issues/69) Adds quote_plus
   to the SnowflakeConnector to resolve possible connection issues caused by
