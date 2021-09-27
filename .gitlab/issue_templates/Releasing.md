@@ -1,5 +1,5 @@
 ### Release Core
-- [x] Verify all necessary changes exist on the master branch
+- [ ] Verify all necessary changes exist on the master branch
 - [ ] Check out permifrost repo.
 - [ ] Create bumpversion branch from master branch. 
 - [ ] From root of directory run `bumpversion --new-version <new full version label> <new version part>`. eg: `bumpversion --new-version 0.12.0 minor`.
