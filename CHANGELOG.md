@@ -6,7 +6,27 @@ Changelog](http://keepachangelog.com/).
 
 
 
-## 0.12.0 - (2021-09-28) ---
+## Unreleased
+---
+
+### New
+
+### Changes
+
+### Fixes
+
+### Breaks
+
+
+## 0.12.1 - (2021-09-28)
+---
+
+### Fixes
+* Update the release documentation and simplify process
+
+
+## 0.12.0 - (2021-09-28)
+---
 
 ### New
 ### Changes
@@ -26,7 +46,8 @@ Future grants on tables and views are granted on the database level.
 ### Breaks
 
 
-## 0.11.0 - (2021-03-01) ---
+## 0.11.0 - (2021-03-01)
+---
 
 ### New
 * [#38](https://gitlab.com/gitlab-data/permifrost/-/issues/38) To begin
@@ -41,14 +62,16 @@ Future grants on tables and views are granted on the database level.
   where reference errors were being triggered due to inadvertant filtering.
 
 
-## 0.10.0 - (2021-02-12) ---
+## 0.10.0 - (2021-02-12)
+---
 
 ### New
 * [#58](https://gitlab.com/gitlab-data/permifrost/-/issues/58) Add support for
   --ignore-membership flag to skip grant/revoke of role memberships
 
 
-## 0.9.0 - (2021-01-29) ---
+## 0.9.0 - (2021-01-29)
+---
 
 ### New
 * [#30](https://gitlab.com/gitlab-data/permifrost/-/issues/30) Add support for
@@ -65,7 +88,8 @@ Future grants on tables and views are granted on the database level.
   entry point to `run`
 
 
-## 0.8.1 - (2020-12-29) ---
+## 0.8.1 - (2020-12-29)
+---
 
 ### Fixes
 
@@ -74,35 +98,40 @@ Future grants on tables and views are granted on the database level.
 * [#42](https://gitlab.com/gitlab-data/permifrost/-/merge_requests/42) Filter
   grants not related to the databases in the config file.
 
-## 0.8.0 - (2020-11-02) ---
+## 0.8.0 - (2020-11-02)
+---
 
 ### New
 * [#50](https://gitlab.com/gitlab-data/permifrost/-/issues/50) Add support for
   include / exclude spec on `member_of` parameter
 
 
-## 0.7.0 - (2020-10-29) ---
+## 0.7.0 - (2020-10-29)
+---
 
 ### New
 * [#49](https://gitlab.com/gitlab-data/permifrost/-/issues/49) Add support for
   using "*" as a `member_of` parameter
 
 
-## 0.6.1 - (2020-10-28) ---
+## 0.6.1 - (2020-10-28)
+---
 
 ### New
 * [#44](https://gitlab.com/gitlab-data/permifrost/-/issues/44) Add support for
   using a key pair to authenticate with Snowflake
 
 
-## 0.6.0 - (2020-10-05) ---
+## 0.6.0 - (2020-10-05)
+---
 
 ### New
 * [#31](https://gitlab.com/gitlab-data/permifrost/-/issues/31) Add `--role`
   option to run permissions for a given role
 
 
-## 0.5.0 - (2020-09-28) ---
+## 0.5.0 - (2020-09-28)
+---
 
 ### New
 * [#29](https://gitlab.com/gitlab-data/permifrost/-/issues/29) The owner field
@@ -111,21 +140,24 @@ Future grants on tables and views are granted on the database level.
   describing that the role does not have the correct owner in the spec.
 
 
-## 0.4.0 - (2020-09-15) ---
+## 0.4.0 - (2020-09-15)
+---
 
 ### New
 * [#41](https://gitlab.com/gitlab-data/permifrost/-/issues/41) Grant monitor
   privileges on warehouses by default
 
 
-## 0.3.1 - (2020-09-03) ---
+## 0.3.1 - (2020-09-03)
+---
 
 ### Changes
 * [#40](https://gitlab.com/gitlab-data/permifrost/-/issues/40) Bump
   requirements to allow for newer versions of PyYaml, Click, and SQLAlchemy
 
 
-## 0.3.0 - (2020-08-25) ---
+## 0.3.0 - (2020-08-25)
+---
 
 ### New
 * [#28](https://gitlab.com/gitlab-data/permifrost/-/issues/28) Add owner field
@@ -136,14 +168,16 @@ Future grants on tables and views are granted on the database level.
   performance of runs by reusing snowflake connection when applying grants
 
 
-## 0.2.1 - (2020-08-18) ---
+## 0.2.1 - (2020-08-18)
+---
 
 ### New
 * [#27](https://gitlab.com/gitlab-data/permifrost/-/issues/27) Add validation
   to make sure current user's role is securityadmin.
 
 
-## 0.2.0 - (2020-08-04) ---
+## 0.2.0 - (2020-08-04)
+---
 
 ### New
 * [#21](https://gitlab.com/gitlab-data/permifrost/-/issues/21) Add support for
@@ -160,21 +194,24 @@ Future grants on tables and views are granted on the database level.
   from roles and users that do not have a `member_of` config entry
 
 
-## 0.1.1 - (2020-07-06) ---
+## 0.1.1 - (2020-07-06)
+---
 
 ### Fixes
 - [#8](https://gitlab.com/gitlab-data/permifrost/-/issues/8) Existing future
   grants on a database cause an error
 
 
-## 0.1.0 - (2020-03-06) ---
+## 0.1.0 - (2020-03-06)
+---
 
 ### Changes
 - [#5](https://gitlab.com/gitlab-data/permifrost/issues/5) Updates to print
   commands as they run instead of in a batch at the end of a run
 
 
-## 0.0.2 - (2020-03-04) ---
+## 0.0.2 - (2020-03-04)
+---
 
 ### Changes
 - [#3](https://gitlab.com/gitlab-data/permifrost/issues/3) Removes extra
@@ -185,7 +222,8 @@ Future grants on tables and views are granted on the database level.
   referencing databases not in spec
 
 
-## 0.0.1 - (2020-03-03) ---
+## 0.0.1 - (2020-03-03)
+---
 
 ### Changes
 - Initial release
