@@ -8,7 +8,8 @@
 - [ ] Based on the prior step, run `make release type=<patch|minor|major>` based on the type of semantic release needed
 - [ ] Push changes to the remote (i.e. `git push origin bumpversion`)
 - [ ] Generate an MR and notify the other maintainers to review the release
-- [ ] Upon approval, merge the MR and ensure the pipelines complete successfully. The new release should now be on PyPi
+    - **NOTE:** For changes required through the review process. Ensure you delete the local tag `git tag -d v<x.x.x>`, commit the new changes, and generate a new tag with `git tag -a v<x.x.x> -m "Bump version: <current> -> <update>"`
+- [ ] Upon approval, merge the MR and run `git push origin --tags` locally. After CI completes, the new release should now be on PyPi
 
 ### Announce
 - [ ] Send out an announcement in GitLab communications

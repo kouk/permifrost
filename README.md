@@ -316,6 +316,6 @@ For committing finalized changes, the below workflow will identify errors and al
 * Add message at the prompt and save/exit the commit file
 * `git push origin <branch name>` until all checks pass
 
-##Releasing
+## Releasing
 
-See the [issue template](https://gitlab.com/gitlab-data/permifrost/-/blob/master/.gitlab/issue_templates/Releasing%20Update.md) for guidance on how to release a new version of this project to Pypi
+See the [issue template](https://gitlab.com/gitlab-data/permifrost/-/blob/master/.gitlab/issue_templates/Releasing%20Update.md) for guidance on how to release a new version of this project to PyPi
