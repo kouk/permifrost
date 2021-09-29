@@ -149,7 +149,7 @@ release:
 	git diff --quiet || { echo "Working directory is dirty, please commit or stash your changes."; exit 1; }
 	changelog release --yes
 	git add CHANGELOG.md
-	bumpversion --tag --no-commit --new-version `changelog current` $(type)
+	bumpversion --tag --allow-dirty --no-commit --new-version `changelog current` $(type)
 
 dist: compose-build
 	@docker-compose run permifrost /bin/bash \
