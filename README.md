@@ -318,4 +318,4 @@ For committing finalized changes, the below workflow will identify errors and al
 
 ##Releasing
 
-See the [issue template](https://gitlab.com/gitlab-data/permifrost/-/blob/master/.gitlab/issue_templates/Releasing.md) for guidance on how to release a new version of this project to Pypi
+See the [issue template](https://gitlab.com/gitlab-data/permifrost/-/blob/master/.gitlab/issue_templates/Releasing%20Update.md) for guidance on how to release a new version of this project to Pypi
