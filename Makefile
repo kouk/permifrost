@@ -120,13 +120,6 @@ show-coverage:
 #################### Deployment #########################
 #########################################################
 
-# Note: The following commands should be run in sequence to enact a release
-# `make requirements.txt` --> `make release [type=<patch|minor|major>]` -->
-# `make dist` --> `make docker-clean`
-# Once the above commands are run in sequence a new release version will occur on
-# GitLab and PyPi
-type ?= minor
-
 # Packaging Related
 requirements.txt: setup.py
 	@docker-compose run permifrost /bin/bash \
@@ -138,21 +131,25 @@ install-dev:
 initial-setup:
 	pip install -e '.[dev]'
 	pre-commit install -f -t pre-commit
-	pre-commit install -t -f pre-push
+	pre-commit install -f -t pre-push
 
 # Release
-ifdef type
-  override type_flag := --$(type)
-endif
 
-# The default `make release` command defaults to a minor release bump (i.e 0.1.0 --> 0.2.0).
-# If it is a different type of release consider using a patch or major release via
-# `make release type=<version>` while adherring to semantic versioning standards
+# BEFORE running `make release` create a Releasing Update issue on GitLab
+# and follow the instructions to determine what type of semantic release to perform
+
+suggest:
+	@(echo "Permifrost version " && changelog current && echo " should be updated to: " \
+		&& changelog suggest) | tr -d "\n" && echo "\n"
+
+# The `make release` command requires a type of release.
+# (i.e. `make release type=<patch|minor|major>`)
+# Which adheres to semantic versioning standards
 release:
 	git diff --quiet || { echo "Working directory is dirty, please commit or stash your changes."; exit 1; }
-	yes | changelog release $(type_flag)
-	# git add CHANGELOG.md
-	# bumpversion --tag --allow-dirty --new-version `changelog current` $(type)
+	changelog release --yes
+	git add CHANGELOG.md
+	bumpversion --tag --no-commit --new-version `changelog current` $(type)
 
 dist: compose-build
 	@docker-compose run permifrost /bin/bash \
