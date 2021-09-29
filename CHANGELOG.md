@@ -14,15 +14,9 @@ Changelog](http://keepachangelog.com/).
 ### Changes
 
 ### Fixes
+* Update the release documentation and simplify process
 
 ### Breaks
-
-
-## 0.12.1 - (2021-09-28)
----
-
-### Fixes
-* Update the release documentation and simplify process
 
 ## 0.12.0 - (2021-09-28)
 ---
