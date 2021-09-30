@@ -2,7 +2,7 @@ import logging
 import sys
 
 
-def setup_logging(log_level=logging.INFO):
+def setup_logging(log_level=logging.WARNING):
     logging.basicConfig(
         stream=sys.stderr,
         format="[%(threadName)10s][%(levelname)s][%(asctime)s] %(message)s",

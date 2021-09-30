@@ -5,25 +5,20 @@ import click
 import permifrost
 from permifrost.core.logging import setup_logging
 
-logger = logging.getLogger(__name__)
-
-
-LEVELS = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "critical": logging.CRITICAL,
-}
-
 
 @click.group(invoke_without_command=True, no_args_is_help=True)
-@click.option("--log-level", type=click.Choice(list(LEVELS.keys())), default="info")
 @click.option("-v", "--verbose", count=True)
 @click.version_option(version=permifrost.__version__, prog_name="permifrost")
 @click.pass_context
-def cli(ctx, log_level, verbose):
-    setup_logging(log_level=LEVELS[log_level])
+def cli(ctx, verbose):
+    log_level = logging.WARNING
+
+    if verbose == 1:
+        log_level = logging.INFO
+    if verbose >= 2:
+        log_level = logging.DEBUG
+
+    setup_logging(log_level=log_level)
 
     ctx.ensure_object(dict)
     ctx.obj["verbosity"] = verbose
