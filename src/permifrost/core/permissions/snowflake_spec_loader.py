@@ -214,7 +214,9 @@ class SnowflakeSpecLoader:
         ignore_memberships: Optional[bool] = False,
     ) -> None:
         future_grants: Dict[str, Any] = {}
+
         for database in self.entities["database_refs"]:
+            logging.info(f"Fetching future grants for database: {database}")
             grant_results = conn.show_future_grants(database=database)
             grant_results = (
                 {
@@ -243,7 +245,9 @@ class SnowflakeSpecLoader:
 
             # Get all schemas in all ref'd databases. Not all schemas will be
             # ref'd in the spec.
+            logging.info(f"Fetching all schemas for database {database}")
             for schema in conn.show_schemas(database=database):
+                logging.info(f"Fetching all future grants for schema {schema}")
                 grant_results = conn.show_future_grants(schema=schema)
                 grant_results = (
                     {
@@ -275,6 +279,7 @@ class SnowflakeSpecLoader:
         for role in self.entities["roles"]:
             if (roles and role not in roles) or ignore_memberships:
                 continue
+            logging.info(f"Fetching all grants for role {role}")
             role_grants = conn.show_grants_to_role(role)
             for privilege in role_grants:
                 for grant_on in role_grants[privilege]:
@@ -298,6 +303,7 @@ class SnowflakeSpecLoader:
         for user in self.entities["users"]:
             if users and user not in users:
                 continue
+            logging.info(f"Fetching user privileges for user: {user}")
             self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
 
     def get_privileges_from_snowflake_server(
@@ -318,9 +324,11 @@ class SnowflakeSpecLoader:
             conn = SnowflakeConnector()
 
         if "users" in run_list and not ignore_memberships:
+            logging.info("Fetching user privileges from Snowflake")
             self.get_user_privileges_from_snowflake_server(conn=conn, users=users)
 
         if "roles" in run_list:
+            logging.info("Fetching role privileges from Snowflake")
             self.get_role_privileges_from_snowflake_server(
                 conn=conn, roles=roles, ignore_memberships=ignore_memberships
             )
