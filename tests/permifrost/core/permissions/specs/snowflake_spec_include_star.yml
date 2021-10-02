@@ -1,0 +1,58 @@
+version: "1.0"
+
+# Databases
+databases:
+  - demo_db:
+      shared: no
+
+  - snowflake:
+      shared: yes
+
+# Roles
+roles:
+  ## Admin Roles
+  - accountadmin:
+      warehouses:
+        - compute_wh
+      member_of:
+        - sysadmin
+
+  - securityadmin:
+      warehouses:
+        - compute_wh
+      member_of:
+        - sysadmin
+
+  - sysadmin:
+      member_of:
+        - "*"
+      warehouses:
+        - compute_wh
+      privileges:
+        databases:
+          read:
+            - demo_db
+          write:
+            - demo_db
+        schemas:
+          read:
+            - demo_db.*
+          write:
+            - demo_db.*
+        tables:
+          read:
+            - demo_db.*.*
+          write:
+            - demo_db.*.*
+
+# Users
+users:
+  - benyart:
+      can_login: yes
+      member_of:
+        - accountadmin
+
+# Warehouses
+warehouses:
+  - compute_wh:
+      size: x-small
