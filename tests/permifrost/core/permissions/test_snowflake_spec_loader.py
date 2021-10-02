@@ -1210,24 +1210,112 @@ class TestSpecFileLoading:
 
         assert results == expected
 
-    def test_generate_grants_for_snowflake_spec_loader(
-        self,
-        mocker,
-        mock_connector,
-    ):
+    # test_generate_grants_for_snowflake_spec_loader
+    def generate_grants_for_spec_case_one(mocker):
         """
         When a spec file includes a member_of: "*" it should generate a grant
         statement for each role in the Snowflake instance
         """
-        mocker.patch.object(
-            SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
-        )
         mocker.patch.object(
             SnowflakeGrantsGenerator,
             "_generate_member_star_lists",
             return_value=["role_1", "role_2", "role_3"],
         )
 
+        spec_file_data = SnowflakeSchemaBuilder().add_role(member_of=['"*"']).build()
+        expected = [
+            "GRANT ROLE role_1 TO role testrole",
+            "GRANT ROLE role_2 TO role testrole",
+            "GRANT ROLE role_3 TO role testrole",
+        ]
+
+        return [spec_file_data, expected]
+
+    # test_generate_grants_for_snowflake_spec_loader
+    def generate_grants_for_spec_case_two(mocker):
+        """
+        Spec file should not generate grant statements
+        for Snowflake default roles, but
+        should for testrole_1 to default roles
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(
+                name="accountadmin",
+                member_of=[
+                    "securityadmin",
+                    "sysadmin",
+                    "useradmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="sysadmin",
+                member_of=[
+                    "securityadmin",
+                    "accountadmin",
+                    "useradmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="securityadmin",
+                member_of=[
+                    "accountadmin",
+                    "sysadmin",
+                    "useradmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="useradmin",
+                member_of=[
+                    "securityadmin",
+                    "sysadmin",
+                    "accountadmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="public",
+                member_of=[
+                    "securityadmin",
+                    "sysadmin",
+                    "useradmin",
+                    "accountadmin",
+                    "testrole_1",
+                ],
+            )
+            .build()
+        )
+        expected = [
+            "GRANT ROLE testrole_1 TO role accountadmin",
+            "GRANT ROLE testrole_1 TO role public",
+            "GRANT ROLE testrole_1 TO role securityadmin",
+            "GRANT ROLE testrole_1 TO role sysadmin",
+            "GRANT ROLE testrole_1 TO role useradmin",
+        ]
+
+        return [spec_file_data, expected]
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            generate_grants_for_spec_case_one,
+            generate_grants_for_spec_case_two,
+        ],
+    )
+    def test_generate_grants_for_snowflake_spec_loader(
+        self, mocker, mock_connector, config
+    ):
+        spec_file_data, expected = config(mocker)
+        mocker.patch.object(
+            SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
+        )
         mocker.patch(
             "permifrost.core.permissions.utils.snowflake_connector.SnowflakeConnector",
             MockSnowflakeConnector,
@@ -1244,14 +1332,8 @@ class TestSpecFileLoading:
             return_value=[],
         )
 
-        spec_file_data = SnowflakeSchemaBuilder().add_role(member_of=['"*"']).build()
         method = "show_roles"
         return_value = {}
-        expected = [
-            "GRANT ROLE role_1 TO role testrole",
-            "GRANT ROLE role_2 TO role testrole",
-            "GRANT ROLE role_3 TO role testrole",
-        ]
 
         print("Spec file is: ")
         print(spec_file_data)

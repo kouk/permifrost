@@ -147,6 +147,20 @@ class SnowflakeGrantsGenerator:
             ):
                 already_granted = True
 
+            # Don't generate grants for Snowflake default roles as this will raise errors
+            # on Snowflake
+            snowflake_default_roles = [
+                "accountadmin",
+                "sysadmin",
+                "securityadmin",
+                "useradmin",
+                "public",
+            ]
+            if (
+                entity in snowflake_default_roles
+                and member_role in snowflake_default_roles
+            ):
+                continue
             sql_commands.append(
                 {
                     "already_granted": already_granted,

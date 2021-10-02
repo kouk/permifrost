@@ -12,38 +12,37 @@ databases:
 roles:
   ## Admin Roles
   - accountadmin:
-      warehouses:
-        - compute_wh
-      member_of:
-        - sysadmin
-
-  - securityadmin:
-      warehouses:
-        - compute_wh
-      member_of:
-        - sysadmin
-
-  - sysadmin:
       member_of:
         - "*"
       warehouses:
         - compute_wh
+
+  - securityadmin:
+      member_of:
+        - useradmin
+
+  - sysadmin:
+      member_of:
+        - testrole_1
+
+  - useradmin:
+      member_of:
+        include:
+          - "*"
+        exclude:
+          - accountadmin
+
+  - testrole_1:
       privileges:
         databases:
           read:
             - demo_db
-          write:
+
+  - testrole_2:
+      privileges:
+        databases:
+          read:
             - demo_db
-        schemas:
-          read:
-            - demo_db.*
-          write:
-            - demo_db.*
-        tables:
-          read:
-            - demo_db.*.*
-          write:
-            - demo_db.*.*
 
 # Users
 users:

@@ -197,6 +197,8 @@ class SnowflakeConnector:
 
     def show_grants_to_role(self, role) -> Dict[str, Any]:
         grants: Dict[str, Any] = {}
+        if role in ["*", '"*"']:
+            return grants
 
         query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky(role)}"
         with self.engine.connect() as connection:
