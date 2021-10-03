@@ -21,7 +21,7 @@ pip install git+https://gitlab.com/gitlab-data/permifrost.git
 Use this command to check and manage the permissions of a Snowflake account.
 
 ```bash
-permifrost run <spec_file> [--role] [--dry] [--diff] [--user] [--ignore-memberships]
+permifrost [-v] run <spec_file> [--role] [--dry] [--diff] [--user] [--ignore-memberships]
 ```
 
 ```shell
@@ -69,7 +69,10 @@ Permifrost generating the proper grants for each type of object. This includes
 shared databases which have simpler and more limited permissions than non-shared
 databases.
 
-According to the `read` vs. `write` permissions approach, you should be able to grant granular access like `read` permissions for usage of database and schema and `write` permissions to insert data into a specific table within that database and schema.
+According to the `read` vs. `write` permissions approach, you should be able to
+grant granular access like `read` permissions for usage of database and schema
+and `write` permissions to insert data into a specific table within that
+database and schema.
 
 Tables and views are listed under `tables` and handled properly behind the
 scenes.
@@ -283,8 +286,10 @@ See [Snowflake-sqlalchemy](https://github.com/snowflakedb/snowflake-sqlalchemy#k
 Contributing to Permifrost is easy, and most commands to do so are available
 within the Makefile.
 
-The easiest way to start developing is to run `make initial-setup` to install all the necessary packages to develop on the project. Next run `make permifrost` in a second terminal, this will open
-a shell in a docker container with the local version of Permifrost installed.
+The easiest way to start developing is to run `make initial-setup` to install
+all the necessary packages to develop on the project. Next run `make
+permifrost` in a second terminal, this will open a shell in a docker container
+with the local version of Permifrost installed.
 
 You can now make changes to the files in your editor and it will be reflected in
 the commands that you run from the docker shell.
@@ -295,11 +300,22 @@ See the [Makefile](Makefile) for more details.
 
 **WARNINGS**
 
-DO NOT name git branches with forward slashes `/` as the current CI pipeline is unable to manage names like this. (i.e. `username/feature/feature-name` will break the CI pipeline so `username.feature.feature-name` should be used instead)
+DO NOT name git branches with forward slashes `/` as the current CI pipeline is
+unable to manage names like this. (i.e. `username/feature/feature-name` will
+break the CI pipeline so `username.feature.feature-name` should be used
+instead)
 
-This project has [pre-commit hooks](https://github.com/pre-commit/pre-commit-hooks) installed to maintain the existing code quality. As such, we strongly recommend you use a terminal to **commit** and **push** code changes. Specifically, avoid using git integrations on IDEs to make **commits** or **pushes**. **Adding** files through the IDE git integrations are okay, but do not **commit** through the IDE. Use the terminal to commit changes because it will show the output of each of the pre-commit checks to allow you to make changes as needed.
+This project has [pre-commit
+hooks](https://github.com/pre-commit/pre-commit-hooks) installed to maintain
+the existing code quality. As such, we strongly recommend you use a terminal to
+**commit** and **push** code changes. Specifically, avoid using git
+integrations on IDEs to make **commits** or **pushes**. **Adding** files
+through the IDE git integrations are okay, but do not **commit** through the
+IDE. Use the terminal to commit changes because it will show the output of each
+of the pre-commit checks to allow you to make changes as needed.
 
-For committing work-in-progress changes use `git commit --no-verify -m "WIP: <message>"`.
+For committing work-in-progress changes use `git commit --no-verify -m "WIP:
+<message>"`.
 
 For committing finalized changes, the below workflow will identify errors and allow for easier development:
 * Make your changes and `git add <file name(s)>`
@@ -318,4 +334,5 @@ For committing finalized changes, the below workflow will identify errors and al
 
 ## Releasing
 
-See the [issue template](https://gitlab.com/gitlab-data/permifrost/-/blob/master/.gitlab/issue_templates/Releasing%20update.md) for guidance on how to release a new version of this project to PyPi
+See the [issue template](https://gitlab.com/gitlab-data/permifrost/-/blob/master/.gitlab/issue_templates/Releasing%20update.md)
+for guidance on how to release a new version of this project to PyPi
