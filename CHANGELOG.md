@@ -14,7 +14,7 @@ Changelog](http://keepachangelog.com/).
 ### Changes
 
 ### Fixes
-
+* [#88](https://gitlab.com/gitlab-data/permifrost/-/issues/88) Fixes `member_of` `include` and `exclude` functionality and introduces improved test coverage for all functionality related to the `member_of` statement for `roles` in spec file
 ### Breaks
 
 
