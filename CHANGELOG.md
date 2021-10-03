@@ -10,11 +10,12 @@ Changelog](http://keepachangelog.com/).
 ---
 
 ### New
-
 ### Changes
 
 ### Fixes
 * [#88](https://gitlab.com/gitlab-data/permifrost/-/issues/88) Fixes `member_of` `include` and `exclude` functionality and introduces improved test coverage for all functionality related to the `member_of` statement for `roles` in spec file
+* Skip creation of role grants (i.e. `GRANT ROLE <role name> TO ROLE <other role name>`) when permifrost attempts to modify the default role hierarchy from Snowflake
+* Update README documentation to reflect some of the limitations associated with using `SECURITYADMIN` role
 ### Breaks
 
 
