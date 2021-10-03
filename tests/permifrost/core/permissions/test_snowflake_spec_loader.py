@@ -1300,12 +1300,12 @@ class TestSpecFileLoading:
         )
 
         expected = [
-            "ALTER USER first.last SET DISABLED = FALSE",
+            'ALTER USER "first.last" SET DISABLED = FALSE',
             "GRANT OWNERSHIP ON database database_1 TO ROLE test_role COPY CURRENT GRANTS",
             "GRANT OWNERSHIP ON database shared_database_1 TO ROLE test_role COPY CURRENT GRANTS",
             "GRANT OWNERSHIP ON schema database_1.schema_1 TO ROLE test_role COPY CURRENT GRANTS",
             "GRANT OWNERSHIP ON table database_1.schema_1.table_1 TO ROLE test_role COPY CURRENT GRANTS",
-            "GRANT ROLE test_role TO user first.last",
+            'GRANT ROLE test_role TO user "first.last"',
             "GRANT monitor ON warehouse warehouse_1 TO ROLE test_role",
             "GRANT operate ON warehouse warehouse_1 TO ROLE test_role",
             "GRANT usage ON database database_1 TO ROLE test_role",

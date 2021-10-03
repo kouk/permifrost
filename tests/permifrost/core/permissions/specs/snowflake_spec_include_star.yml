@@ -48,12 +48,40 @@ roles:
           write:
             - demo_db
 
+  - "first.last":
+      privileges:
+        databases:
+          read:
+            - demo_db
+          write:
+            - demo_db
+        schemas:
+          read:
+            - demo_db.*
+          write:
+            - demo_db.*
+        tables:
+          read:
+            - demo_db.*.*
+          write:
+            - demo_db.*.*
+
 # Users
 users:
   - benyart:
       can_login: yes
       member_of:
         - accountadmin
+  - "first.last@example.com":
+      can_login: yes
+      member_of:
+        - accountadmin
+        - "first.last"
+  - "FIRST@example.com":
+      can_login: yes
+      member_of:
+        - accountadmin
+        - "first.last"
 
 # Warehouses
 warehouses:

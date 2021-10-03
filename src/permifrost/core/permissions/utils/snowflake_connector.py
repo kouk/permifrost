@@ -90,7 +90,12 @@ class SnowflakeConnector:
             results = connection.execute(query).fetchall()
 
             for result in results:
-                names.append(result["name"].lower())
+                # lowercase the entity if alphanumeric plus _ else leave as is
+                names.append(
+                    result["name"].lower()
+                    if bool(re.match("^[a-zA-Z0-9_]*$", result["name"]))
+                    else result["name"]
+                )
 
         return names
 
@@ -200,7 +205,7 @@ class SnowflakeConnector:
         if role in ["*", '"*"']:
             return grants
 
-        query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky(role)}"
+        query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky_user_role(role)}"
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
 
@@ -236,7 +241,7 @@ class SnowflakeConnector:
     def show_roles_granted_to_user(self, user) -> List[str]:
         roles = []
 
-        query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky(user)}"
+        query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky_user_role(user)}"
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
 
@@ -331,19 +336,36 @@ class SnowflakeConnector:
         Pronounced /snəʊfleɪkɪ/ like saying very fast snowflak[e and clarif]y
         Permission granted to use snowflaky as a verb.
         """
-        if name[0] == '"' and name[-1] == '"':
-            return (f'"{name}"').upper()
-        else:
-            name_parts = name.split(".")
-            new_name_parts = []
+        name_parts = name.split(".")
+        new_name_parts = []
 
-            for part in name_parts:
-                if (
-                    re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
-                    and re.match('^".*"$', part) is None  # Already quoted
-                ):
-                    new_name_parts.append(f'"{part}"')
-                else:
-                    new_name_parts.append(part)
+        for part in name_parts:
+            if (
+                re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
+                and re.match('^".*"$', part) is None  # Already quoted
+            ):
+                new_name_parts.append(f'"{part}"')
+            else:
+                new_name_parts.append(part)
 
-            return ".".join(new_name_parts)
+        return ".".join(new_name_parts)
+
+    @staticmethod
+    def snowflaky_user_role(name: str) -> str:
+        """
+        Convert users/roles to an object identifier that will most probably be
+        the proper name for Snowflake.
+
+        e.g. gitlab-ci --> "gitlab-ci"
+             blake.enyart@gmail.com --> "blake.enyart@gmail.com"
+
+        Pronounced /snəʊfleɪkɪ/ like saying very fast snowflak[e and clarif]y
+        Permission granted to use snowflaky as a verb.
+        """
+        if (
+            re.match("^[0-9a-zA-Z_]*$", name) is None  # Proper formatting
+            and re.match('^".*"$', name) is None  # Already quoted
+        ):
+            name = f'"{name}"'
+
+        return name

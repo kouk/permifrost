@@ -93,9 +93,21 @@ class SnowflakeGrantsGenerator:
 
         if isinstance(config.get("member_of", []), dict):
             member_include_list = config.get("member_of", {}).get("include", [])
+            member_include_list = [
+                SnowflakeConnector.snowflaky_user_role(role)
+                for role in member_include_list
+            ]
             member_exclude_list = config.get("member_of", {}).get("exclude", [])
+            member_exclude_list = [
+                SnowflakeConnector.snowflaky_user_role(role)
+                for role in member_exclude_list
+            ]
         elif isinstance(config.get("member_of", []), list):
             member_include_list = config.get("member_of", [])
+            member_include_list = [
+                SnowflakeConnector.snowflaky_user_role(role)
+                for role in member_include_list
+            ]
 
         return (member_include_list, member_exclude_list)
 
@@ -136,7 +148,7 @@ class SnowflakeGrantsGenerator:
 
         sql_commands = []
         for member_role in member_of_list:
-            granted_role = SnowflakeConnector.snowflaky(member_role)
+            granted_role = SnowflakeConnector.snowflaky_user_role(member_role)
             already_granted = False
             if (
                 entity_type == "users"
@@ -165,9 +177,9 @@ class SnowflakeGrantsGenerator:
                 {
                     "already_granted": already_granted,
                     "sql": GRANT_ROLE_TEMPLATE.format(
-                        role_name=SnowflakeConnector.snowflaky(member_role),
+                        role_name=SnowflakeConnector.snowflaky_user_role(member_role),
                         type=grant_type,
-                        entity_name=SnowflakeConnector.snowflaky(entity),
+                        entity_name=SnowflakeConnector.snowflaky_user_role(entity),
                     ),
                 }
             )
@@ -186,9 +198,13 @@ class SnowflakeGrantsGenerator:
                     {
                         "already_granted": False,
                         "sql": REVOKE_ROLE_TEMPLATE.format(
-                            role_name=SnowflakeConnector.snowflaky(granted_role),
+                            role_name=SnowflakeConnector.snowflaky_user_role(
+                                granted_role
+                            ),
                             type="user",
-                            entity_name=SnowflakeConnector.snowflaky(username),
+                            entity_name=SnowflakeConnector.snowflaky_user_role(
+                                username
+                            ),
                         ),
                     }
                 )
@@ -201,13 +217,29 @@ class SnowflakeGrantsGenerator:
             self.grants_to_role.get(rolename, {}).get("usage", {}).get("role", [])
         ):
             if granted_role not in member_of_list:
+                snowflake_default_roles = [
+                    "accountadmin",
+                    "sysadmin",
+                    "securityadmin",
+                    "useradmin",
+                    "public",
+                ]
+                if (
+                    granted_role in snowflake_default_roles
+                    and rolename in snowflake_default_roles
+                ):
+                    continue
                 sql_commands.append(
                     {
                         "already_granted": False,
                         "sql": REVOKE_ROLE_TEMPLATE.format(
-                            role_name=SnowflakeConnector.snowflaky(granted_role),
+                            role_name=SnowflakeConnector.snowflaky_user_role(
+                                granted_role
+                            ),
                             type="role",
-                            entity_name=SnowflakeConnector.snowflaky(rolename),
+                            entity_name=SnowflakeConnector.snowflaky_user_role(
+                                rolename
+                            ),
                         ),
                     }
                 )
@@ -237,7 +269,7 @@ class SnowflakeGrantsGenerator:
 
         member_include_list, member_exclude_list = self._generate_member_lists(config)
 
-        if len(member_include_list) == 1 and member_include_list[0] == "*":
+        if len(member_include_list) == 1 and member_include_list[0] == '"*"':
             if not all_entities:
                 raise ValueError(
                     "Cannot generate grant roles if all_entities not provided"
@@ -417,7 +449,7 @@ class SnowflakeGrantsGenerator:
                             privileges=priv,
                             resource_type="warehouse",
                             resource_name=SnowflakeConnector.snowflaky(warehouse),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -436,7 +468,7 @@ class SnowflakeGrantsGenerator:
                                 resource_name=SnowflakeConnector.snowflaky(
                                     granted_warehouse
                                 ),
-                                role=SnowflakeConnector.snowflaky(role),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
                             ),
                         }
                     )
@@ -480,7 +512,7 @@ class SnowflakeGrantsGenerator:
                             privileges="imported privileges",
                             resource_type="database",
                             resource_name=SnowflakeConnector.snowflaky(database),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -493,7 +525,7 @@ class SnowflakeGrantsGenerator:
                         privileges=read_privileges,
                         resource_type="database",
                         resource_name=SnowflakeConnector.snowflaky(database),
-                        role=SnowflakeConnector.snowflaky(role),
+                        role=SnowflakeConnector.snowflaky_user_role(role),
                     ),
                 }
             )
@@ -518,7 +550,7 @@ class SnowflakeGrantsGenerator:
                             privileges="imported privileges",
                             resource_type="database",
                             resource_name=SnowflakeConnector.snowflaky(database),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -531,7 +563,7 @@ class SnowflakeGrantsGenerator:
                         privileges=write_privileges,
                         resource_type="database",
                         resource_name=SnowflakeConnector.snowflaky(database),
-                        role=SnowflakeConnector.snowflaky(role),
+                        role=SnowflakeConnector.snowflaky_user_role(role),
                     ),
                 }
             )
@@ -562,7 +594,7 @@ class SnowflakeGrantsGenerator:
                             resource_name=SnowflakeConnector.snowflaky(
                                 granted_database
                             ),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -577,7 +609,7 @@ class SnowflakeGrantsGenerator:
                             resource_name=SnowflakeConnector.snowflaky(
                                 granted_database
                             ),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -607,7 +639,7 @@ class SnowflakeGrantsGenerator:
                             resource_name=SnowflakeConnector.snowflaky(
                                 granted_database
                             ),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -621,7 +653,7 @@ class SnowflakeGrantsGenerator:
                             resource_name=SnowflakeConnector.snowflaky(
                                 granted_database
                             ),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -669,7 +701,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="schema",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -689,7 +721,7 @@ class SnowflakeGrantsGenerator:
                             privileges=read_privileges,
                             resource_type="schema",
                             resource_name=SnowflakeConnector.snowflaky(db_schema),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -748,7 +780,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="schema",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -770,7 +802,7 @@ class SnowflakeGrantsGenerator:
                             privileges=write_privileges,
                             resource_type="schema",
                             resource_name=SnowflakeConnector.snowflaky(db_schema),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -803,7 +835,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="schema",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -820,7 +852,7 @@ class SnowflakeGrantsGenerator:
                             privileges=read_privileges,
                             resource_type="schema",
                             resource_name=SnowflakeConnector.snowflaky(granted_schema),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -928,7 +960,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="schema",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -944,7 +976,7 @@ class SnowflakeGrantsGenerator:
                             privileges=partial_write_privileges,
                             resource_type="schema",
                             resource_name=SnowflakeConnector.snowflaky(granted_schema),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -996,7 +1028,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="table",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1016,7 +1048,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="view",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1061,7 +1093,7 @@ class SnowflakeGrantsGenerator:
                                 resource_type="table",
                                 grouping_type="schema",
                                 grouping_name=SnowflakeConnector.snowflaky(schema),
-                                role=SnowflakeConnector.snowflaky(role),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
                             ),
                         }
                     )
@@ -1079,7 +1111,7 @@ class SnowflakeGrantsGenerator:
                                 resource_type="view",
                                 grouping_type="schema",
                                 grouping_name=SnowflakeConnector.snowflaky(schema),
-                                role=SnowflakeConnector.snowflaky(role),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
                             ),
                         }
                     )
@@ -1111,7 +1143,7 @@ class SnowflakeGrantsGenerator:
                             privileges=read_privileges,
                             resource_type="table",
                             resource_name=SnowflakeConnector.snowflaky(db_table),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1129,7 +1161,7 @@ class SnowflakeGrantsGenerator:
                             privileges=read_privileges,
                             resource_type="view",
                             resource_name=SnowflakeConnector.snowflaky(db_view),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1191,7 +1223,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="table",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1212,7 +1244,7 @@ class SnowflakeGrantsGenerator:
                             resource_type="view",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1259,7 +1291,7 @@ class SnowflakeGrantsGenerator:
                                 resource_type="table",
                                 grouping_type="schema",
                                 grouping_name=SnowflakeConnector.snowflaky(schema),
-                                role=SnowflakeConnector.snowflaky(role),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
                             ),
                         }
                     )
@@ -1277,7 +1309,7 @@ class SnowflakeGrantsGenerator:
                                 resource_type="view",
                                 grouping_type="schema",
                                 grouping_name=SnowflakeConnector.snowflaky(schema),
-                                role=SnowflakeConnector.snowflaky(role),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
                             ),
                         }
                     )
@@ -1313,7 +1345,7 @@ class SnowflakeGrantsGenerator:
                             privileges=write_privileges,
                             resource_type="table",
                             resource_name=SnowflakeConnector.snowflaky(db_table),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1333,7 +1365,7 @@ class SnowflakeGrantsGenerator:
                             privileges="select",
                             resource_type="view",
                             resource_name=SnowflakeConnector.snowflaky(db_view),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1410,7 +1442,7 @@ class SnowflakeGrantsGenerator:
                             resource_type=resource_type,
                             grouping_type=grouping_type,
                             grouping_name=SnowflakeConnector.snowflaky(grouping_name),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1429,7 +1461,7 @@ class SnowflakeGrantsGenerator:
                             resource_name=SnowflakeConnector.snowflaky(
                                 granted_resource
                             ),
-                            role=SnowflakeConnector.snowflaky(role),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1581,7 +1613,7 @@ class SnowflakeGrantsGenerator:
                 {
                     "already_granted": False,
                     "sql": ALTER_USER_TEMPLATE.format(
-                        user_name=SnowflakeConnector.snowflaky(user),
+                        user_name=SnowflakeConnector.snowflaky_user_role(user),
                         privileges=", ".join(alter_privileges),
                     ),
                 }
@@ -1604,7 +1636,7 @@ class SnowflakeGrantsGenerator:
                     "sql": GRANT_OWNERSHIP_TEMPLATE.format(
                         resource_type="database",
                         resource_name=SnowflakeConnector.snowflaky(database),
-                        role_name=SnowflakeConnector.snowflaky(role),
+                        role_name=SnowflakeConnector.snowflaky_user_role(role),
                     ),
                 }
             )
@@ -1638,7 +1670,7 @@ class SnowflakeGrantsGenerator:
                         "sql": GRANT_OWNERSHIP_TEMPLATE.format(
                             resource_type="schema",
                             resource_name=SnowflakeConnector.snowflaky(db_schema),
-                            role_name=SnowflakeConnector.snowflaky(role),
+                            role_name=SnowflakeConnector.snowflaky_user_role(role),
                         ),
                     }
                 )
@@ -1682,7 +1714,7 @@ class SnowflakeGrantsGenerator:
                     "sql": GRANT_OWNERSHIP_TEMPLATE.format(
                         resource_type="table",
                         resource_name=SnowflakeConnector.snowflaky(db_table),
-                        role_name=SnowflakeConnector.snowflaky(role),
+                        role_name=SnowflakeConnector.snowflaky_user_role(role),
                     ),
                 }
             )
