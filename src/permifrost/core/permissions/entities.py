@@ -1,6 +1,6 @@
-import logging
 from typing import Any, Dict, List, Set, Tuple, TypedDict
 
+from permifrost.core.logger import GLOBAL_LOGGER as logger
 from permifrost.core.permissions.types import PermifrostSpecSchema
 from permifrost.core.permissions.utils.error import SpecLoadingError
 
@@ -284,7 +284,7 @@ class EntityGenerator:
                         if config["shared"]:
                             self.entities["shared_databases"].add(db_name)
                     else:
-                        logging.debug(
+                        logger.debug(
                             "`shared` for database {} must be boolean, skipping Role Reference generation.".format(
                                 db_name
                             )
@@ -302,7 +302,7 @@ class EntityGenerator:
                 for member_role in config["member_of"]:
                     self.entities["roles"].add(member_role)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`member_of` not found for role {}, skipping Role Reference generation.".format(
                     role_name
                 )
@@ -313,7 +313,7 @@ class EntityGenerator:
             for warehouse in config["warehouses"]:
                 self.entities["warehouse_refs"].add(warehouse)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`warehouses` not found for role {}, skipping Warehouse Reference generation.".format(
                     role_name
                 )
@@ -324,7 +324,7 @@ class EntityGenerator:
             for schema in config["privileges"]["databases"]["read"]:
                 self.entities["database_refs"].add(schema)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`privileges.databases.read` not found for role {}, skipping Database Reference generation.".format(
                     role_name
                 )
@@ -333,7 +333,7 @@ class EntityGenerator:
             for schema in config["privileges"]["databases"]["write"]:
                 self.entities["database_refs"].add(schema)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`privileges.databases.write` not found for role {}, skipping Database Reference generation.".format(
                     role_name
                 )
@@ -365,7 +365,7 @@ class EntityGenerator:
                         f"for role {role_name}"
                     )
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`privileges.schemas.read` not found for role {}, skipping Schema Reference generation.".format(
                     role_name
                 )
@@ -382,7 +382,7 @@ class EntityGenerator:
                         f"for role {role_name}"
                     )
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`privileges.schemas.write` not found for role {}, skipping Schema Reference generation.".format(
                     role_name
                 )
@@ -404,7 +404,7 @@ class EntityGenerator:
                         f"for role {role_name}"
                     )
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`privileges.tables.read` not found for role {}, skipping Table Reference generation.".format(
                     role_name
                 )
@@ -421,7 +421,7 @@ class EntityGenerator:
                         f"for role {role_name}"
                     )
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`privileges.tables.write` not found for role {}, skipping Table Reference generation.".format(
                     role_name
                 )
@@ -432,7 +432,7 @@ class EntityGenerator:
             for schema in config["owns"]["databases"]:
                 self.entities["database_refs"].add(schema)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`owns.databases` not found for role {}, skipping Database Reference generation.".format(
                     role_name
                 )
@@ -442,7 +442,7 @@ class EntityGenerator:
             for schema in config["owns"]["schemas"]:
                 self.entities["schema_refs"].add(schema)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`owns.schemas` not found for role {}, skipping Schema Reference generation.".format(
                     role_name
                 )
@@ -452,7 +452,7 @@ class EntityGenerator:
             for table in config["owns"]["tables"]:
                 self.entities["table_refs"].add(table)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`owns.tables` not found for role {}, skipping Table Reference generation.".format(
                     role_name
                 )
@@ -480,7 +480,7 @@ class EntityGenerator:
             for item in config[key]:
                 self.entities[ref].add(item)
         else:
-            logging.debug(
+            logger.debug(
                 "`{}` not found for user {}, skipping Role Reference generation.".format(
                     key, user_name
                 )
