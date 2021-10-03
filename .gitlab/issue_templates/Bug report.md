@@ -1,4 +1,3 @@
-> Brought over from dbt
 
 ### Describe the bug
 A clear and concise description of what the bug is. What command did you run? What happened?
