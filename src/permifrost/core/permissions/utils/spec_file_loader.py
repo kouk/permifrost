@@ -1,7 +1,6 @@
-from typing import Dict, List, cast
+from typing import Dict, List
 
 import cerberus
-import re
 import yaml
 
 from permifrost.core.permissions.spec_schemas.snowflake import (
