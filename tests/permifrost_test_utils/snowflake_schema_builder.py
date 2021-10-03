@@ -33,7 +33,28 @@ class SnowflakeSchemaBuilder:
 
         if len(self.roles) > 0:
             spec_yaml.append("roles:")
-        for role in self.roles:
+            spec_yaml.extend(self._roles_generator(self.roles))
+
+        if len(self.users) > 0:
+            spec_yaml.append("users:")
+        for user in self.users:
+            spec_yaml.extend([f"  - {user['name']}:", "      can_login: yes"])
+            if user["owner"] is not None:
+                spec_yaml.append(f"      owner: {user['owner']}")
+        if len(self.warehouses) > 0:
+            spec_yaml.append("warehouses:")
+
+        for warehouse in self.warehouses:
+            spec_yaml.extend([f"  - {warehouse['name']}:", "      size: x-small"])
+            if warehouse["owner"] is not None:
+                spec_yaml.append(f"      owner: {warehouse['owner']}")
+
+        spec_yaml.append("")
+        return str.join("\n", spec_yaml)
+
+    def _roles_generator(self, roles):
+        spec_yaml = []
+        for role in roles:
             if (role["member_of_exclude"] or role["member_of_include"]) and role[
                 "member_of"
             ]:
@@ -80,23 +101,7 @@ class SnowflakeSchemaBuilder:
                 spec_yaml.extend(self._build_schema_tables(role))
                 spec_yaml.extend(["        databases:"])
                 spec_yaml.extend(self._build_schema_databases(role))
-
-        if len(self.users) > 0:
-            spec_yaml.append("users:")
-        for user in self.users:
-            spec_yaml.extend([f"  - {user['name']}:", "      can_login: yes"])
-            if user["owner"] is not None:
-                spec_yaml.append(f"      owner: {user['owner']}")
-        if len(self.warehouses) > 0:
-            spec_yaml.append("warehouses:")
-
-        for warehouse in self.warehouses:
-            spec_yaml.extend([f"  - {warehouse['name']}:", "      size: x-small"])
-            if warehouse["owner"] is not None:
-                spec_yaml.append(f"      owner: {warehouse['owner']}")
-
-        spec_yaml.append("")
-        return str.join("\n", spec_yaml)
+        return spec_yaml
 
     def _build_tables(self, role):
         spec_yaml = []
