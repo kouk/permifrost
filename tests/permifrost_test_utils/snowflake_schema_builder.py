@@ -34,11 +34,7 @@ class SnowflakeSchemaBuilder:
         if len(self.roles) > 0:
             spec_yaml.append("roles:")
         for role in self.roles:
-            if role["member_of_exclude"] and not role["member_of_include"]:
-                raise KeyError(
-                    "'member_of_exclude' requires 'member_of_include' to be defined"
-                )
-            elif (role["member_of_exclude"] or role["member_of_include"]) and role[
+            if (role["member_of_exclude"] or role["member_of_include"]) and role[
                 "member_of"
             ]:
                 raise KeyError(
@@ -55,7 +51,14 @@ class SnowflakeSchemaBuilder:
                 spec_yaml.extend(
                     [f"          - {member}" for member in role["member_of_exclude"]]
                 )
-            elif role["member_of_include"]:
+            elif role["member_of_exclude"] and not role["member_of_include"]:
+                spec_yaml.extend(
+                    [f"  - {role['name']}:", "      member_of:", "        exclude:"]
+                )
+                spec_yaml.extend(
+                    [f"          - {member}" for member in role["member_of_exclude"]]
+                )
+            elif role["member_of_include"] and not role["member_of_exclude"]:
                 spec_yaml.extend(
                     [f"  - {role['name']}:", "      member_of:", "        include:"]
                 )

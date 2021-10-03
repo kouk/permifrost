@@ -1,5 +1,7 @@
 version: "1.0"
 
+# Used for manual testing on real Snowflake connection
+
 # Databases
 databases:
   - demo_db:
@@ -42,6 +44,8 @@ roles:
       privileges:
         databases:
           read:
+            - demo_db
+          write:
             - demo_db
 
 # Users
