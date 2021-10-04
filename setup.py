@@ -9,6 +9,8 @@ with open("VERSION") as version_file:
 
 requires = [
     "cerberus",
+    "colorama",
+    "coloredlogs",
     "click",
     "click-default-group",
     "pyyaml",
@@ -21,7 +23,6 @@ dev_requires = [
     "black",
     "bumpversion",
     "changelog-cli",
-    "colorama",
     "coverage",
     "flake8",
     "isort",

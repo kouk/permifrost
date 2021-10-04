@@ -1,0 +1,52 @@
+# Databases
+databases:
+  - analytics:
+      shared: no
+  - test_db:
+      shared: no
+  - raw:
+      shared: no
+
+# Roles
+roles:
+    - sysadmin:
+        member_of:
+          include:
+            -  loader
+    - loader:
+        warehouses:
+            - loading
+        privileges:
+            databases:
+                read:
+                    - raw
+                    - analytics
+                write:
+                    - raw
+                    - analytics
+            schemas:
+                read:
+                    - analytics.*
+                write:
+                    - analytics.*
+            tables:
+                read:
+                    - analytics.*.*
+                write:
+                    - analytics.*.*
+        owns:
+            tables:
+                - analytics.scratch.test
+
+# Users
+users:
+    - test_user:
+        can_login: yes
+        member_of:
+            - sysadmin
+            - loader
+
+# Warehouses
+warehouses:
+    - loading:
+        size: x-small
