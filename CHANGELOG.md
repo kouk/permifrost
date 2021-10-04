@@ -14,7 +14,7 @@ Changelog](http://keepachangelog.com/).
 ### Changes
 
 * [#88](https://gitlab.com/gitlab-data/permifrost/-/issues/88)
-Improved overall package logging. Rather than than setting log-level explicitly,
+Improved overall package logging. Rather than setting log-level explicitly,
 the verbose flag is used to increase the level of logging output. Logs are now formatted
 with timestamp and colours and include details on which module originated the log.
 When permifrost is run with `-vv` all queries are logged to help isolate potential issues.
