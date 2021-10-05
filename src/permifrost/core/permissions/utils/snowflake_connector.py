@@ -233,14 +233,8 @@ class SnowflakeConnector:
     def show_roles_granted_to_user(self, user) -> List[str]:
         roles = []
 
-<<<<<<< src/permifrost/core/permissions/utils/snowflake_connector.py
         query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky_user_role(user)}"
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
-=======
-        query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky(user)}"
         results = self.run_query(query).fetchall()
->>>>>>> src/permifrost/core/permissions/utils/snowflake_connector.py
 
         for result in results:
             roles.append(result["role"].lower())
