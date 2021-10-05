@@ -1,7 +1,7 @@
-import logging
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from permifrost.core.logger import GLOBAL_LOGGER as logger
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
 GRANT_ROLE_TEMPLATE = "GRANT ROLE {role_name} TO {type} {entity_name}"
@@ -303,14 +303,14 @@ class SnowflakeGrantsGenerator:
         }
 
         if len(databases.get("read", "")) == 0:
-            logging.debug(
+            logger.debug(
                 "`privileges.databases.read` not found for role {}, skipping generation of database read level GRANT statements.".format(
                     role
                 )
             )
 
         if len(databases.get("write", "")) == 0:
-            logging.debug(
+            logger.debug(
                 "`privileges.databases.write` not found for role {}, skipping generation of database write level GRANT statements.".format(
                     role
                 )
@@ -328,14 +328,14 @@ class SnowflakeGrantsGenerator:
         }
 
         if len(schemas.get("read", "")) == 0:
-            logging.debug(
+            logger.debug(
                 "`privileges.schemas.read` not found for role {}, skipping generation of schemas read level GRANT statements.".format(
                     role
                 )
             )
 
         if len(schemas.get("write", "")) == 0:
-            logging.debug(
+            logger.debug(
                 "`privileges.schemas.write` not found for role {}, skipping generation of schemas write level GRANT statements.".format(
                     role
                 )
@@ -353,14 +353,14 @@ class SnowflakeGrantsGenerator:
         }
 
         if len(tables.get("read", "")) == 0:
-            logging.debug(
+            logger.debug(
                 "`privileges.tables.read` not found for role {}, skipping generation of tables read level GRANT statements.".format(
                     role
                 )
             )
 
         if len(tables.get("write", "")) == 0:
-            logging.debug(
+            logger.debug(
                 "`privileges.tables.write` not found for role {}, skipping generation of tables write level GRANT statements.".format(
                     role
                 )
@@ -401,7 +401,7 @@ class SnowflakeGrantsGenerator:
             )
             sql_commands.extend(new_commands)
         except KeyError:
-            logging.debug(
+            logger.debug(
                 "`warehouses` not found for role {}, skipping generation of Warehouse GRANT statements.".format(
                     role
                 )

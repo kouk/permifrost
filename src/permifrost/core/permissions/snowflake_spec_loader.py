@@ -1,8 +1,8 @@
-import logging
 from typing import Any, Dict, List, Optional, cast
 
 import click
 
+from permifrost.core.logger import GLOBAL_LOGGER as logger
 from permifrost.core.permissions.entities import EntityGenerator
 from permifrost.core.permissions.utils.error import SpecLoadingError
 from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
@@ -92,7 +92,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug(
+            logger.debug(
                 "`warehouses` not found in spec, skipping SHOW WAREHOUSES call."
             )
         return error_messages
@@ -108,9 +108,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug(
-                "`databases` not found in spec, skipping SHOW DATABASES call."
-            )
+            logger.debug("`databases` not found in spec, skipping SHOW DATABASES call.")
         return error_messages
 
     def check_schema_ref_entities(self, conn):
@@ -124,7 +122,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug("`schemas` not found in spec, skipping SHOW SCHEMAS call.")
+            logger.debug("`schemas` not found in spec, skipping SHOW SCHEMAS call.")
 
         return error_messages
 
@@ -140,9 +138,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug(
-                "`tables` not found in spec, skipping SHOW TABLES/VIEWS call."
-            )
+            logger.debug("`tables` not found in spec, skipping SHOW TABLES/VIEWS call.")
         return error_messages
 
     def check_role_entities(self, conn):
@@ -165,7 +161,7 @@ class SnowflakeSpecLoader:
                                 f"but has owner {owner_in_spec} defined in the spec file."
                             )
         else:
-            logging.debug("`roles` not found in spec, skipping SHOW ROLES call.")
+            logger.debug("`roles` not found in spec, skipping SHOW ROLES call.")
         return error_messages
 
     def check_users_entities(self, conn):
@@ -179,7 +175,7 @@ class SnowflakeSpecLoader:
                         " Snowflake Server. Please create it before continuing."
                     )
         else:
-            logging.debug("`users` not found in spec, skipping SHOW USERS call.")
+            logger.debug("`users` not found in spec, skipping SHOW USERS call.")
         return error_messages
 
     def check_entities_on_snowflake_server(  # noqa
@@ -214,7 +210,9 @@ class SnowflakeSpecLoader:
         ignore_memberships: Optional[bool] = False,
     ) -> None:
         future_grants: Dict[str, Any] = {}
+
         for database in self.entities["database_refs"]:
+            logger.info(f"Fetching future grants for database: {database}")
             grant_results = conn.show_future_grants(database=database)
             grant_results = (
                 {
@@ -243,7 +241,9 @@ class SnowflakeSpecLoader:
 
             # Get all schemas in all ref'd databases. Not all schemas will be
             # ref'd in the spec.
+            logger.info(f"Fetching all schemas for database {database}")
             for schema in conn.show_schemas(database=database):
+                logger.info(f"Fetching all future grants for schema {schema}")
                 grant_results = conn.show_future_grants(schema=schema)
                 grant_results = (
                     {
@@ -275,6 +275,7 @@ class SnowflakeSpecLoader:
         for role in self.entities["roles"]:
             if (roles and role not in roles) or ignore_memberships:
                 continue
+            logger.info(f"Fetching all grants for role {role}")
             role_grants = conn.show_grants_to_role(role)
             for privilege in role_grants:
                 for grant_on in role_grants[privilege]:
@@ -298,6 +299,7 @@ class SnowflakeSpecLoader:
         for user in self.entities["users"]:
             if users and user not in users:
                 continue
+            logger.info(f"Fetching user privileges for user: {user}")
             self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
 
     def get_privileges_from_snowflake_server(
@@ -318,9 +320,11 @@ class SnowflakeSpecLoader:
             conn = SnowflakeConnector()
 
         if "users" in run_list and not ignore_memberships:
+            logger.info("Fetching user privileges from Snowflake")
             self.get_user_privileges_from_snowflake_server(conn=conn, users=users)
 
         if "roles" in run_list:
+            logger.info("Fetching role privileges from Snowflake")
             self.get_role_privileges_from_snowflake_server(
                 conn=conn, roles=roles, ignore_memberships=ignore_memberships
             )

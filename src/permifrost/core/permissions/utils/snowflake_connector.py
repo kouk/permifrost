@@ -11,10 +11,12 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from snowflake.sqlalchemy import URL
 
+from permifrost.core.logger import GLOBAL_LOGGER as logger
+
 # Don't show all the info log messages from Snowflake
 for logger_name in ["snowflake.connector", "botocore", "boto3"]:
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.WARNING)
+    log = logging.getLogger(logger_name)
+    log.setLevel(logging.WARNING)
 
 
 class SnowflakeConnector:
@@ -86,16 +88,15 @@ class SnowflakeConnector:
         names = []
 
         query = f"SHOW {entity}"
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
+        results = self.run_query(query).fetchall()
 
-            for result in results:
-                # lowercase the entity if alphanumeric plus _ else leave as is
-                names.append(
-                    result["name"].lower()
-                    if bool(re.match("^[a-zA-Z0-9_]*$", result["name"]))
-                    else result["name"]
-                )
+        for result in results:
+            # lowercase the entity if alphanumeric plus _ else leave as is
+            names.append(
+                result["name"].lower()
+                if bool(re.match("^[a-zA-Z0-9_]*$", result["name"]))
+                else result["name"]
+            )
 
         return names
 
@@ -116,13 +117,10 @@ class SnowflakeConnector:
         else:
             query = "SHOW TERSE SCHEMAS IN ACCOUNT"
 
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
+        results = self.run_query(query).fetchall()
 
-            for result in results:
-                names.append(
-                    f"{result['database_name'].lower()}.{result['name'].lower()}"
-                )
+        for result in results:
+            names.append(f"{result['database_name'].lower()}.{result['name'].lower()}")
 
         return names
 
@@ -136,15 +134,13 @@ class SnowflakeConnector:
         else:
             query = "SHOW TERSE TABLES IN ACCOUNT"
 
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
-
-            for result in results:
-                names.append(
-                    f"{result['database_name'].lower()}"
-                    + f".{result['schema_name'].lower()}"
-                    + f".{result['name'].lower()}"
-                )
+        results = self.run_query(query).fetchall()
+        for result in results:
+            names.append(
+                f"{result['database_name'].lower()}"
+                + f".{result['schema_name'].lower()}"
+                + f".{result['name'].lower()}"
+            )
 
         return names
 
@@ -158,15 +154,13 @@ class SnowflakeConnector:
         else:
             query = "SHOW TERSE VIEWS IN ACCOUNT"
 
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
-
-            for result in results:
-                names.append(
-                    f"{result['database_name'].lower()}"
-                    + f".{result['schema_name'].lower()}"
-                    + f".{result['name'].lower()}"
-                )
+        results = self.run_query(query).fetchall()
+        for result in results:
+            names.append(
+                f"{result['database_name'].lower()}"
+                + f".{result['schema_name'].lower()}"
+                + f".{result['name'].lower()}"
+            )
 
         return names
 
@@ -182,21 +176,20 @@ class SnowflakeConnector:
         else:
             pass
 
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
+        results = self.run_query(query).fetchall()
 
-            for result in results:
-                if result["grant_to"] == "ROLE":
-                    role = result["grantee_name"].lower()
-                    privilege = result["privilege"].lower()
-                    granted_on = result["grant_on"].lower()
+        for result in results:
+            if result["grant_to"] == "ROLE":
+                role = result["grantee_name"].lower()
+                privilege = result["privilege"].lower()
+                granted_on = result["grant_on"].lower()
 
-                    future_grants.setdefault(role, {}).setdefault(
-                        privilege, {}
-                    ).setdefault(granted_on, []).append(result["name"].lower())
+                future_grants.setdefault(role, {}).setdefault(privilege, {}).setdefault(
+                    granted_on, []
+                ).append(result["name"].lower())
 
-                else:
-                    continue
+            else:
+                continue
 
         return future_grants
 
@@ -206,16 +199,16 @@ class SnowflakeConnector:
             return grants
 
         query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky_user_role(role)}"
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
 
-            for result in results:
-                privilege = result["privilege"].lower()
-                granted_on = result["granted_on"].lower()
+        results = self.run_query(query).fetchall()
 
-                grants.setdefault(privilege, {}).setdefault(granted_on, []).append(
-                    result["name"].lower()
-                )
+        for result in results:
+            privilege = result["privilege"].lower()
+            granted_on = result["granted_on"].lower()
+
+            grants.setdefault(privilege, {}).setdefault(granted_on, []).append(
+                result["name"].lower()
+            )
 
         return grants
 
@@ -223,30 +216,34 @@ class SnowflakeConnector:
         grants: Dict[str, Any] = {}
 
         query = f"SHOW GRANTS TO ROLE {SnowflakeConnector.snowflaky(role)}"
-        with self.engine.connect() as connection:
-            results = connection.execute(query).fetchall()
+        results = self.run_query(query).fetchall()
 
-            for result in results:
-                privilege = result["privilege"].lower()
-                granted_on = result["granted_on"].lower()
-                grant_option = result["grant_option"].lower() == "true"
-                name = result["name"].lower()
+        for result in results:
+            privilege = result["privilege"].lower()
+            granted_on = result["granted_on"].lower()
+            grant_option = result["grant_option"].lower() == "true"
+            name = result["name"].lower()
 
-                grants.setdefault(privilege, {}).setdefault(granted_on, {}).setdefault(
-                    name, {}
-                ).update({"grant_option": grant_option})
+            grants.setdefault(privilege, {}).setdefault(granted_on, {}).setdefault(
+                name, {}
+            ).update({"grant_option": grant_option})
 
         return grants
 
     def show_roles_granted_to_user(self, user) -> List[str]:
         roles = []
 
+<<<<<<< src/permifrost/core/permissions/utils/snowflake_connector.py
         query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky_user_role(user)}"
         with self.engine.connect() as connection:
             results = connection.execute(query).fetchall()
+=======
+        query = f"SHOW GRANTS TO USER {SnowflakeConnector.snowflaky(user)}"
+        results = self.run_query(query).fetchall()
+>>>>>>> src/permifrost/core/permissions/utils/snowflake_connector.py
 
-            for result in results:
-                roles.append(result["role"].lower())
+        for result in results:
+            roles.append(result["role"].lower())
 
         return roles
 
@@ -273,6 +270,7 @@ class SnowflakeConnector:
     def run_query(self, query: str):
 
         with self.engine.connect() as connection:
+            logger.debug(f"Running query: {query}")
             result = connection.execute(query)
 
         return result

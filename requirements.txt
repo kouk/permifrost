@@ -19,12 +19,14 @@ charset-normalizer==2.0.4
 click==8.0.1
 click-default-group==1.2.2
 colorama==0.4.4
+coloredlogs==15.0.1
 coverage==5.5
 cryptography==3.4.8
 distlib==0.3.2
 filelock==3.0.12
 flake8==3.9.2
 greenlet==1.1.1
+humanfriendly==10.0
 identify==2.2.14
 idna==3.2
 iniconfig==1.1.1
