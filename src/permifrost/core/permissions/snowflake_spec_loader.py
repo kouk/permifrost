@@ -296,11 +296,13 @@ class SnowflakeSpecLoader:
     def get_user_privileges_from_snowflake_server(
         self, conn: SnowflakeConnector, users: Optional[List[str]] = None
     ) -> None:
-        for user in self.entities["users"]:
-            if users and user not in users:
-                continue
-            logger.info(f"Fetching user privileges for user: {user}")
-            self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
+        user_entities = self.entities["users"]
+        with click.progressbar(user_entities) as users_bar:
+            for user in users_bar:
+                if users and user not in users:
+                    continue
+                logger.info(f"Fetching user privileges for user: {user}")
+                self.roles_granted_to_user[user] = conn.show_roles_granted_to_user(user)
 
     def get_privileges_from_snowflake_server(
         self,
