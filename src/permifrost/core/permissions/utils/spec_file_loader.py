@@ -1,4 +1,4 @@
-from typing import Dict, List, cast
+from typing import Dict, List
 
 import cerberus
 import yaml
@@ -95,16 +95,4 @@ def load_spec(spec_path: str) -> PermifrostSpecSchema:
     if error_messages:
         raise SpecLoadingError("\n".join(error_messages))
 
-    def lower_values(value):
-        if isinstance(value, bool):
-            return value
-        elif isinstance(value, list):
-            return [lower_values(entry) for entry in value]
-        elif isinstance(value, str):
-            return value.lower()
-        elif isinstance(value, dict):
-            return {k.lower(): lower_values(v) for k, v in value.items()}
-
-    lower_spec = cast(PermifrostSpecSchema, lower_values(spec))
-
-    return lower_spec
+    return spec

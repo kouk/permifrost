@@ -1,5 +1,6 @@
 import os
 import json
+from typing import List, Optional
 
 
 class SnowflakeSchemaBuilder:
@@ -32,18 +33,7 @@ class SnowflakeSchemaBuilder:
 
         if len(self.roles) > 0:
             spec_yaml.append("roles:")
-        for role in self.roles:
-            spec_yaml.extend([f"  - {role['name']}:", "      member_of:"])
-            spec_yaml.extend([f"        - {member}" for member in role["member_of"]])
-            if role["owner"] is not None:
-                spec_yaml.append(f"      owner: {role['owner']}")
-            if role["tables"] != []:
-                spec_yaml.extend(["      privileges:", "        tables:"])
-                spec_yaml.extend(self._build_tables(role))
-                spec_yaml.extend(["        schemas:"])
-                spec_yaml.extend(self._build_schema_tables(role))
-                spec_yaml.extend(["        databases:"])
-                spec_yaml.extend(self._build_schema_databases(role))
+            spec_yaml.extend(self._roles_generator(self.roles))
 
         if len(self.users) > 0:
             spec_yaml.append("users:")
@@ -61,6 +51,57 @@ class SnowflakeSchemaBuilder:
 
         spec_yaml.append("")
         return str.join("\n", spec_yaml)
+
+    def _roles_generator(self, roles):
+        spec_yaml = []
+        for role in roles:
+            if (role["member_of_exclude"] or role["member_of_include"]) and role[
+                "member_of"
+            ]:
+                raise KeyError(
+                    "'member_of_include' and 'member_of_exclude' cannot be defined if 'member_of' is defined"
+                )
+            elif role["member_of_exclude"] and role["member_of_include"]:
+                spec_yaml.extend(
+                    [f"  - {role['name']}:", "      member_of:", "        include:"]
+                )
+                spec_yaml.extend(
+                    [f"          - {member}" for member in role["member_of_include"]]
+                )
+                spec_yaml.extend(["        exclude:"])
+                spec_yaml.extend(
+                    [f"          - {member}" for member in role["member_of_exclude"]]
+                )
+            elif role["member_of_exclude"] and not role["member_of_include"]:
+                spec_yaml.extend(
+                    [f"  - {role['name']}:", "      member_of:", "        exclude:"]
+                )
+                spec_yaml.extend(
+                    [f"          - {member}" for member in role["member_of_exclude"]]
+                )
+            elif role["member_of_include"] and not role["member_of_exclude"]:
+                spec_yaml.extend(
+                    [f"  - {role['name']}:", "      member_of:", "        include:"]
+                )
+                spec_yaml.extend(
+                    [f"          - {member}" for member in role["member_of_include"]]
+                )
+            elif role["member_of"]:
+                spec_yaml.extend([f"  - {role['name']}:", "      member_of:"])
+                spec_yaml.extend(
+                    [f"        - {member}" for member in role["member_of"]]
+                )
+
+            if role["owner"] is not None:
+                spec_yaml.append(f"      owner: {role['owner']}")
+            if role["tables"] != []:
+                spec_yaml.extend(["      privileges:", "        tables:"])
+                spec_yaml.extend(self._build_tables(role))
+                spec_yaml.extend(["        schemas:"])
+                spec_yaml.extend(self._build_schema_tables(role))
+                spec_yaml.extend(["        databases:"])
+                spec_yaml.extend(self._build_schema_databases(role))
+        return spec_yaml
 
     def _build_tables(self, role):
         spec_yaml = []
@@ -183,12 +224,18 @@ class SnowflakeSchemaBuilder:
 
     def add_role(
         self,
-        name="testrole",
-        owner=None,
-        member_of=["testrole"],
-        tables=[],
-        permission_set=None,
+        name: str = "testrole",
+        owner: str = None,
+        member_of: List[str] = None,
+        tables: List[str] = [],
+        permission_set: List[str] = None,
+        member_of_include: Optional[List[str]] = None,
+        member_of_exclude: Optional[List[str]] = None,
     ):
+        """
+        At a minimum, the 'member_of' key must be defined.
+        It is recommended to set 'member_of' to 'testrole'
+        """
         self.roles.append(
             {
                 "name": name,
@@ -196,6 +243,8 @@ class SnowflakeSchemaBuilder:
                 "member_of": member_of,
                 "tables": tables,
                 "permission_set": permission_set,
+                "member_of_include": member_of_include,
+                "member_of_exclude": member_of_exclude,
             }
         )
         return self

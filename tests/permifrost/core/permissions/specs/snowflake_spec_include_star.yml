@@ -1,0 +1,89 @@
+version: "1.0"
+
+# Used for manual testing on real Snowflake connection
+
+# Databases
+databases:
+  - demo_db:
+      shared: no
+
+  - snowflake:
+      shared: yes
+
+# Roles
+roles:
+  ## Admin Roles
+  - accountadmin:
+      member_of:
+        - "*"
+      warehouses:
+        - compute_wh
+
+  - securityadmin:
+      member_of:
+        - useradmin
+
+  - sysadmin:
+      member_of:
+        - testrole_1
+
+  - useradmin:
+      member_of:
+        include:
+          - "*"
+        exclude:
+          - accountadmin
+
+  - testrole_1:
+      privileges:
+        databases:
+          read:
+            - demo_db
+
+  - testrole_2:
+      privileges:
+        databases:
+          read:
+            - demo_db
+          write:
+            - demo_db
+
+  - "first.last":
+      privileges:
+        databases:
+          read:
+            - demo_db
+          write:
+            - demo_db
+        schemas:
+          read:
+            - demo_db.*
+          write:
+            - demo_db.*
+        tables:
+          read:
+            - demo_db.*.*
+          write:
+            - demo_db.*.*
+
+# Users
+users:
+  - benyart:
+      can_login: yes
+      member_of:
+        - accountadmin
+  - "first.last@example.com":
+      can_login: yes
+      member_of:
+        - accountadmin
+        - "first.last"
+  - "FIRST@example.com":
+      can_login: yes
+      member_of:
+        - accountadmin
+        - "first.last"
+
+# Warehouses
+warehouses:
+  - compute_wh:
+      size: x-small

@@ -41,10 +41,10 @@ def test_roles_spec_file():
         .add_db(owner="secondary", name="secondarydb")
         .add_warehouse(owner="primary", name="primarywarehouse")
         .add_warehouse(owner="secondary", name="secondarywarehouse")
-        .add_role()
-        .add_role(name="securityadmin")
-        .add_role(name="primary")
-        .add_role(name="secondary")
+        .add_role(member_of=["testrole"])
+        .add_role(name="securityadmin", member_of=["testrole"])
+        .add_role(name="primary", member_of=["testrole"])
+        .add_role(name="secondary", member_of=["testrole"])
         .build()
     )
     yield spec_file_data
@@ -112,7 +112,11 @@ class TestSnowflakeSpecLoader:
         """
         SnowflakeSchemaBuilder loads correctly with only role and owner attr
         """
-        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
+        )
         method = "show_roles"
         return_value = {"testrole": "user"}
 
@@ -145,12 +149,48 @@ class TestSnowflakeSpecLoader:
 
         return [spec_file_data, method, return_value]
 
+    # test_check_entities_on_snowflake_server_checks_role_owner
+    def member_of_include_star_file():
+        """
+        SnowflakeSchemaBuilder loads role with member_of
+        include * correctly
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .set_version("1.0")
+            .add_role(member_of_include=['"*"'])
+            .build()
+        )
+        method = "show_roles"
+        return_value = {"testrole": "none"}
+
+        return [spec_file_data, method, return_value]
+
+    # test_check_entities_on_snowflake_server_checks_role_owner
+    def member_of_include_star_exclude_file():
+        """
+        SnowflakeSchemaBuilder loads role with member_of
+        include * and exclude testrole correctly
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .set_version("1.0")
+            .add_role(member_of_include=['"*"'], member_of_exclude=["testrole"])
+            .build()
+        )
+        method = "show_roles"
+        return_value = {"testrole": "none"}
+
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
         "config",
         [
             enforce_owner_role,
             empty_spec_file,
             member_of_star_file,
+            member_of_include_star_file,
+            member_of_include_star_exclude_file,
         ],
     )
     def test_check_entities_on_snowflake_server_checks_role_owner(
@@ -163,24 +203,76 @@ class TestSnowflakeSpecLoader:
         mocker.patch.object(mock_connector, method, return_value=return_value)
         SnowflakeSpecLoader("", mock_connector)
 
+    # test_spec_loader_errors
+    def spec_loader_error_handling_case_one():
+        """
+        Raise SpecLoadingError error when member_of exclude defined, but include is not
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(name="role_1", member_of_exclude=["testrole"])
+            .build()
+        )
+        method = "show_roles"
+        return_value = ["role_1"]
+        expected_error = (
+            'Spec error: roles "role_1", field "member_of": no definitions validate'
+        )
+
+        return [spec_file_data, method, return_value, expected_error]
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            spec_loader_error_handling_case_one,
+        ],
+    )
+    def test_spec_loader_errors(
+        self,
+        config,
+        mocker,
+        mock_connector,
+    ):
+        spec_file_data, method, return_value, expected_error = config()
+        """
+        Error handling for SnowflakeSpecLoader functionality:
+        """
+        print("Spec file is: ")
+        print(spec_file_data)
+        mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
+        mocker.patch.object(mock_connector, method, return_value=return_value)
+        with pytest.raises(SpecLoadingError) as context:
+            SnowflakeSpecLoader("", mock_connector)
+
+        assert expected_error in str(context.value)
+
     # test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match
     def require_owner_error_handling_case_one():
         """
         Raise error when role owner on Snowflake is different than
         role owner in spec
         """
-        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
+        )
         method = "show_roles"
         return_value = {"testrole": "testuser"}
         expected_error = "Role testrole has owner testuser on snowflake, but has owner user defined in the spec file"
 
         return [spec_file_data, method, return_value, expected_error]
 
+    # test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match
     def require_owner_error_handling_case_two():
         """
         Role in spec missing on Snowflake
         """
-        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
+        )
         method = "show_roles"
         return_value = {"some-other-role": "none"}
         expected_error = (
@@ -189,11 +281,14 @@ class TestSnowflakeSpecLoader:
 
         return [spec_file_data, method, return_value, expected_error]
 
+    # test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match
     def require_owner_error_handling_case_three():
         """
         Role in spec missing on Snowflake
         """
-        spec_file_data = SnowflakeSchemaBuilder().add_role().build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder().add_role(member_of=["testrole"]).build()
+        )
         method = "show_roles"
         return_value = {}
         expected_error = (
@@ -202,11 +297,16 @@ class TestSnowflakeSpecLoader:
 
         return [spec_file_data, method, return_value, expected_error]
 
+    # test_check_entities_on_snowflake_server_errors_if_role_owner_does_not_match
     def require_owner_error_handling_case_four():
         """
         Role in spec missing on Snowflake
         """
-        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
+        )
         method = "show_roles"
         return_value = {}
         expected_error = (
@@ -440,6 +540,7 @@ class TestSnowflakeSpecLoader:
             .add_role(
                 tables=["database_1.schema_1.TableOne"],
                 permission_set=["read", "write"],
+                member_of=["testrole"],
             )
             .build()
         )
@@ -511,7 +612,11 @@ class TestSnowflakeSpecLoaderWithOwner:
         """
         SnowflakeSpecLoader loads without error for role with owner
         """
-        spec_file_data = SnowflakeSchemaBuilder().add_role(owner="user").build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
+        )
         method = "show_roles"
         return_value = {"testrole": "user"}
 
@@ -556,7 +661,10 @@ class TestSnowflakeSpecLoaderWithOwner:
         and require-owner: True
         """
         spec_file_data = (
-            SnowflakeSchemaBuilder().require_owner().add_role(owner="user").build()
+            SnowflakeSchemaBuilder()
+            .require_owner()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
         )
         method = "show_roles"
         return_value = {"testrole": "user"}
@@ -632,7 +740,12 @@ class TestSnowflakeSpecLoaderWithOwner:
         Raise 'Owner not defined' error on show_roles
         with no owner and require-owner = True
         """
-        spec_file_data = SnowflakeSchemaBuilder().require_owner().add_role().build()
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .require_owner()
+            .add_role(member_of=["testrole"])
+            .build()
+        )
         method = "show_roles"
         return_value = ["testrole"]
         return [spec_file_data, method, return_value]
@@ -1187,12 +1300,12 @@ class TestSpecFileLoading:
         )
 
         expected = [
-            "ALTER USER first.last SET DISABLED = FALSE",
+            'ALTER USER "first.last" SET DISABLED = FALSE',
             "GRANT OWNERSHIP ON database database_1 TO ROLE test_role COPY CURRENT GRANTS",
             "GRANT OWNERSHIP ON database shared_database_1 TO ROLE test_role COPY CURRENT GRANTS",
             "GRANT OWNERSHIP ON schema database_1.schema_1 TO ROLE test_role COPY CURRENT GRANTS",
             "GRANT OWNERSHIP ON table database_1.schema_1.table_1 TO ROLE test_role COPY CURRENT GRANTS",
-            "GRANT ROLE test_role TO user first.last",
+            'GRANT ROLE test_role TO user "first.last"',
             "GRANT monitor ON warehouse warehouse_1 TO ROLE test_role",
             "GRANT operate ON warehouse warehouse_1 TO ROLE test_role",
             "GRANT usage ON database database_1 TO ROLE test_role",
@@ -1210,24 +1323,176 @@ class TestSpecFileLoading:
 
         assert results == expected
 
-    def test_generate_grants_for_snowflake_spec_loader(
-        self,
-        mocker,
-        mock_connector,
-    ):
+    # test_generate_grants_for_snowflake_spec_loader
+    def generate_grants_for_spec_case_one(mocker):
         """
         When a spec file includes a member_of: "*" it should generate a grant
         statement for each role in the Snowflake instance
         """
-        mocker.patch.object(
-            SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
-        )
         mocker.patch.object(
             SnowflakeGrantsGenerator,
             "_generate_member_star_lists",
             return_value=["role_1", "role_2", "role_3"],
         )
 
+        spec_file_data = SnowflakeSchemaBuilder().add_role(member_of=['"*"']).build()
+        expected = [
+            "GRANT ROLE role_1 TO role testrole",
+            "GRANT ROLE role_2 TO role testrole",
+            "GRANT ROLE role_3 TO role testrole",
+        ]
+
+        return [spec_file_data, expected]
+
+    # test_generate_grants_for_snowflake_spec_loader
+    def generate_grants_for_spec_case_two(mocker):
+        """
+        Spec file should not generate grant statements
+        for Snowflake default roles, but
+        should for testrole_1 to default roles
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(
+                name="accountadmin",
+                member_of=[
+                    "securityadmin",
+                    "sysadmin",
+                    "useradmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="sysadmin",
+                member_of=[
+                    "securityadmin",
+                    "accountadmin",
+                    "useradmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="securityadmin",
+                member_of=[
+                    "accountadmin",
+                    "sysadmin",
+                    "useradmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="useradmin",
+                member_of=[
+                    "securityadmin",
+                    "sysadmin",
+                    "accountadmin",
+                    "public",
+                    "testrole_1",
+                ],
+            )
+            .add_role(
+                name="public",
+                member_of=[
+                    "securityadmin",
+                    "sysadmin",
+                    "useradmin",
+                    "accountadmin",
+                    "testrole_1",
+                ],
+            )
+            .build()
+        )
+        expected = [
+            "GRANT ROLE testrole_1 TO role accountadmin",
+            "GRANT ROLE testrole_1 TO role public",
+            "GRANT ROLE testrole_1 TO role securityadmin",
+            "GRANT ROLE testrole_1 TO role sysadmin",
+            "GRANT ROLE testrole_1 TO role useradmin",
+        ]
+
+        return [spec_file_data, expected]
+
+    # test_generate_grants_for_snowflake_spec_loader
+    def generate_grants_for_spec_case_three(mocker):
+        """
+        member_of include "*" will generate GRANTS
+        only for roles managed in spec file
+        """
+        mocker.patch.object(
+            SnowflakeGrantsGenerator,
+            "_generate_member_star_lists",
+            return_value=["role_1", "role_2"],
+        )
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(
+                name="useradmin",
+                member_of_include=['"*"'],
+            )
+            .add_role(name="role_1", member_of=["testrole"])
+            .add_role(name="role_2", member_of=["testrole"])
+            .build()
+        )
+
+        expected = [
+            "GRANT ROLE role_1 TO role useradmin",
+            "GRANT ROLE role_2 TO role useradmin",
+            "GRANT ROLE testrole TO role role_1",
+            "GRANT ROLE testrole TO role role_2",
+        ]
+
+        return [spec_file_data, expected]
+
+    # test_generate_grants_for_snowflake_spec_loader
+    def generate_grants_for_spec_case_four(mocker):
+        """
+        member_of include "*" with exclude role_2
+        will generate GRANTS only for roles managed in spec file
+        """
+        mocker.patch.object(
+            SnowflakeGrantsGenerator,
+            "_generate_member_star_lists",
+            return_value=["role_1", "role_2"],
+        )
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(
+                name="useradmin",
+                member_of_include=['"*"'],
+                member_of_exclude=["role_2"],
+            )
+            .add_role(name="role_1", member_of=["testrole"])
+            .add_role(name="role_2", member_of=["testrole"])
+            .build()
+        )
+
+        expected = [
+            "GRANT ROLE role_1 TO role useradmin",
+            "GRANT ROLE testrole TO role role_1",
+            "GRANT ROLE testrole TO role role_2",
+        ]
+
+        return [spec_file_data, expected]
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            generate_grants_for_spec_case_one,
+            generate_grants_for_spec_case_two,
+            generate_grants_for_spec_case_three,
+            generate_grants_for_spec_case_four,
+        ],
+    )
+    def test_generate_grants_for_snowflake_spec_loader(
+        self, mocker, mock_connector, config
+    ):
+        spec_file_data, expected = config(mocker)
+        mocker.patch.object(
+            SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
+        )
         mocker.patch(
             "permifrost.core.permissions.utils.snowflake_connector.SnowflakeConnector",
             MockSnowflakeConnector,
@@ -1244,14 +1509,8 @@ class TestSpecFileLoading:
             return_value=[],
         )
 
-        spec_file_data = SnowflakeSchemaBuilder().add_role(member_of=['"*"']).build()
         method = "show_roles"
         return_value = {}
-        expected = [
-            "GRANT ROLE role_1 TO role testrole",
-            "GRANT ROLE role_2 TO role testrole",
-            "GRANT ROLE role_3 TO role testrole",
-        ]
 
         print("Spec file is: ")
         print(spec_file_data)

@@ -19,7 +19,7 @@ SNOWFLAKE_SPEC_SCHEMA = """
             type: dict
             keyschema:
                 type: string
-            valueschema:
+            valuesrules:
                 type: dict
     roles:
         type: list
@@ -27,7 +27,7 @@ SNOWFLAKE_SPEC_SCHEMA = """
             type: dict
             keyschema:
                 type: string
-            valueschema:
+            valuesrules:
                 type: dict
     users:
         type: list
@@ -35,7 +35,7 @@ SNOWFLAKE_SPEC_SCHEMA = """
             type: dict
             keyschema:
                 type: string
-            valueschema:
+            valuesrules:
                 type: dict
     warehouses:
         type: list
@@ -43,7 +43,7 @@ SNOWFLAKE_SPEC_SCHEMA = """
             type: dict
             keyschema:
                 type: string
-            valueschema:
+            valuesrules:
                 type: dict
     """
 
@@ -71,10 +71,17 @@ SNOWFLAKE_SPEC_ROLE_SCHEMA = """
               allowed:
                   - include
                   - exclude
-              valueschema:
-                  type: list
-                  schema:
-                      type: string
+              schema:
+                  include:
+                      type: list
+                      required: True
+                      schema:
+                          type: string
+                  exclude:
+                      type: list
+                      required: False
+                      schema:
+                          type: string
             - type: list
               schema:
                   type: string
@@ -84,12 +91,12 @@ SNOWFLAKE_SPEC_ROLE_SCHEMA = """
             - databases
             - schemas
             - tables
-        valueschema:
+        valuesrules:
             type: dict
             allowed:
                 - read
                 - write
-            valueschema:
+            valuesrules:
                 type: list
                 schema:
                     type: string
@@ -99,7 +106,7 @@ SNOWFLAKE_SPEC_ROLE_SCHEMA = """
             - databases
             - schemas
             - tables
-        valueschema:
+        valuesrules:
             type: list
             schema:
                 type: string
