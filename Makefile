@@ -151,7 +151,7 @@ endif
 
 release:
 	git diff --quiet || { echo "Working directory is dirty, please commit or stash your changes."; exit 1; }
-	changelog release --yes $(type_flag)
+	yes | changelog release $(type_flag)
 	git add CHANGELOG.md
 	bumpversion --tag --allow-dirty --new-version `changelog current` $(type)
 
