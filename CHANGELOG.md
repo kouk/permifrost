@@ -10,6 +10,17 @@ Changelog](http://keepachangelog.com/).
 ---
 
 ### New
+
+### Changes
+
+### Fixes
+
+### Breaks
+
+
+## 0.13.0 - (2021-11-02)
+---
+
 ### Changes
 
 * [#88](https://gitlab.com/gitlab-data/permifrost/-/issues/88)
