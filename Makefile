@@ -146,7 +146,7 @@ suggest:
 # (i.e. `make release type=<patch|minor|major>`)
 # Which adheres to semantic versioning standards
 ifdef type
-  override type_flag := --$(type)
+  type_flag := --$(type)
 endif
 
 release:
