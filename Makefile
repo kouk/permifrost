@@ -145,9 +145,13 @@ suggest:
 # The `make release` command requires a type of release.
 # (i.e. `make release type=<patch|minor|major>`)
 # Which adheres to semantic versioning standards
+ifdef type
+  override type_flag := --$(type)
+endif
+
 release:
 	git diff --quiet || { echo "Working directory is dirty, please commit or stash your changes."; exit 1; }
-	changelog release --yes
+	changelog release --yes $(type_flag)
 	git add CHANGELOG.md
 	bumpversion --tag --allow-dirty --new-version `changelog current` $(type)
 
