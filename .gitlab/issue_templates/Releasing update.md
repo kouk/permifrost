@@ -5,7 +5,7 @@
 - [ ] Verify that the CHANGELOG.md has correct and up-to-date changes for the release
 - [ ] Create a bumpversion branch from the master branch (i.e. `git checkout -b bumpversion`)
 - [ ] From the root of the directory, run `make suggest` to determine the recommended version update
-- [ ] Based on the prior step, run `make release type=<patch|minor|major>` based on the type of semantic release needed
+- [ ] Based on the prior step, run `make release type=<patch|minor|major>` based on the type of semantic release needed (Optionally, ignore the semantic version if there is concern about the version release recommended by `make suggest`)
 - [ ] Push changes to the remote (i.e. `git push origin bumpversion`)
 - [ ] Generate an MR and notify the other maintainers to review the release
     - **NOTE:** For changes required through the review process. Ensure you delete the local tag `git tag -d v<x.x.x>`, make the changes, commit and push to GitLab for review
