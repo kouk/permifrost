@@ -101,8 +101,8 @@ To work on permifrost you'll want installed, at a minimum:
 
 Before starting development, you'll want to create a virtual environment
 to isolate your development environment from all the other Python
-work you might do on your computer. Virtual environemtns are one of the
-most confusing parts of getting started with Pyhton, so if the instructions
+work you might do on your computer. Virtual environments are one of the
+most confusing parts of getting started with Python, so if the instructions
 here don't make sense, or if they're not working, please ask for help!
 
 ```bash
