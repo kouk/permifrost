@@ -76,7 +76,7 @@ prod-image: base-image
 # Linting
 BLACK_RUN = black src/permifrost tests/
 MYPY_RUN = mypy src
-FLAKE8_RUN = flake8
+FLAKE8_RUN = flake8 src/
 ISORT_RUN = isort src/
 
 lint: compose-build
