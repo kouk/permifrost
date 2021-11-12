@@ -57,7 +57,13 @@ def print_command(command, diff):
     help="Do not handle role membership grants/revokes",
     is_flag=True,
 )
-def run(spec, dry, diff, role, user, ignore_memberships):
+@click.option(
+    "--spec-loader-only",
+    help="Do not handle role membership grants/revokes",
+    is_flag=True,
+    default=False,
+)
+def run(spec, dry, diff, role, user, ignore_memberships, spec_loader_only):
     """
     Grant the permissions provided in the provided specification file for specific users and roles
     """
@@ -77,10 +83,13 @@ def run(spec, dry, diff, role, user, ignore_memberships):
         users=user,
         run_list=run_list,
         ignore_memberships=ignore_memberships,
+        spec_loader_only=spec_loader_only,
     )
 
 
-def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_memberships):
+def permifrost_grants(
+    spec, dry, diff, roles, users, run_list, ignore_memberships, spec_loader_only
+):
     """Grant the permissions provided in the provided specification file."""
     try:
         spec_loader = SnowflakeSpecLoader(
@@ -90,6 +99,9 @@ def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_membership
             run_list=run_list,
             ignore_memberships=ignore_memberships,
         )
+
+        if spec_loader_only:
+            return
 
         sql_grant_queries = spec_loader.generate_permission_queries(
             roles=roles,
