@@ -29,6 +29,9 @@ the verbose flag is used to increase the level of logging output. Logs are now f
 with timestamp and colours and include details on which module originated the log.
 When permifrost is run with `-vv` all queries are logged to help isolate potential issues.
 
+* [#98](https://gitlab.com/gitlab-data/permifrost/-/issues/98)
+Separated out the spec loading step from into a function and added in the new CLI command `spec_cli_test`.
+Minor improvements to the linting, accounting for venv folders existing in the permifrost directory during development.
 ### Fixes
 * [#88](https://gitlab.com/gitlab-data/permifrost/-/issues/88) Fixes `member_of` `include` and `exclude` functionality and introduces improved test coverage for all functionality related to the `member_of` statement for `roles` in spec file
 * Skip creation of role grants (i.e. `GRANT ROLE <role name> TO ROLE <other role name>`) when permifrost attempts to modify the default role hierarchy from Snowflake
