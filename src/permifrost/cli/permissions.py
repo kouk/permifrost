@@ -110,7 +110,7 @@ def spec_cli_test(spec, role, user, ignore_memberships, run_list):
     Load SnowFlake spec based on the roles.yml provided. CLI use only for confirming specifications are valid.
     """
     click.secho("Confirming spec loads successfully")
-    s = load_specs(spec, role, user, run_list, ignore_memberships)
+    load_specs(spec, role, user, run_list, ignore_memberships)
 
 
 def load_specs(spec, role, user, run_list, ignore_memberships):
