@@ -57,13 +57,7 @@ def print_command(command, diff):
     help="Do not handle role membership grants/revokes",
     is_flag=True,
 )
-@click.option(
-    "--spec-loader-only",
-    help="Do not handle role membership grants/revokes",
-    is_flag=True,
-    default=False,
-)
-def run(spec, dry, diff, role, user, ignore_memberships, spec_loader_only):
+def run(spec, dry, diff, role, user, ignore_memberships):
     """
     Grant the permissions provided in the provided specification file for specific users and roles
     """
@@ -83,14 +77,29 @@ def run(spec, dry, diff, role, user, ignore_memberships, spec_loader_only):
         users=user,
         run_list=run_list,
         ignore_memberships=ignore_memberships,
-        spec_loader_only=spec_loader_only,
     )
 
 
-def permifrost_grants(
-    spec, dry, diff, roles, users, run_list, ignore_memberships, spec_loader_only
-):
-    """Grant the permissions provided in the provided specification file."""
+@click.command()
+@click.argument("spec")
+@click.option(
+    "--role",
+    multiple=True,
+    default=[],
+    help="Run grants for specific roles. Usage: --role testrole --role testrole2.",
+)
+@click.option(
+    "--user",
+    multiple=True,
+    default=[],
+    help="Run grants for specific users. Usage: --user testuser --user testuser2.",
+)
+@click.option(
+    "--ignore-memberships",
+    help="Do not handle role membership grants/revokes",
+    is_flag=True,
+)
+def load_specs(spec, roles, users, run_list, ignore_memberships):
     try:
         spec_loader = SnowflakeSpecLoader(
             spec,
@@ -100,47 +109,58 @@ def permifrost_grants(
             ignore_memberships=ignore_memberships,
         )
 
-        if spec_loader_only:
-            return
-
-        sql_grant_queries = spec_loader.generate_permission_queries(
-            roles=roles,
-            users=users,
-            run_list=run_list,
-            ignore_memberships=ignore_memberships,
-        )
-
-        click.secho()
-        if diff:
-            click.secho(
-                "SQL Commands generated for given spec file (Full diff with both new and already granted commands):"
-            )
-        else:
-            click.secho("SQL Commands generated for given spec file:")
-        click.secho()
-
-        conn = SnowflakeConnector()
-        for query in sql_grant_queries:
-            if not dry:
-                status = None
-                if not query.get("already_granted"):
-                    try:
-                        conn.run_query(query.get("sql", ""))
-                        status = True
-                    except Exception:
-                        status = False
-
-                    ran_query = query
-                    ran_query["run_status"] = status
-                    print_command(ran_query, diff)
-                # If already granted, print command
-                else:
-                    print_command(query, diff)
-            # If dry, print commands
-            else:
-                print_command(query, diff)
-
     except SpecLoadingError as exc:
         for line in str(exc).splitlines():
             click.secho(line, fg="red")
         sys.exit(1)
+
+    return spec_loader
+
+
+def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_memberships):
+    """Grant the permissions provided in the provided specification file."""
+
+    spec_loader = load_specs(
+        spec,
+        roles=roles,
+        users=users,
+        run_list=run_list,
+        ignore_memberships=ignore_memberships,
+    )
+
+    sql_grant_queries = spec_loader.generate_permission_queries(
+        roles=roles,
+        users=users,
+        run_list=run_list,
+        ignore_memberships=ignore_memberships,
+    )
+
+    click.secho()
+    if diff:
+        click.secho(
+            "SQL Commands generated for given spec file (Full diff with both new and already granted commands):"
+        )
+    else:
+        click.secho("SQL Commands generated for given spec file:")
+    click.secho()
+
+    conn = SnowflakeConnector()
+    for query in sql_grant_queries:
+        if not dry:
+            status = None
+            if not query.get("already_granted"):
+                try:
+                    conn.run_query(query.get("sql", ""))
+                    status = True
+                except Exception:
+                    status = False
+
+                ran_query = query
+                ran_query["run_status"] = status
+                print_command(ran_query, diff)
+            # If already granted, print command
+            else:
+                print_command(query, diff)
+        # If dry, print commands
+        else:
+            print_command(query, diff)
