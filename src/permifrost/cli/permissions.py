@@ -99,12 +99,31 @@ def run(spec, dry, diff, role, user, ignore_memberships):
     help="Do not handle role membership grants/revokes",
     is_flag=True,
 )
-def load_specs(spec, roles, users, run_list, ignore_memberships):
+@click.option(
+    "--run-list",
+    multiple=True,
+    default=["roles", "users"],
+    help="Run grants for specific users. Usage: --user testuser --user testuser2.",
+)
+def spec_cli_test(spec, role, user, ignore_memberships, run_list):
+    """
+    Load specs separately. CLI use only for confirming specs are valid.
+    """
+    click.secho("Confirming spec loads successfully")
+    s = load_specs(spec, role, user, run_list, ignore_memberships)
+    if s:
+        click.secho("Specs loaded successfully")
+
+
+def load_specs(spec, role, user, run_list, ignore_memberships):
+    """
+    Load specs separately.
+    """
     try:
         spec_loader = SnowflakeSpecLoader(
             spec,
-            roles=roles,
-            users=users,
+            roles=role,
+            users=user,
             run_list=run_list,
             ignore_memberships=ignore_memberships,
         )
@@ -119,11 +138,10 @@ def load_specs(spec, roles, users, run_list, ignore_memberships):
 
 def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_memberships):
     """Grant the permissions provided in the provided specification file."""
-
     spec_loader = load_specs(
         spec,
-        roles=roles,
-        users=users,
+        role=roles,
+        user=users,
         run_list=run_list,
         ignore_memberships=ignore_memberships,
     )
@@ -164,3 +182,6 @@ def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_membership
         # If dry, print commands
         else:
             print_command(query, diff)
+
+
+cli.add_command(spec_cli_test)  # type: ignore
