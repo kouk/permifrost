@@ -46,11 +46,11 @@ Options:
 
 Use this utility command to run the SnowFlake specification loader to confirm that your `roles.yml` file is valid.
 ```bash
-permifrost [-v] spec-cli-test <spec_file> [--role] [--user] [--ignore-memberships]
+permifrost [-v] spec-test <spec_file> [--role] [--user] [--ignore-memberships]
 ```
 
 ```shell
-#>  permifrost spec-cli-test --help
+#>  permifrost spec-test --help
 Usage: permifrost spec-test [OPTIONS] SPEC
 
   Load SnowFlake spec based on the roles.yml provided. CLI use only for confirming specifications are valid.
