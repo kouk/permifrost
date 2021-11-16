@@ -105,7 +105,7 @@ def run(spec, dry, diff, role, user, ignore_memberships):
     default=["roles", "users"],
     help="Run grants for specific users. Usage: --user testuser --user testuser2.",
 )
-def spec_cli_test(spec, role, user, ignore_memberships, run_list):
+def spec_test(spec, role, user, ignore_memberships, run_list):
     """
     Load SnowFlake spec based on the roles.yml provided. CLI use only for confirming specifications are valid.
     """
@@ -182,4 +182,4 @@ def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_membership
             print_command(query, diff)
 
 
-cli.add_command(spec_cli_test)  # type: ignore
+cli.add_command(spec_test)  # type: ignore
