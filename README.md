@@ -51,7 +51,7 @@ permifrost [-v] spec-cli-test <spec_file> [--role] [--user] [--ignore-membership
 
 ```shell
 #>  permifrost spec-cli-test --help
-Usage: permifrost spec-cli-test [OPTIONS] SPEC
+Usage: permifrost spec-test [OPTIONS] SPEC
 
   Load SnowFlake spec based on the roles.yml provided. CLI use only for confirming specifications are valid.
 
