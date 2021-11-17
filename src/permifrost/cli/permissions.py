@@ -109,7 +109,6 @@ def spec_test(spec, role, user, ignore_memberships, run_list):
     """
     Load SnowFlake spec based on the roles.yml provided. CLI use only for confirming specifications are valid.
     """
-    click.secho("Confirming spec loads successfully")
     load_specs(spec, role, user, run_list, ignore_memberships)
 
 
@@ -118,6 +117,7 @@ def load_specs(spec, role, user, run_list, ignore_memberships):
     Load specs separately.
     """
     try:
+        click.secho("Confirming spec loads successfully")
         spec_loader = SnowflakeSpecLoader(
             spec,
             roles=role,
@@ -125,7 +125,7 @@ def load_specs(spec, role, user, run_list, ignore_memberships):
             run_list=run_list,
             ignore_memberships=ignore_memberships,
         )
-
+        click.secho("Snowflake specs successfully loaded", fg="green")
     except SpecLoadingError as exc:
         for line in str(exc).splitlines():
             click.secho(line, fg="red")
