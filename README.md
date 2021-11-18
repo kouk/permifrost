@@ -44,6 +44,30 @@ Options:
   --help       Show this message and exit.
 ```
 
+Use this utility command to run the SnowFlake specification loader to confirm that your `roles.yml` file is valid.
+```bash
+permifrost [-v] spec-test <spec_file> [--role] [--user] [--ignore-memberships]
+```
+
+```shell
+#>  permifrost spec-test --help
+Usage: permifrost spec-test [OPTIONS] SPEC
+
+  Load SnowFlake spec based on the roles.yml provided. CLI use only for confirming specifications are valid.
+
+Options:
+  --role TEXT           Run grants for specific roles. Usage: --role testrole
+                        --role testrole2.
+
+  --user TEXT           Run grants for specific users. Usage: --user testuser
+                        --user testuser2.
+
+  --ignore-memberships  Do not handle role membership grants/revokes
+  --run-list TEXT       Run grants for specific users. Usage: --user testuser
+                        --user testuser2.
+
+  --help                Show this message and exit.
+```
 Given the parameters to connect to a Snowflake account and a YAML file (a
 "spec") representing the desired database configuration, this command makes sure
 that the configuration of that database matches the spec. If there are

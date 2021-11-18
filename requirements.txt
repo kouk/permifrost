@@ -70,6 +70,7 @@ SQLAlchemy==1.4.23
 toml==0.10.2
 tomli==1.2.1
 types-PyYAML==5.4.8
+types-click==7.1.7
 typing-extensions==3.10.0.2
 urllib3==1.26.6
 virtualenv==20.7.2
