@@ -17,10 +17,6 @@ Changelog](http://keepachangelog.com/).
 
 ### Breaks
 
-
-## 0.13.2 - (2021-11-19)
----
-
 ## 0.13.1 - (2021-11-19)
 [#98](https://gitlab.com/gitlab-data/permifrost/-/issues/98)
 Separated out the spec loading step from into a function and added in the new CLI command `spec_test`.
