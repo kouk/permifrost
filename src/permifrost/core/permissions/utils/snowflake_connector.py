@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from urllib.parse import quote_plus
 
 import sqlalchemy
@@ -44,9 +44,9 @@ class SnowflakeConnector:
                     warehouse=config["warehouse"],
                 )
             )
-        elif config["key_path"] is not None and config["key_passphrase"] is not None:
+        elif config["key_path"] is not None:
             pkb = self.generate_private_key(
-                config["key_path"], config["key_passphrase"]
+                config["key_path"], config.get("key_passphrase")
             )
             self.engine = sqlalchemy.create_engine(
                 URL(
@@ -72,10 +72,15 @@ class SnowflakeConnector:
                 )
             )
 
-    def generate_private_key(self, key_path: str, key_passphrase: str) -> bytes:
+    def generate_private_key(
+        self, key_path: str, key_passphrase: Union[str, None]
+    ) -> bytes:
         with open(key_path, "rb") as key:
+            encoded_key = None
+            if key_passphrase:
+                encoded_key = key_passphrase.encode()
             p_key = serialization.load_pem_private_key(
-                key.read(), password=key_passphrase.encode(), backend=default_backend()
+                key.read(), password=encoded_key, backend=default_backend()
             )
 
         return p_key.private_bytes(

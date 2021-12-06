@@ -15,6 +15,8 @@ Changelog](http://keepachangelog.com/).
 
 ### Fixes
 
+* Allow optional passphrase for key authentication to address #81
+
 ### Breaks
 
 ## 0.13.1 - (2021-11-19)
