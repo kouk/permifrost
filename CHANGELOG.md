@@ -16,6 +16,9 @@ Changelog](http://keepachangelog.com/).
 ### Fixes
 
 * Allow optional passphrase for key authentication to address #81
+* [#105](https://gitlab.com/gitlab-data/permifrost/-/issues/105)
+Resolve REVOKE command always runs for write permissions on tables
+
 
 ### Breaks
 
