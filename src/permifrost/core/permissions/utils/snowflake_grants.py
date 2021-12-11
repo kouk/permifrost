@@ -476,7 +476,7 @@ class SnowflakeGrantsGenerator:
         return sql_commands
 
     def _generate_database_read_privs(
-        self, database: str, role: str, shared_dbs: List[str], read_privileges: str
+        self, database: str, role: str, shared_dbs: Set[str], read_privileges: str
     ) -> Dict:
         already_granted = self.is_granted_privilege(role, "usage", "database", database)
 
@@ -1392,7 +1392,7 @@ class SnowflakeGrantsGenerator:
         spec_dbs: Set[Any],
         privilege_set: str,
         resource_type: str,
-        granted_resources: Optional[List] = None,
+        granted_resources: List[str],
     ) -> List[Dict[str, Any]]:
         """
         Generates REVOKE privileges for tables/views known as resources here
@@ -1408,15 +1408,6 @@ class SnowflakeGrantsGenerator:
         Returns a list of REVOKE statements
         """
         sql_commands = []
-
-        if granted_resources == None:
-            granted_resources = list(
-                set(
-                    self.grants_to_role.get(role, {})
-                    .get("select", {})
-                    .get(resource_type, [])
-                )
-            )
         for granted_resource in granted_resources:
             resource_split = granted_resource.split(".")
             database_name = resource_split[0]
@@ -1491,7 +1482,10 @@ class SnowflakeGrantsGenerator:
         read_privileges = "select"
         write_partial_privileges = "insert, update, delete, truncate, references"
         sql_commands = []
-        
+        granted_resources = list(
+            set(self.grants_to_role.get(role, {}).get("select", {}).get("table", []))
+        )
+
         sql_commands.extend(
             self._generate_revoke_select_privs(
                 role=role,
@@ -1500,7 +1494,11 @@ class SnowflakeGrantsGenerator:
                 spec_dbs=spec_dbs,
                 privilege_set=read_privileges,
                 resource_type="table",
+                granted_resources=granted_resources,
             )
+        )
+        granted_resources = list(
+            set(self.grants_to_role.get(role, {}).get("select", {}).get("view", []))
         )
         sql_commands.extend(
             self._generate_revoke_select_privs(
@@ -1510,15 +1508,18 @@ class SnowflakeGrantsGenerator:
                 spec_dbs=spec_dbs,
                 privilege_set=read_privileges,
                 resource_type="view",
+                granted_resources=granted_resources,
             )
         )
 
         all_write_privs_granted_tables = []
-        for privilege in write_partial_privileges.split(', '):
-            table_names = self.grants_to_role.get(role, {}).get(privilege, {}).get("table", [])
+        for privilege in write_partial_privileges.split(", "):
+            table_names = (
+                self.grants_to_role.get(role, {}).get(privilege, {}).get("table", [])
+            )
             all_write_privs_granted_tables += table_names
         all_write_privs_granted_tables = list(set(all_write_privs_granted_tables))
-        
+
         # Write Privileges
         # Only need to revoke write privileges for tables since SELECT is the
         # only privilege available for views
@@ -1614,7 +1615,6 @@ class SnowflakeGrantsGenerator:
                 alter_privileges.append("DISABLED = FALSE")
             else:
                 alter_privileges.append("DISABLED = TRUE")
-        breakpoint()
         if alter_privileges:
             sql_commands.append(
                 {
