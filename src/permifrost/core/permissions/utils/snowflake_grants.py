@@ -475,6 +475,35 @@ class SnowflakeGrantsGenerator:
 
         return sql_commands
 
+    def _generate_database_read_privs(
+        self, database: str, role: str, shared_dbs: Set[str], read_privileges: str
+    ) -> Dict:
+        already_granted = self.is_granted_privilege(role, "usage", "database", database)
+
+        # If this is a shared database, we have to grant the "imported privileges"
+        # privilege to the user and skip granting the specific permissions as
+        # "Granting individual privileges on imported databases is not allowed."
+        if database in shared_dbs:
+            return {
+                "already_granted": already_granted,
+                "sql": GRANT_PRIVILEGES_TEMPLATE.format(
+                    privileges="imported privileges",
+                    resource_type="database",
+                    resource_name=SnowflakeConnector.snowflaky(database),
+                    role=SnowflakeConnector.snowflaky_user_role(role),
+                ),
+            }
+        else:
+            return {
+                "already_granted": already_granted,
+                "sql": GRANT_PRIVILEGES_TEMPLATE.format(
+                    privileges=read_privileges,
+                    resource_type="database",
+                    resource_name=SnowflakeConnector.snowflaky(database),
+                    role=SnowflakeConnector.snowflaky_user_role(role),
+                ),
+            }
+
     def generate_database_grants(
         self, role: str, databases: Dict[str, List], shared_dbs: Set, spec_dbs: Set
     ) -> List[Dict[str, Any]]:
@@ -497,39 +526,13 @@ class SnowflakeGrantsGenerator:
         write_privileges = f"{read_privileges}, {partial_write_privileges}"
 
         for database in databases.get("read", []):
-            already_granted = self.is_granted_privilege(
-                role, "usage", "database", database
+            read_grant = self._generate_database_read_privs(
+                database=database,
+                role=role,
+                shared_dbs=shared_dbs,
+                read_privileges=read_privileges,
             )
-
-            # If this is a shared database, we have to grant the "imported privileges"
-            # privilege to the user and skip granting the specific permissions as
-            # "Granting individual privileges on imported databases is not allowed."
-            if database in shared_dbs:
-                sql_commands.append(
-                    {
-                        "already_granted": already_granted,
-                        "sql": GRANT_PRIVILEGES_TEMPLATE.format(
-                            privileges="imported privileges",
-                            resource_type="database",
-                            resource_name=SnowflakeConnector.snowflaky(database),
-                            role=SnowflakeConnector.snowflaky_user_role(role),
-                        ),
-                    }
-                )
-                continue
-
-            sql_commands.append(
-                {
-                    "already_granted": already_granted,
-                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
-                        privileges=read_privileges,
-                        resource_type="database",
-                        resource_name=SnowflakeConnector.snowflaky(database),
-                        role=SnowflakeConnector.snowflaky_user_role(role),
-                    ),
-                }
-            )
-
+            sql_commands.append(read_grant)
         for database in databases.get("write", []):
             already_granted = (
                 self.is_granted_privilege(role, "usage", "database", database)
@@ -573,15 +576,18 @@ class SnowflakeGrantsGenerator:
         # The "Usage" privilege is consistent across read and write.
         # Compare granted usage to full read/write usage set
         # and revoke missing ones
-        for granted_database in (
+        usage_privs_on_db = (
             self.grants_to_role.get(role, {}).get("usage", {}).get("database", [])
-        ):
+        )
+
+        for granted_database in usage_privs_on_db:
             # If it's a shared database, only revoke imported
             # We'll only know if it's a shared DB based on the spec
             all_databases = databases.get("read", []) + databases.get("write", [])
             if granted_database not in spec_dbs:
                 # Skip revocation on database that are not defined in spec
                 continue
+            # Revoke read/write permissions on shared databases
             elif (
                 granted_database not in all_databases and granted_database in shared_dbs
             ):
@@ -598,7 +604,7 @@ class SnowflakeGrantsGenerator:
                         ),
                     }
                 )
-
+            # Revoke read permissions on created databases in Snowflake
             elif granted_database not in all_databases:
                 sql_commands.append(
                     {
@@ -617,13 +623,19 @@ class SnowflakeGrantsGenerator:
         # usage was revoked but other write permissions still exist
         # This also preserves the case where somebody switches write access
         # for read access
-        for granted_database in self.grants_to_role.get(role, {}).get(
-            "monitor", {}
-        ).get("database", []) + self.grants_to_role.get(role, {}).get(
-            "create schema", {}
-        ).get(
-            "database", []
-        ):
+        monitor_privs_on_db = (
+            self.grants_to_role.get(role, {}).get("monitor", {}).get("database", [])
+        )
+
+        create_privs_on_db = (
+            self.grants_to_role.get(role, {})
+            .get("create schema", {})
+            .get("database", [])
+        )
+
+        full_write_privs_on_dbs = monitor_privs_on_db + create_privs_on_db
+
+        for granted_database in full_write_privs_on_dbs:
             # If it's a shared database, only revoke imported
             # We'll only know if it's a shared DB based on the spec
             if (
@@ -1380,7 +1392,7 @@ class SnowflakeGrantsGenerator:
         spec_dbs: Set[Any],
         privilege_set: str,
         resource_type: str,
-        granted_resources: Optional[List] = None,
+        granted_resources: List[str],
     ) -> List[Dict[str, Any]]:
         """
         Generates REVOKE privileges for tables/views known as resources here
@@ -1396,16 +1408,6 @@ class SnowflakeGrantsGenerator:
         Returns a list of REVOKE statements
         """
         sql_commands = []
-
-        if not granted_resources:
-            granted_resources = list(
-                set(
-                    self.grants_to_role.get(role, {})
-                    .get("select", {})
-                    .get(resource_type, [])
-                )
-            )
-
         for granted_resource in granted_resources:
             resource_split = granted_resource.split(".")
             database_name = resource_split[0]
@@ -1476,9 +1478,13 @@ class SnowflakeGrantsGenerator:
         all_grant_views: List[str],
         write_grant_tables_full: List[str],
     ) -> List[Dict[str, Any]]:
+
         read_privileges = "select"
         write_partial_privileges = "insert, update, delete, truncate, references"
         sql_commands = []
+        granted_resources = list(
+            set(self.grants_to_role.get(role, {}).get("select", {}).get("table", []))
+        )
 
         sql_commands.extend(
             self._generate_revoke_select_privs(
@@ -1488,7 +1494,11 @@ class SnowflakeGrantsGenerator:
                 spec_dbs=spec_dbs,
                 privilege_set=read_privileges,
                 resource_type="table",
+                granted_resources=granted_resources,
             )
+        )
+        granted_resources = list(
+            set(self.grants_to_role.get(role, {}).get("select", {}).get("view", []))
         )
         sql_commands.extend(
             self._generate_revoke_select_privs(
@@ -1498,20 +1508,18 @@ class SnowflakeGrantsGenerator:
                 spec_dbs=spec_dbs,
                 privilege_set=read_privileges,
                 resource_type="view",
+                granted_resources=granted_resources,
             )
         )
 
-        granted_tables = list(
-            set(
-                self.grants_to_role.get(role, {}).get("insert", {}).get("table", [])
-                + self.grants_to_role.get(role, {}).get("update", {}).get("table", [])
-                + self.grants_to_role.get(role, {}).get("delete", {}).get("table", [])
-                + self.grants_to_role.get(role, {}).get("truncate", {}).get("table", [])
-                + self.grants_to_role.get(role, {})
-                .get("references", {})
-                .get("table", [])
+        all_write_privs_granted_tables = []
+        for privilege in write_partial_privileges.split(", "):
+            table_names = (
+                self.grants_to_role.get(role, {}).get(privilege, {}).get("table", [])
             )
-        )
+            all_write_privs_granted_tables += table_names
+        all_write_privs_granted_tables = list(set(all_write_privs_granted_tables))
+
         # Write Privileges
         # Only need to revoke write privileges for tables since SELECT is the
         # only privilege available for views
@@ -1523,7 +1531,7 @@ class SnowflakeGrantsGenerator:
                 spec_dbs=spec_dbs,
                 privilege_set=write_partial_privileges,
                 resource_type="table",
-                granted_resources=granted_tables,
+                granted_resources=all_write_privs_granted_tables,
             )
         )
 
@@ -1607,7 +1615,6 @@ class SnowflakeGrantsGenerator:
                 alter_privileges.append("DISABLED = FALSE")
             else:
                 alter_privileges.append("DISABLED = TRUE")
-
         if alter_privileges:
             sql_commands.append(
                 {

@@ -1592,7 +1592,6 @@ class TestGenerateTableAndViewRevokes:
         }
 
         expected = [
-            "REVOKE insert, update, delete, truncate, references ON table database_1.schema_1.table_1 FROM ROLE functional_role",
             "REVOKE select ON table database_1.schema_1.table_1 FROM ROLE functional_role",
         ]
 

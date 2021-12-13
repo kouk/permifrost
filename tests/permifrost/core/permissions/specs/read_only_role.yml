@@ -1,0 +1,31 @@
+version: "1.0"
+
+# Databases
+databases:
+  - demo_db:
+      shared: no
+# Roles
+roles:
+  - testrole_1:
+      warehouses:
+        - compute_wh
+      privileges:
+        databases:
+          read:
+            - demo_db
+        schemas:
+          read:
+            - demo_db.public
+        tables:
+          read:
+            - demo_db.public.table_1
+# Users
+users:
+  - test_user:
+      can_login: yes
+      member_of:
+        - testrole_1
+# Warehouses
+warehouses:
+  - compute_wh:
+      size: x-small
