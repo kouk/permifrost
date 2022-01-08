@@ -9,7 +9,7 @@ from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConne
 from . import cli
 
 
-def print_command(command, diff):
+def print_command(command, diff, dry=False):
     """Prints the queries to the command line with prefixes"""
     diff_prefix = ""
     if command["already_granted"]:
@@ -24,6 +24,9 @@ def print_command(command, diff):
     if command.get("run_status"):
         foreground_color = "green"
         run_prefix = "[SUCCESS] "
+    elif command.get("run_status") is None and dry:
+        foreground_color = "cyan"
+        run_prefix = "[PENDING] "
     elif command.get("run_status") is None:
         foreground_color = "cyan"
         run_prefix = "[SKIPPED] "
@@ -57,7 +60,8 @@ def print_command(command, diff):
     help="Do not handle role membership grants/revokes",
     is_flag=True,
 )
-def run(spec, dry, diff, role, user, ignore_memberships):
+@click.pass_context
+def run(ctx, spec, dry, diff, role, user, ignore_memberships, print_skipped=False):
     """
     Grant the permissions provided in the provided specification file for specific users and roles
     """
@@ -69,6 +73,8 @@ def run(spec, dry, diff, role, user, ignore_memberships):
         run_list = ["users"]
     else:
         run_list = ["roles", "users"]
+    if ctx.parent.params.get("verbose", 0) >= 1:
+        print_skipped = True
     permifrost_grants(
         spec=spec,
         dry=dry,
@@ -77,6 +83,7 @@ def run(spec, dry, diff, role, user, ignore_memberships):
         users=user,
         run_list=run_list,
         ignore_memberships=ignore_memberships,
+        print_skipped=print_skipped,
     )
 
 
@@ -134,7 +141,9 @@ def load_specs(spec, role, user, run_list, ignore_memberships):
     return spec_loader
 
 
-def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_memberships):
+def permifrost_grants(
+    spec, dry, diff, roles, users, run_list, ignore_memberships, print_skipped
+):
     """Grant the permissions provided in the provided specification file."""
     spec_loader = load_specs(
         spec,
@@ -175,11 +184,12 @@ def permifrost_grants(spec, dry, diff, roles, users, run_list, ignore_membership
                 ran_query["run_status"] = status
                 print_command(ran_query, diff)
             # If already granted, print command
-            else:
+            elif print_skipped:
                 print_command(query, diff)
         # If dry, print commands
         else:
-            print_command(query, diff)
+            if not query.get("already_granted") or print_skipped:
+                print_command(query, diff, dry=True)
 
 
 cli.add_command(spec_test)  # type: ignore

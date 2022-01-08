@@ -59,6 +59,10 @@ class SnowflakeConnector:
                 connect_args={"private_key": pkb},
             )
         else:
+            if not config["user"]:
+                raise Exception(
+                    "Validation Error: PERMISSION_BOT_USER not set. Please ensure environment variables are set."
+                )
             self.engine = sqlalchemy.create_engine(
                 URL(
                     user=config["user"],
