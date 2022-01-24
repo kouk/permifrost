@@ -13,6 +13,13 @@ Changelog](http://keepachangelog.com/).
 
 ### Changes
 
+* Statements for already granted permissions (shown as [SKIPPED]) will no
+longer be displayed by default. They will display when used with `--verbose` or
+`-v` flags. This will help clean the output of permifrost to make it easier
+to see what changes will be applied.
+* On a dry run (--dry), statements that are expected to run will show as [PENDING]
+instead of [SKIPPED].
+
 ### Fixes
 
 * Allow optional passphrase for key authentication to address #81
