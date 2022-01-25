@@ -117,8 +117,12 @@ grant granular access like `read` permissions for usage of database and schema
 and `write` permissions to insert data into a specific table within that
 database and schema.
 
-Tables and views are listed under `tables` and handled properly behind the
-scenes.
+Also under the hood, Permifrost grants privileges for more object types than
+databases, schemas and tables/views. E.g.: `write` permissions for a schema
+include the ability to create tables and views, but also stages, sequences,
+functions, file formats, pipes, tasks, streams and procedures on that schema
+(as the owner, you should be able to manage those objects without further
+permissions).
 
 If `*` is provided as the parameter for tables the grant statement will use the
 `ALL <object_type>s in SCHEMA` syntax. It will also grant to future tables and

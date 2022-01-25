@@ -7,7 +7,8 @@ Changelog](http://keepachangelog.com/).
 
 
 ## Unreleased
----
+* [#72](https://gitlab.com/gitlab-data/permifrost/-/issues/72)
+Adds CREATE permissions on a schema for tasks, procedures and streams.
 
 ### New
 
