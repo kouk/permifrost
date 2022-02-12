@@ -1,7 +1,8 @@
 from typing import Dict, List, Any
+from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
 
 
-class MockSnowflakeConnector:
+class MockSnowflakeConnector(SnowflakeConnector):
     def show_databases(self) -> List[str]:
         return []
 
