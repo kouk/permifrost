@@ -11,10 +11,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from snowflake.sqlalchemy import URL
 
-from permifrost.core.logger import GLOBAL_LOGGER as logger
+from permifrost.logger import GLOBAL_LOGGER as logger
 
 # Don't show all the info log messages from Snowflake
-for logger_name in ["snowflake.connector", "botocore", "boto3"]:
+for logger_name in ["snowflake.connector", "bot", "boto3"]:
     log = logging.getLogger(logger_name)
     log.setLevel(logging.WARNING)
 

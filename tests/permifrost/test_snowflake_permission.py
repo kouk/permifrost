@@ -1,4 +1,4 @@
-from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
+from permifrost.snowflake_permission import SnowflakePermission
 
 
 class TestSnowflakePermission:

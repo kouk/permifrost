@@ -2,7 +2,7 @@ import pytest
 import os
 import sqlalchemy
 
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_connector import SnowflakeConnector
 
 
 @pytest.fixture

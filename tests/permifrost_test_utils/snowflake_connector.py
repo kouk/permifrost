@@ -1,5 +1,5 @@
 from typing import Dict, List, Any
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_connector import SnowflakeConnector
 
 
 class MockSnowflakeConnector(SnowflakeConnector):

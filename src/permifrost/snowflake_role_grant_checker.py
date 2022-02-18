@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
-from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
+from permifrost.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_permission import SnowflakePermission
 
 
 class SnowflakeRoleGrantChecker:

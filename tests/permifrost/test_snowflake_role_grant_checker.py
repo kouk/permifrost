@@ -1,7 +1,7 @@
 import pytest
 
-from permifrost.core.permissions.utils.snowflake_permission import SnowflakePermission
-from permifrost.core.permissions.utils.snowflake_role_grant_checker import (
+from permifrost.snowflake_permission import SnowflakePermission
+from permifrost.snowflake_role_grant_checker import (
     SnowflakeRoleGrantChecker,
 )
 
