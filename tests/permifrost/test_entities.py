@@ -1,8 +1,8 @@
 import pytest
 import os
 
-from permifrost.core.permissions.entities import EntityGenerator
-from permifrost.core.permissions.utils.spec_file_loader import load_spec
+from permifrost.entities import EntityGenerator
+from permifrost.spec_file_loader import load_spec
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

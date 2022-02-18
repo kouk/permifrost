@@ -3,15 +3,15 @@ from typing import Dict, List
 import cerberus
 import yaml
 
-from permifrost.core.permissions.spec_schemas.snowflake import (
+from permifrost.error import SpecLoadingError
+from permifrost.spec_schemas.snowflake import (
     SNOWFLAKE_SPEC_DATABASE_SCHEMA,
     SNOWFLAKE_SPEC_ROLE_SCHEMA,
     SNOWFLAKE_SPEC_SCHEMA,
     SNOWFLAKE_SPEC_USER_SCHEMA,
     SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA,
 )
-from permifrost.core.permissions.types import PermifrostSpecSchema
-from permifrost.core.permissions.utils.error import SpecLoadingError
+from permifrost.types import PermifrostSpecSchema
 
 VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 

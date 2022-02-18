@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Set, Tuple, TypedDict
 
-from permifrost.core.logger import GLOBAL_LOGGER as logger
-from permifrost.core.permissions.types import PermifrostSpecSchema
-from permifrost.core.permissions.utils.error import SpecLoadingError
+from permifrost.error import SpecLoadingError
+from permifrost.logger import GLOBAL_LOGGER as logger
+from permifrost.types import PermifrostSpecSchema
 
 
 class EntitySchema(TypedDict):

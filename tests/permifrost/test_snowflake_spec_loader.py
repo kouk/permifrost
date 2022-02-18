@@ -1,10 +1,10 @@
 import pytest
 import os
 
-from permifrost.core.permissions import SpecLoadingError
-from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
-from permifrost.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
+from permifrost import SpecLoadingError
+from permifrost.snowflake_spec_loader import SnowflakeSpecLoader
+from permifrost.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_grants import SnowflakeGrantsGenerator
 from permifrost_test_utils.snowflake_schema_builder import SnowflakeSchemaBuilder
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 
@@ -347,7 +347,7 @@ class TestSnowflakeSpecLoader:
     def generate_grants_for_spec_roles_case_one():
         """
         Shows FUTURE GRANTS to be applied to the testrole found in the
-        tests/permifrost/core/permissions/specs folder which should
+        tests/permifrost/specs folder which should
         filter out secondarydb grant references as only primarydb is
         cited in the spec file
         """
@@ -369,7 +369,7 @@ class TestSnowflakeSpecLoader:
     def generate_grants_for_spec_roles_case_two():
         """
         Shows GRANTS to be applied to the testrole found in the
-        tests/permifrost/core/permissions/specs folder which should
+        tests/permifrost/specs folder which should
         filter out secondarydb grant references as only primarydb is
         cited in the spec file
         """
@@ -567,7 +567,7 @@ class TestSnowflakeSpecLoader:
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
         mocker.patch.object(mock_connector, method, return_value=return_value)
         mocker.patch(
-            "permifrost.core.permissions.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
+            "permifrost.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
             return_value=None,
         )
         SnowflakeSpecLoader("", mock_connector)
@@ -1280,7 +1280,7 @@ class TestSpecFileLoading:
             SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
         )
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_connector.SnowflakeConnector",
+            "permifrost.snowflake_connector.SnowflakeConnector",
             MockSnowflakeConnector,
         )
         mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
@@ -1494,7 +1494,7 @@ class TestSpecFileLoading:
             SnowflakeSpecLoader, "check_entities_on_snowflake_server", return_value=None
         )
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_connector.SnowflakeConnector",
+            "permifrost.snowflake_connector.SnowflakeConnector",
             MockSnowflakeConnector,
         )
         mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
