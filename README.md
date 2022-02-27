@@ -312,6 +312,14 @@ To connect using an OAuth token, also include the following:
 $PERMISSION_BOT_OAUTH_TOKEN
 ```
 
+### External Browser SSO Auth
+
+To connect using an external browser with SSO Auth, also include the following:
+
+```bash
+$PERMISSION_BOT_AUTHENTICATOR='externalbrowser'
+```
+
 ### Key Pair Authentication
 
 Rather than supplying a password or an oauth token, it's possible to connect via
