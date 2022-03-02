@@ -251,7 +251,7 @@ warehouses:
 ```
 
 For a working example, you can check [the Snowflake specification
-file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/core/permissions/specs/snowflake_spec.yml)
+file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/specs/snowflake_spec.yml)
 that we are using for testing `permifrost permissions`.
 
 ### Settings
