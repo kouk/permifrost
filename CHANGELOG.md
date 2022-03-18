@@ -7,12 +7,11 @@ Changelog](http://keepachangelog.com/).
 
 
 ## Unreleased
-[#101](https://gitlab.com/gitlab-data/permifrost/-/issues/101)
-Adds in a new authentication mechanism for externalbrower sso auth in Snowflake.
-
 ---
 
 ### New
+[#101](https://gitlab.com/gitlab-data/permifrost/-/issues/101)
+Adds in a new authentication mechanism for externalbrower sso auth in Snowflake.
 
 ### Changes
 
