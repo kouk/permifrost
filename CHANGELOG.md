@@ -10,6 +10,18 @@ Changelog](http://keepachangelog.com/).
 ---
 
 ### New
+
+### Changes
+
+### Fixes
+
+### Breaks
+
+
+## 0.14.0 - (2022-03-18)
+---
+
+### New
 [#101](https://gitlab.com/gitlab-data/permifrost/-/issues/101)
 Adds in a new authentication mechanism for externalbrower sso auth in Snowflake.
 
@@ -30,8 +42,6 @@ Resolve REVOKE command always runs for write permissions on tables
 * [#68](https://gitlab.com/gitlab-data/permifrost/-/issues/68)
 Implement ownership grants on views
 
-
-### Breaks
 
 ## 0.13.1 - (2021-11-19)
 ---
