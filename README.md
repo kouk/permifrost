@@ -115,7 +115,19 @@ databases.
 According to the `read` vs. `write` permissions approach, you should be able to
 grant granular access like `read` permissions for usage of database and schema
 and `write` permissions to insert data into a specific table within that
-database and schema.
+database and schema. 
+
+Please find below the links between Permifrost permissions and Snowflake grants.
+
+| Objects   | Permifrost permissions | Snowflake grants                                                                                                    |
+|-----------|------------------------|---------------------------------------------------------------------------------------------------------------------|
+| Databases | read                   | usage                                                                                                               |
+|           | write                  | monitor, create schema                                                                                              |
+| Schemas   | read                   | usage                                                                                                               |
+|           | write                  | monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe |
+| Table     | read                   | select                                                                                                              |
+|           | write                  | insert, update, delete, truncate, references                                                                        |
+
 
 Tables and views are listed under `tables` and handled properly behind the
 scenes.
