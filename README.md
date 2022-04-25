@@ -33,7 +33,7 @@ Usage: permifrost run [OPTIONS] SPEC
 
 Options:
   --dry        Do not actually run, just check.
-  --diff       Show full diff, both new and existing permissions.
+  --diff       Show full diff, both new and existing permissions, use with -v.
   --role TEXT  Run grants for specific roles. Usage: --role testrole --role
                testrole2.
 
