@@ -134,7 +134,7 @@ scenes.
 
 If `*` is provided as the parameter for tables the grant statement will use the
 `ALL <object_type>s in SCHEMA` syntax. It will also grant to future tables and
-views. See Snowflake documenation for [`ON
+views. See Snowflake documentation for [`ON
 FUTURE`](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html#optional-parameters)
 
 If a schema name includes an asterisk, such as `snowplow_*`, then all schemas
