@@ -33,7 +33,7 @@ Usage: permifrost run [OPTIONS] SPEC
 
 Options:
   --dry        Do not actually run, just check.
-  --diff       Show full diff, both new and existing permissions.
+  --diff       Show full diff, both new and existing permissions, use with -v.
   --role TEXT  Run grants for specific roles. Usage: --role testrole --role
                testrole2.
 
@@ -117,12 +117,24 @@ grant granular access like `read` permissions for usage of database and schema
 and `write` permissions to insert data into a specific table within that
 database and schema.
 
+Please find below the links between Permifrost permissions and Snowflake grants.
+
+| Objects   | Permifrost permissions | Snowflake grants                                                                                                    |
+|-----------|------------------------|---------------------------------------------------------------------------------------------------------------------|
+| Databases | read                   | usage                                                                                                               |
+|           | write                  | monitor, create schema                                                                                              |
+| Schemas   | read                   | usage                                                                                                               |
+|           | write                  | monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe |
+| Table     | read                   | select                                                                                                              |
+|           | write                  | insert, update, delete, truncate, references                                                                        |
+
+
 Tables and views are listed under `tables` and handled properly behind the
 scenes.
 
 If `*` is provided as the parameter for tables the grant statement will use the
 `ALL <object_type>s in SCHEMA` syntax. It will also grant to future tables and
-views. See Snowflake documenation for [`ON
+views. See Snowflake documentation for [`ON
 FUTURE`](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html#optional-parameters)
 
 If a schema name includes an asterisk, such as `snowplow_*`, then all schemas
@@ -241,6 +253,7 @@ users:
     ... ... ...
 
 # Warehouses
+# Warehouse sizes are informative and not altered by Permifrost to align with the spec file
 warehouses:
     - warehouse_name:
         size: x-small
