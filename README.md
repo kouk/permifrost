@@ -115,7 +115,7 @@ databases.
 According to the `read` vs. `write` permissions approach, you should be able to
 grant granular access like `read` permissions for usage of database and schema
 and `write` permissions to insert data into a specific table within that
-database and schema. 
+database and schema.
 
 Please find below the links between Permifrost permissions and Snowflake grants.
 
@@ -253,6 +253,7 @@ users:
     ... ... ...
 
 # Warehouses
+# Warehouse sizes are informative and not altered by Permifrost to align with the spec file
 warehouses:
     - warehouse_name:
         size: x-small
