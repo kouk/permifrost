@@ -1034,7 +1034,16 @@ class SnowflakeGrantsGenerator:
             )
             read_grant_tables_full.append(future_database_table)
 
+            # For grants at the database level for views
+            future_database_view = "{database}.<view>".format(database=database_name)
+            view_already_granted = self.is_granted_privilege(
+                role, read_privileges, "view", future_database_view
+            )
+            read_grant_views_full.append(future_database_view)
+
             if schema_name == "*" and table_view_name == "*":
+
+                # Tables
                 sql_commands.append(
                     {
                         "already_granted": table_already_granted,
@@ -1061,13 +1070,7 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
-            # For future grants at the database level for views
-            future_database_view = "{database}.<view>".format(database=database_name)
-            view_already_granted = self.is_granted_privilege(
-                role, read_privileges, "view", future_database_view
-            )
-            read_grant_views_full.append(future_database_view)
-            if schema_name == "*" and table_view_name == "*":
+                # Views
                 sql_commands.append(
                     {
                         "already_granted": view_already_granted,
@@ -1278,7 +1281,14 @@ class SnowflakeGrantsGenerator:
             )
             write_grant_tables_full.append(future_database_table)
 
+            view_already_granted = self.is_granted_privilege(
+                role, write_privileges, "view", future_database_view
+            )
+            write_grant_views_full.append(future_database_view)
+
             if schema_name == "*" and table_view_name == "*":
+
+                # Tables
                 sql_commands.append(
                     {
                         "already_granted": table_already_granted,
@@ -1305,12 +1315,7 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
-            view_already_granted = self.is_granted_privilege(
-                role, write_privileges, "view", future_database_view
-            )
-            write_grant_views_full.append(future_database_view)
-
-            if schema_name == "*" and table_view_name == "*":
+                # Views
                 sql_commands.append(
                     {
                         "already_granted": view_already_granted,
