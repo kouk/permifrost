@@ -1320,7 +1320,7 @@ class SnowflakeGrantsGenerator:
                     {
                         "already_granted": view_already_granted,
                         "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
-                            privileges=write_privileges,
+                            privileges="select",
                             resource_type="view",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
@@ -1333,7 +1333,7 @@ class SnowflakeGrantsGenerator:
                     {
                         "already_granted": view_already_granted,
                         "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
-                            privileges=write_privileges,
+                            privileges="select",
                             resource_type="view",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
