@@ -4,7 +4,7 @@
 
 .DEFAULT_GOAL := help
 COMMIT_HASH = $(shell git log -1 --pretty=%H)
-DEFAULT_ORG ?= gitlab-data
+DEFAULT_ORG ?= ${GITLAB_ORGANISATION}
 
 help:
 	@echo "base-image -> builds gitlab-data/base"
