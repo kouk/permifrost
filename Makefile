@@ -93,7 +93,7 @@ show-lint: compose-build
 
 local-lint:
 	pre-commit run --hook-stage push
-        ${BLACK_RUN}
+	${BLACK_RUN}
 	${ISORT_RUN}
 	${MYPY_RUN}
 	${FLAKE8_RUN}
