@@ -20,13 +20,3 @@ repos:
     hooks:
       - id: black
         language_version: python3
-
-  - repo: local
-    hooks:
-      - id: linting
-        name: Lint and format code with (flake8, isort, mypy, black)
-        language: system
-        entry: make local-lint
-        pass_filenames: false
-        stages:
-          - push
