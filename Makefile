@@ -80,7 +80,7 @@ prod-image: base-image
 
 
 # Linting
-BLACK_RUN = sudo black src/permifrost tests/
+BLACK_RUN = black src/permifrost tests/
 MYPY_RUN = mypy src
 FLAKE8_RUN = flake8 src/ tests/
 ISORT_RUN = isort src/
@@ -93,7 +93,6 @@ show-lint: compose-build
 
 local-lint:
 	pre-commit run --hook-stage push
-	${BLACK_RUN}
 	${ISORT_RUN}
 	${MYPY_RUN}
 	${FLAKE8_RUN}
