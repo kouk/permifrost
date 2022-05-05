@@ -4,7 +4,13 @@
 
 .DEFAULT_GOAL := help
 COMMIT_HASH = $(shell git log -1 --pretty=%H)
-DEFAULT_ORG ?= ${GITLAB_ORGANISATION}
+
+# Works out the default organisation for the GitLab repo.
+REMOTE = $(shell git ls-remote --get-url)
+# Remove the start of the string
+URL_END = $(shell echo "${REMOTE}" | sed -e "s/git@gitlab.com:/''/g")
+# Remove the end of the string.
+DEFAULT_ORG = $(shell echo "${URL_END}" | sed -e "s/\/permifrost.git/''/g")
 
 help:
 	@echo "base-image -> builds gitlab-data/base"
