@@ -321,12 +321,18 @@ class SnowflakeConnector:
                 if db_schema != info_schema:
                     fetched_schemas.append(db_schema)
 
-        # Prefix schema match
+        # Prefix and suffix schema matches
         elif "*" in name_parts[1]:
             db_schemas = self.show_schemas(name_parts[0])
             for db_schema in db_schemas:
                 schema_name = db_schema.split(".", 1)[1].lower()
-                if schema_name.startswith(name_parts[1].split("*", 1)[0]):
+                if name_parts[1].endswith("*") and schema_name.startswith(
+                    name_parts[1].split("*", 1)[0]
+                ):
+                    fetched_schemas.append(db_schema)
+                elif name_parts[1].startswith("*") and schema_name.endswith(
+                    name_parts[1].split("*", 1)[1]
+                ):
                     fetched_schemas.append(db_schema)
 
         # TODO Handle more complicated matches
