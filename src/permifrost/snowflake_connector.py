@@ -329,11 +329,13 @@ class SnowflakeConnector:
                 if name_parts[1].endswith("*") and schema_name.startswith(
                     name_parts[1].split("*", 1)[0]
                 ):
-                    fetched_schemas.append(db_schema)
+                    if db_schema != info_schema:
+                        fetched_schemas.append(db_schema)
                 elif name_parts[1].startswith("*") and schema_name.endswith(
                     name_parts[1].split("*", 1)[1]
                 ):
-                    fetched_schemas.append(db_schema)
+                    if db_schema != info_schema:
+                        fetched_schemas.append(db_schema)
 
         # TODO Handle more complicated matches
 
