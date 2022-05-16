@@ -1251,6 +1251,76 @@ class TestGenerateSchemaGrants:
         ]
         return [MockSnowflakeConnector, config, expected]
 
+    def partial_prefix_star_rw_schema_config(mocker):
+        """
+        Provides read/write access on SCHEMA_1, SCHEMA_2 in DATABASE_1
+        but not to EXCLUDE_SCHEMA_3 in DATABASE_1
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[
+                [
+                    "database_1.prefix_schema_1",
+                    "database_1.prefix_schema_2",
+                    "database_1.exclude_schema_3",
+                ],
+                [
+                    "database_1.prefix_schema_1",
+                    "database_1.prefix_schema_2",
+                    "database_1.exclude_schema_3",
+                ],
+            ],
+        )
+        config = {
+            "read": ["database_1.prefix_*"],
+            "write": ["database_1.prefix_*"],
+        }
+
+        expected = [
+            "GRANT usage ON schema database_1.prefix_schema_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.prefix_schema_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.prefix_schema_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.prefix_schema_2 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def partial_suffix_star_rw_schema_config(mocker):
+        """
+        Provides read/write access on SCHEMA_1, SCHEMA_2 in DATABASE_1
+        but not to EXCLUDE_SCHEMA_3 in DATABASE_1
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[
+                [
+                    "database_1.schema_1_suffix",
+                    "database_1.schema_2_suffix",
+                    "database_1.exclude_schema_3",
+                ],
+                [
+                    "database_1.schema_1_suffix",
+                    "database_1.schema_2_suffix",
+                    "database_1.exclude_schema_3",
+                ],
+            ],
+        )
+        config = {
+            "read": ["database_1.*_suffix"],
+            "write": ["database_1.*_suffix"],
+        }
+
+        expected = [
+            "GRANT usage ON schema database_1.schema_1_suffix TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2_suffix TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1_suffix TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_2_suffix TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
     @pytest.mark.parametrize(
         "config",
         [
@@ -1266,6 +1336,8 @@ class TestGenerateSchemaGrants:
             star_rw_schema_config,
             star_diff_rw_schema_config,
             multi_star_rw_schema_config,
+            partial_prefix_star_rw_schema_config,
+            partial_suffix_star_rw_schema_config,
         ],
     )
     def test_generate_schema_grants(
