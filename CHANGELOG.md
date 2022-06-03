@@ -14,6 +14,20 @@ Adds CREATE permissions on a schema for tasks, procedures and streams.
 
 ### Changes
 
+### Fixes
+
+### Breaks
+
+
+## 0.14.0 - (2022-03-18)
+---
+
+### New
+[#101](https://gitlab.com/gitlab-data/permifrost/-/issues/101)
+Adds in a new authentication mechanism for externalbrower sso auth in Snowflake.
+
+### Changes
+
 * Statements for already granted permissions (shown as [SKIPPED]) will no
 longer be displayed by default. They will display when used with `--verbose` or
 `-v` flags. This will help clean the output of permifrost to make it easier
@@ -29,8 +43,6 @@ Resolve REVOKE command always runs for write permissions on tables
 * [#68](https://gitlab.com/gitlab-data/permifrost/-/issues/68)
 Implement ownership grants on views
 
-
-### Breaks
 
 ## 0.13.1 - (2021-11-19)
 ---

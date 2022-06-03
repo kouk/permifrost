@@ -1,7 +1,7 @@
 import pytest
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_connector import SnowflakeConnector
 
-from permifrost.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
+from permifrost.snowflake_grants import SnowflakeGrantsGenerator
 from permifrost_test_utils.snowflake_connector import MockSnowflakeConnector
 
 
@@ -812,7 +812,7 @@ class TestGenerateTableAndViewGrants:
             return_value=["database_1.schema_1.view_1"],
         )
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_schemas",
+            "permifrost.snowflake_grants.SnowflakeConnector.show_schemas",
             mock_connector.show_schemas,
         )
         config = {
@@ -893,7 +893,7 @@ class TestGenerateTableAndViewGrants:
             mock_connector, "show_views", return_value=["raw.public.view_1"]
         )
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_schemas",
+            "permifrost.snowflake_grants.SnowflakeConnector.show_schemas",
             mock_connector.show_schemas,
         )
         config = {
@@ -962,12 +962,12 @@ class TestGenerateTableAndViewGrants:
         mock_connector, test_tables_config, expected = config(mocker)
 
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_tables",
+            "permifrost.snowflake_grants.SnowflakeConnector.show_tables",
             mock_connector.show_tables,
         )
 
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_views",
+            "permifrost.snowflake_grants.SnowflakeConnector.show_views",
             mock_connector.show_views,
         )
 
@@ -1288,7 +1288,7 @@ class TestGenerateSchemaGrants:
         mocker.patch.object(SnowflakeConnector, "__init__", lambda x: None)
 
         mocker.patch(
-            "permifrost.core.permissions.utils.snowflake_grants.SnowflakeConnector.show_schemas",
+            "permifrost.snowflake_grants.SnowflakeConnector.show_schemas",
             mock_connector.show_schemas,
         )
 

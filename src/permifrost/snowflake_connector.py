@@ -11,10 +11,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from snowflake.sqlalchemy import URL
 
-from permifrost.core.logger import GLOBAL_LOGGER as logger
+from permifrost.logger import GLOBAL_LOGGER as logger
 
 # Don't show all the info log messages from Snowflake
-for logger_name in ["snowflake.connector", "botocore", "boto3"]:
+for logger_name in ["snowflake.connector", "bot", "boto3"]:
     log = logging.getLogger(logger_name)
     log.setLevel(logging.WARNING)
 
@@ -32,6 +32,7 @@ class SnowflakeConnector:
                 "oauth_token": os.getenv("PERMISSION_BOT_OAUTH_TOKEN"),
                 "key_path": os.getenv("PERMISSION_BOT_KEY_PATH"),
                 "key_passphrase": os.getenv("PERMISSION_BOT_KEY_PASSPHRASE"),
+                "authenticator": os.getenv("PERMISSION_BOT_AUTHENTICATOR"),
             }
 
         if config["oauth_token"] is not None:
@@ -57,6 +58,18 @@ class SnowflakeConnector:
                     warehouse=config["warehouse"],
                 ),
                 connect_args={"private_key": pkb},
+            )
+
+        elif config["authenticator"] is not None:
+            self.engine = sqlalchemy.create_engine(
+                URL(
+                    user=config["user"],
+                    account=config["account"],
+                    database=config["database"],
+                    role=config["role"],
+                    warehouse=config["warehouse"],
+                    authenticator=config["authenticator"],
+                ),
             )
         else:
             if not config["user"]:

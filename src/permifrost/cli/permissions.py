@@ -2,9 +2,9 @@ import sys
 
 import click
 
-from permifrost.core.permissions import SpecLoadingError
-from permifrost.core.permissions.snowflake_spec_loader import SnowflakeSpecLoader
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
+from permifrost import SpecLoadingError
+from permifrost.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_spec_loader import SnowflakeSpecLoader
 
 from . import cli
 

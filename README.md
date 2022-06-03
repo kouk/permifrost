@@ -255,7 +255,7 @@ warehouses:
 ```
 
 For a working example, you can check [the Snowflake specification
-file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/core/permissions/specs/snowflake_spec.yml)
+file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/specs/snowflake_spec.yml)
 that we are using for testing `permifrost permissions`.
 
 ### Settings
@@ -314,6 +314,14 @@ To connect using an OAuth token, also include the following:
 
 ```bash
 $PERMISSION_BOT_OAUTH_TOKEN
+```
+
+### External Browser SSO Auth
+
+To connect using an external browser with SSO Auth, also include the following:
+
+```bash
+$PERMISSION_BOT_AUTHENTICATOR='externalbrowser'
 ```
 
 ### Key Pair Authentication

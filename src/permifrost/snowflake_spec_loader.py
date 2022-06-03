@@ -2,12 +2,12 @@ from typing import Any, Dict, List, Optional, cast
 
 import click
 
-from permifrost.core.logger import GLOBAL_LOGGER as logger
-from permifrost.core.permissions.entities import EntityGenerator
-from permifrost.core.permissions.utils.error import SpecLoadingError
-from permifrost.core.permissions.utils.snowflake_connector import SnowflakeConnector
-from permifrost.core.permissions.utils.snowflake_grants import SnowflakeGrantsGenerator
-from permifrost.core.permissions.utils.spec_file_loader import load_spec
+from permifrost.entities import EntityGenerator
+from permifrost.error import SpecLoadingError
+from permifrost.logger import GLOBAL_LOGGER as logger
+from permifrost.snowflake_connector import SnowflakeConnector
+from permifrost.snowflake_grants import SnowflakeGrantsGenerator
+from permifrost.spec_file_loader import load_spec
 
 VALIDATION_ERR_MSG = 'Spec error: {} "{}", field "{}": {}'
 

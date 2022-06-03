@@ -3,7 +3,7 @@ import logging
 import click
 
 import permifrost
-from permifrost.core.logger import GLOBAL_LOGGER as logger
+from permifrost.logger import GLOBAL_LOGGER as logger
 
 
 @click.group(invoke_without_command=True, no_args_is_help=True)
