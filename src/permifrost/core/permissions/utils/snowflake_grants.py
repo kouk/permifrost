@@ -1684,7 +1684,9 @@ class SnowflakeGrantsGenerator:
                 )
         return sql_commands
 
-    def _generate_ownership_grant_table(self, conn, role, table_refs) -> List[Dict]:
+    def _generate_ownership_grant_table(
+        self, conn: SnowflakeConnector, role, table_refs
+    ) -> List[Dict]:
         sql_commands = []
 
         tables = []
@@ -1708,19 +1710,30 @@ class SnowflakeGrantsGenerator:
                 for schema in schemas:
                     tables.extend(conn.show_tables(schema=schema))
             else:
+                schemas = [f"{name_parts[0]}.{name_parts[1]}"]
                 tables.append(table)
+
+        existing_views = []
+        for schema in schemas:
+            existing_views = conn.show_views(schema=schema)
 
         # And then grant ownership to all tables
         for db_table in tables:
+            # In case `db_table` does not exist, call it a table.
+            # Regardless, the SQL will be validated later and alert it doesn't exist.
+            resource_type = "table"
+            if SnowflakeConnector.snowflaky(db_table) in existing_views:
+                resource_type = "view"
+
             already_granted = self.is_granted_privilege(
-                role, "ownership", "table", db_table
+                role, "ownership", resource_type, db_table
             )
 
             sql_commands.append(
                 {
                     "already_granted": already_granted,
                     "sql": GRANT_OWNERSHIP_TEMPLATE.format(
-                        resource_type="table",
+                        resource_type=resource_type,
                         resource_name=SnowflakeConnector.snowflaky(db_table),
                         role_name=SnowflakeConnector.snowflaky_user_role(role),
                     ),

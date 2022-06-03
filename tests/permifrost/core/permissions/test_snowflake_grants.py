@@ -2396,14 +2396,20 @@ class TestGenerateDatabaseRevokes:
 
 
 class TestSnowflakeOwnershipGrants:
-    def generate_ownership_on_warehouse(self, entity, entity_name):
+    def generate_ownership_on_warehouse(self, entity, entity_name, is_view=False):
         """
-        Test that SnowflakeSpecLoader generates ownership grant for an entity
+        Test that SnowflakeSpecLoader generates ownership grant for an entity.
+        Because we treat views and tables as the same entity in the spec, but
+        the underlying implementation will differentiate, we have a boolean
+        flag for specifying if the tested entity is actually a mocked view.
         """
         grants_to_role = {"test_role": {}}
         roles_granted_to_user = {"user_name": ["test_role"]}
         role = "test_role"
         spec = {"owns": {entity: [entity_name]}}
+
+        if is_view:
+            entity = "views"
         expectation = f"GRANT OWNERSHIP ON {entity[:-1]} {entity_name} TO ROLE test_role COPY CURRENT GRANTS"
 
         return spec, role, grants_to_role, roles_granted_to_user, expectation
@@ -2411,34 +2417,50 @@ class TestSnowflakeOwnershipGrants:
     @pytest.mark.parametrize(
         "entity",
         [
-            ("databases", "database_1"),
-            ("schemas", "database_1.schema_1"),
-            ("tables", "database_1.schema_1.table1"),
+            ("databases", "database_1", False),
+            ("schemas", "database_1.schema_1", False),
+            ("tables", "database_1.schema_1.table_1", False),
+            ("tables", "database_1.schema_1.view_1", True),
         ],
     )
-    def test_generate_ownership_grants(self, entity):
+    def test_generate_ownership_grants(self, entity, mocker):
         """Test that SnowflakeGrantsGenerator generates ownership grants for a single entity"""
+        mock_connector = MockSnowflakeConnector()
+        mocker.patch.object(
+            mock_connector,
+            "show_tables",
+            side_effect=[["database_1.schema_1.table_1"], []],
+        )
+        mocker.patch.object(
+            mock_connector,
+            "show_views",
+            side_effect=[["database_1.schema_1.view_1"], []],
+        )
+
         (
             spec,
             role,
             grants_to_role,
             roles_granted_to_user,
             expectation,
-        ) = self.generate_ownership_on_warehouse(entity[0], entity[1])
+        ) = self.generate_ownership_on_warehouse(entity[0], entity[1], entity[2])
         generator = SnowflakeGrantsGenerator(grants_to_role, roles_granted_to_user)
-
+        generator.conn = mock_connector
         sql_commands = generator.generate_grant_ownership(role, spec)
 
         assert sql_commands[0]["sql"] == expectation
 
     def test_generate_database_ownership_grants(
-        self, test_grants_to_role, test_roles_granted_to_user, test_role_config
+        self, test_grants_to_role, test_roles_granted_to_user, test_role_config, mocker
     ):
         """Test that SnowflakeGrantsGenerator generates ownership grants for for multiple grant definitions"""
+        mock_connector = MockSnowflakeConnector()
 
         generator = SnowflakeGrantsGenerator(
             test_grants_to_role, test_roles_granted_to_user, test_role_config
         )
+
+        generator.conn = mock_connector
         sql_commands = generator.generate_grant_ownership(
             "test_role", test_role_config["functional_role"]
         )
