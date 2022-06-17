@@ -14,6 +14,8 @@ Changelog](http://keepachangelog.com/).
 ### Changes
 
 ### Fixes
+* [#112](https://gitlab.com/gitlab-data/permifrost/-/issues/122)
+Explicitly mention the spec file must be lowercase
 
 ### Breaks
 
