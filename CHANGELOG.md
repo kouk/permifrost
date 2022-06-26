@@ -10,10 +10,15 @@ Changelog](http://keepachangelog.com/).
 ---
 
 ### New
+* [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)
+Adds support for suffix partial schema name
 
 ### Changes
 
 ### Fixes
+* [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)
+Remove `information_schema` of fetched schemas in case of partial schema name input
+
 * [#112](https://gitlab.com/gitlab-data/permifrost/-/issues/122)
 Explicitly mention the spec file must be lowercase
 

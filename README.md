@@ -137,7 +137,7 @@ If `*` is provided as the parameter for tables the grant statement will use the
 views. See Snowflake documentation for [`ON
 FUTURE`](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html#optional-parameters)
 
-If a schema name includes an asterisk, such as `snowplow_*`, then all schemas
+If a schema name includes an asterisk (prefix or suffix), such as `snowplow_*` or `*_snowplow`, then all schemas
 that match this pattern will be included in the grant statement _unless it is
 for ownership_, in which case the asterisk is not supported. This can be coupled
 with the asterisk for table grants to grant permissions on all tables in all
@@ -203,23 +203,28 @@ roles:
                     - database_name.*
                     - database_name.schema_name
                     - database_name.schema_partial_*
+                    - database_name.*_schema_partial
+
                     ...
                 write:
                     - database_name.*
                     - database_name.schema_name
                     - database_name.schema_partial_*
+                    - database_name.*_schema_partial
                     ...
             tables:
                 read:
                     - database_name.*.*
                     - database_name.schema_name.*
                     - database_name.schema_partial_*.*
+                    - database_name.*_schema_partial.*
                     - database_name.schema_name.table_name
                     ...
                 write:
                     - database_name.*.*
                     - database_name.schema_name.*
                     - database_name.schema_partial_*.*
+                    - database_name.*_schema_partial.*
                     - database_name.schema_name.table_name
                     ...
 
