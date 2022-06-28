@@ -45,6 +45,14 @@ SNOWFLAKE_SPEC_SCHEMA = """
                 type: string
             valuesrules:
                 type: dict
+    integrations:
+        type: list
+        schema:
+            type: dict
+            keyschema:
+                type: string
+            valuesrules:
+                type: dict
     """
 
 SNOWFLAKE_SPEC_DATABASE_SCHEMA = """
@@ -62,6 +70,10 @@ SNOWFLAKE_SPEC_ROLE_SCHEMA = """
         type: string
         required: False
     warehouses:
+        type: list
+        schema:
+            type: string
+    integrations:
         type: list
         schema:
             type: string
@@ -130,6 +142,15 @@ SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA = """
         type: string
         required: False
     size:
+        type: string
+        required: True
+    """
+
+SNOWFLAKE_SPEC_INTEGRATION_SCHEMA = """
+    owner:
+        type: string
+        required: False
+    category:
         type: string
         required: True
     """

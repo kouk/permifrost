@@ -128,6 +128,9 @@ class SnowflakeConnector:
     def show_warehouses(self) -> List[str]:
         return self.show_query("WAREHOUSES")
 
+    def show_integrations(self) -> List[str]:
+        return self.show_query("INTEGRATIONS")
+
     def show_users(self) -> List[str]:
         return self.show_query("USERS")
 

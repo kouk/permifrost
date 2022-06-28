@@ -90,6 +90,8 @@ roles:
     - loader:
         warehouses:
             - loading
+        integrations:
+            - cloud_integration
         owns:
             schemas:
                 - raw.*
@@ -308,3 +310,7 @@ warehouses:
 
     - transforming:
         size: x-small
+
+integrations:
+    - cloud_integration:
+        category: storage

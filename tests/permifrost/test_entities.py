@@ -111,6 +111,14 @@ class TestEntityGenerator:
         expected = {"demo", "loading", "transforming", "reporting"}
         assert entities["warehouses"] == expected
 
+    def test_entity_integrations(self, entities):
+        """
+        Expect all actionable <integrations> from the integrations section in
+        snowflake_spec_reference_roles.yml spec
+        """
+        expected = {"demo"}
+        assert entities["integrations"] == expected
+
 
 def test_filter_by_type(entities):
     expected = {"demo", "sysadmin", "accountadmin", "useradmin", "securityadmin", "*"}

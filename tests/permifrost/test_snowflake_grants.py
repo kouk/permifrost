@@ -41,6 +41,7 @@ def test_role_config():
     config = {
         "functional_role": {
             "warehouses": ["warehouse_2", "warehouse_3"],
+            "integrations": ["integration_2", "integration_3"],
             "member_of": ["object_role_2", "object_role_3"],
             "owns": {
                 "databases": ["database_2", "database_3"],
@@ -62,6 +63,7 @@ def test_role_config():
         },
         "role_without_member_of": {
             "warehouses": ["warehouse_2", "warehouse_3"],
+            "integrations": ["integration_2", "integration_3"],
             "privileges": {
                 "databases": {
                     "read": ["database_2", "shared_database_2"],
@@ -101,6 +103,7 @@ def test_grants_to_role():
                 "database": ["database_1", "database_2", "shared_database_1"],
                 "role": ["object_role_1", "object_role_2"],
                 "warehouse": ["warehouse_1", "warehouse_2"],
+                "integration": ["integration_1", "integration_2"],
             },
             "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
             "monitor": {
@@ -114,6 +117,7 @@ def test_grants_to_role():
                 "database": ["database_1", "database_2", "shared_database_1"],
                 "role": ["object_role_1", "object_role_2"],
                 "warehouse": ["warehouse_1", "warehouse_2"],
+                "integration": ["integration_1", "integration_2"],
             },
             "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
             "monitor": {"database": ["database_1", "database_2"]},
@@ -191,6 +195,41 @@ class TestSnowflakeGrants:
         assert (
             "revoke monitor on warehouse warehouse_1 from role functional_role"
             in warehouse_lower_list
+        )
+
+    @pytest.mark.parametrize("ignore_memberships", [True, False])
+    def test_generate_integration_grants(
+        self,
+        test_grants_to_role,
+        test_roles_granted_to_user,
+        test_role_config,
+        ignore_memberships,
+    ):
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
+        )
+
+        integration_command_list = generator.generate_integration_grants(
+            "functional_role", test_role_config["functional_role"]["integrations"]
+        )
+
+        integration_lower_list = [
+            cmd.get("sql", "").lower() for cmd in integration_command_list
+        ]
+
+        assert (
+            "grant usage on integration integration_2 to role functional_role"
+            in integration_lower_list
+        )
+        assert (
+            "grant usage on integration integration_3 to role functional_role"
+            in integration_lower_list
+        )
+        assert (
+            "revoke usage on integration integration_1 from role functional_role"
+            in integration_lower_list
         )
 
 

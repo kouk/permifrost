@@ -12,6 +12,7 @@ class SnowflakeSchemaBuilder:
     def __init__(self):
         self.version = ""
         self.warehouses = []
+        self.integrations = []
         self.roles = []
         self.dbs = []
         self.users = []
@@ -43,11 +44,17 @@ class SnowflakeSchemaBuilder:
                 spec_yaml.append(f"      owner: {user['owner']}")
         if len(self.warehouses) > 0:
             spec_yaml.append("warehouses:")
-
         for warehouse in self.warehouses:
             spec_yaml.extend([f"  - {warehouse['name']}:", "      size: x-small"])
             if warehouse["owner"] is not None:
                 spec_yaml.append(f"      owner: {warehouse['owner']}")
+
+        if len(self.integrations) > 0:
+            spec_yaml.append("integrations:")
+        for integration in self.integrations:
+            spec_yaml.extend([f"  - {integration['name']}:", "      category: storage"])
+            if integration["owner"] is not None:
+                spec_yaml.append(f"      owner: {integration['owner']}")
 
         spec_yaml.append("")
         return str.join("\n", spec_yaml)
@@ -220,6 +227,10 @@ class SnowflakeSchemaBuilder:
 
     def add_warehouse(self, name="testwarehouse", owner=None):
         self.warehouses.append({"name": name, "owner": owner})
+        return self
+
+    def add_integration(self, name="testintegration", owner=None):
+        self.integrations.append({"name": name, "owner": owner})
         return self
 
     def add_role(
