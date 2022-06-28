@@ -6,11 +6,11 @@ import yaml
 from permifrost.error import SpecLoadingError
 from permifrost.spec_schemas.snowflake import (
     SNOWFLAKE_SPEC_DATABASE_SCHEMA,
+    SNOWFLAKE_SPEC_INTEGRATION_SCHEMA,
     SNOWFLAKE_SPEC_ROLE_SCHEMA,
     SNOWFLAKE_SPEC_SCHEMA,
     SNOWFLAKE_SPEC_USER_SCHEMA,
     SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA,
-    SNOWFLAKE_SPEC_INTEGRATION_SCHEMA,
 )
 from permifrost.types import PermifrostSpecSchema
 
