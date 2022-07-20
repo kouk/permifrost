@@ -14,6 +14,8 @@ Changelog](http://keepachangelog.com/).
 Adds support for suffix partial schema name
 
 ### Changes
+[#112](https://gitlab.com/gitlab-data/permifrost/-/issues/112)  Add support for 'grant select on all tables in db/schema'
+for `db.*.*` or `db.schema.*` in spec file.
 
 ### Fixes
 * [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)

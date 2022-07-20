@@ -680,10 +680,10 @@ class TestGenerateTableAndViewGrants:
         }
 
         expected = [
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
         return [MockSnowflakeConnector, config, expected]
@@ -708,10 +708,10 @@ class TestGenerateTableAndViewGrants:
         }
 
         expected = [
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
         return [MockSnowflakeConnector, config, expected]
@@ -738,14 +738,14 @@ class TestGenerateTableAndViewGrants:
         }
 
         expected = [
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
         return [MockSnowflakeConnector, config, expected]
@@ -767,21 +767,23 @@ class TestGenerateTableAndViewGrants:
         )
 
         config = {
-            "read": ["database_1.schema_1.*"],
-            "write": ["database_1.schema_1.*"],
+            "read": [
+                "database_1.schema_1.*",
+            ],
+            "write": [
+                "database_1.schema_1.*",
+            ],
         }
 
         expected = [
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
         return [MockSnowflakeConnector, config, expected]
@@ -825,34 +827,30 @@ class TestGenerateTableAndViewGrants:
         }
 
         expected = [
+            "GRANT select ON ALL tables IN database database_1 TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database database_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database database_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_2 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN database database_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN database database_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN database database_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_2 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_2 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_2.table_3 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_2.table_3 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN database database_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_2 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN database database_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_2 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON FUTURE views IN database database_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_2.table_3 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_2.table_3 TO ROLE functional_role",
         ]
 
         return [mock_connector, config, expected]
@@ -906,6 +904,13 @@ class TestGenerateTableAndViewGrants:
         }
 
         expected = [
+            "GRANT select ON ALL tables IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN database raw TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema raw.public TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema raw.public_1 TO ROLE functional_role",
@@ -913,15 +918,86 @@ class TestGenerateTableAndViewGrants:
             "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema raw.public_1 TO ROLE functional_role",
-            "GRANT select ON table raw.public.table_1 TO ROLE functional_role",
-            "GRANT select ON table raw.public.table_2 TO ROLE functional_role",
-            "GRANT select ON table raw.public_1.table_3 TO ROLE functional_role",
-            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
-            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
-            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema raw.public TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema raw.public TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_2 TO ROLE functional_role",
+        ]
+
+        return [mock_connector, config, expected]
+
+    def table_partial_rw_future_schemas_tables_views_config(mocker):
+        """
+        Provides read on ALL|FUTURE schemas and ALL|FUTURE views|tables
+        in RAW database, but only write access on ALL|FUTURE tables
+        in PUBLIC schema and RAW database.
+        """
+        mock_connector = MockSnowflakeConnector()
+        # Need to account for different outputs in function
+        mocker.patch.object(
+            mock_connector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[["raw.public", "raw.public_1"], ["raw.public"]],
+        )
+        mocker.patch.object(
+            mock_connector,
+            "show_tables",
+            # show_tables called multiple times for read/write
+            # therefore, there is a need to have different
+            # results for each call where read comes before write
+            side_effect=[
+                [
+                    "raw.public.table_1",
+                    "raw.public.table_2",
+                ],
+                [
+                    "raw.public_1.table_3",
+                    "raw.public_1.table_4",
+                ],
+                [
+                    "raw.public.table_1",
+                    "raw.public.table_2",
+                ],
+                [
+                    "raw.public_1.table_3",
+                    "raw.public_1.table_4",
+                ],
+            ],
+        )
+        mocker.patch.object(
+            mock_connector, "show_views", return_value=["raw.public.view_1"]
+        )
+        mocker.patch(
+            "permifrost.snowflake_grants.SnowflakeConnector.show_schemas",
+            mock_connector.show_schemas,
+        )
+        config = {
+            "read": [
+                "raw.*.*",
+            ],
+            "write": [
+                "raw.public.*",
+                "raw.public_1.table_4",
+            ],
+        }
+
+        expected = [
+            "GRANT select ON ALL tables IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON FUTURE tables IN database raw TO ROLE functional_role",
+            "GRANT select ON FUTURE tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE tables IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN database raw TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON TABLE raw.public_1.table_4 TO ROLE functional_role",
         ]
 
         return [mock_connector, config, expected]
