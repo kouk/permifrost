@@ -1,6 +1,6 @@
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
-from pprint import pprint
+
 from permifrost.logger import GLOBAL_LOGGER as logger
 from permifrost.snowflake_connector import SnowflakeConnector
 
