@@ -18,6 +18,9 @@ Adds support for suffix partial schema name
 for `db.*.*` or `db.schema.*` in spec file.
 
 ### Fixes
+* [#125](https://gitlab.com/gitlab-data/permifrost/-/issues/125)
+Skip generation of write privileges for already-granted <database_or_schema>.* privileges
+
 * [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)
 Remove `information_schema` of fetched schemas in case of partial schema name input
 
