@@ -1276,9 +1276,13 @@ class SnowflakeGrantsGenerator:
             future_database_table = "{database}.<table>".format(database=database_name)
             future_database_view = "{database}.<view>".format(database=database_name)
 
-            table_already_granted = self.is_granted_privilege(
-                role, write_privileges, "table", future_database_table
-            )
+            table_already_granted = True
+            for privilege in write_privileges_array:
+                # If any of the privileges are not granted, set already_granted to False
+                if not self.is_granted_privilege(
+                    role, privilege, "table", future_database_table
+                ):
+                    table_already_granted = False
             write_grant_tables_full.append(future_database_table)
 
             view_already_granted = self.is_granted_privilege(
@@ -1367,13 +1371,13 @@ class SnowflakeGrantsGenerator:
                     write_grant_tables_full.append(future_table)
                     write_grant_views_full.append(future_view)
 
+                    table_already_granted = True
                     for privilege in write_privileges_array:
                         # If any of the privileges are not granted, set already_granted to False
                         if not self.is_granted_privilege(
                             role, privilege, "table", future_table
                         ):
                             table_already_granted = False
-                            break
 
                     # Grant future on all tables
                     sql_commands.append(
