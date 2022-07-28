@@ -1,6 +1,6 @@
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
-
+from pprint import pprint
 from permifrost.logger import GLOBAL_LOGGER as logger
 from permifrost.snowflake_connector import SnowflakeConnector
 
@@ -1378,7 +1378,6 @@ class SnowflakeGrantsGenerator:
                             role, privilege, "table", future_table
                         ):
                             table_already_granted = False
-
                     # Grant future on all tables
                     sql_commands.append(
                         {
@@ -1406,8 +1405,7 @@ class SnowflakeGrantsGenerator:
                             ),
                         }
                     )
-
-                    view_already_granted = not self.is_granted_privilege(
+                    view_already_granted = self.is_granted_privilege(
                         role, "select", "view", future_view
                     )
 
