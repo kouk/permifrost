@@ -6,6 +6,7 @@ import yaml
 from permifrost.error import SpecLoadingError
 from permifrost.spec_schemas.snowflake import (
     SNOWFLAKE_SPEC_DATABASE_SCHEMA,
+    SNOWFLAKE_SPEC_INTEGRATION_SCHEMA,
     SNOWFLAKE_SPEC_ROLE_SCHEMA,
     SNOWFLAKE_SPEC_SCHEMA,
     SNOWFLAKE_SPEC_USER_SCHEMA,
@@ -33,7 +34,6 @@ def ensure_valid_schema(spec: Dict) -> List[str]:
 
         for error in err_msg[0].values():
             error_messages.append(f"Spec error: {entity_type}: {error[0]}")
-
     if error_messages:
         return error_messages
 
@@ -42,6 +42,7 @@ def ensure_valid_schema(spec: Dict) -> List[str]:
         "roles": yaml.safe_load(SNOWFLAKE_SPEC_ROLE_SCHEMA),
         "users": yaml.safe_load(SNOWFLAKE_SPEC_USER_SCHEMA),
         "warehouses": yaml.safe_load(SNOWFLAKE_SPEC_WAREHOUSE_SCHEMA),
+        "integrations": yaml.safe_load(SNOWFLAKE_SPEC_INTEGRATION_SCHEMA),
     }
 
     validators = {
@@ -49,11 +50,18 @@ def ensure_valid_schema(spec: Dict) -> List[str]:
         "roles": cerberus.Validator(schema["roles"]),
         "users": cerberus.Validator(schema["users"]),
         "warehouses": cerberus.Validator(schema["warehouses"]),
+        "integrations": cerberus.Validator(schema["integrations"]),
     }
 
     entities_by_type = []
     for entity_type, entities in spec.items():
-        if entities and entity_type in ["databases", "roles", "users", "warehouses"]:
+        if entities and entity_type in [
+            "databases",
+            "roles",
+            "users",
+            "warehouses",
+            "integrations",
+        ]:
             entities_by_type.append((entity_type, entities))
 
     for entity_type, entities in entities_by_type:

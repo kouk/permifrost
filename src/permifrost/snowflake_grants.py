@@ -408,6 +408,20 @@ class SnowflakeGrantsGenerator:
                     role
                 )
             )
+
+        try:
+            integrations = config["integrations"]
+            new_commands = self.generate_integration_grants(
+                role=role, integrations=integrations
+            )
+            sql_commands.extend(new_commands)
+        except KeyError:
+            logger.debug(
+                "`integrations` not found for role {}, skipping generation of Integrations GRANT statements.".format(
+                    role
+                )
+            )
+
         database_commands = self._generate_database_commands(
             role, config, shared_dbs, spec_dbs
         )
@@ -455,7 +469,6 @@ class SnowflakeGrantsGenerator:
                         ),
                     }
                 )
-
         for priv in ["usage", "operate", "monitor"]:
             for granted_warehouse in (
                 self.grants_to_role.get(role, {}).get(priv, {}).get("warehouse", [])
@@ -474,6 +487,57 @@ class SnowflakeGrantsGenerator:
                             ),
                         }
                     )
+
+        return sql_commands
+
+    def generate_integration_grants(
+        self, role: str, integrations: list
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate the GRANT statements for Integrations usage.
+
+        role: the name of the role the privileges are GRANTed to
+        integrations: list of integrations for the specified role
+
+        Returns the SQL command generated
+        """
+        sql_commands: List[Dict] = []
+
+        for integration in integrations:
+
+            already_granted = self.is_granted_privilege(
+                role, "usage", "integration", integration
+            )
+
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
+                        privileges="usage",
+                        resource_type="integration",
+                        resource_name=SnowflakeConnector.snowflaky(integration),
+                        role=SnowflakeConnector.snowflaky_user_role(role),
+                    ),
+                }
+            )
+        print(self.grants_to_role.get(role, {}).get("usage", {}).get("integration", []))
+        for granted_integration in (
+            self.grants_to_role.get(role, {}).get("usage", {}).get("integration", [])
+        ):
+            if granted_integration not in integrations:
+                sql_commands.append(
+                    {
+                        "already_granted": False,
+                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
+                            privileges="usage",
+                            resource_type="integration",
+                            resource_name=SnowflakeConnector.snowflaky(
+                                granted_integration
+                            ),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
+                        ),
+                    }
+                )
 
         return sql_commands
 
