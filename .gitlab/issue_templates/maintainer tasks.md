@@ -8,3 +8,5 @@ _**Tasks to be completed by maintainers at least weekly.**_
     - [ ] Make sure next steps are clear and assigned
 - [ ] Review [Open MRs](https://gitlab.com/gitlab-data/permifrost/-/merge_requests)
     - [ ] Make sure next steps are clear and assigned
+
+/label ~Housekeeping 
