@@ -30,8 +30,10 @@ class TestSnowflakeConnector:
         db10 = 'DATABASE_1.SCHEMA_1."QUOTED!TABLE%WITH^SPECIAL*CHARACTERS"'
         db11 = "DATABASE_1.SCHEMA_1.TABLE%WITH^SPECIAL*CHARACTERS"
         db12 = "DATABASE_1.SCHEMA_1.Case_Sensitive_Table_Name"
-        db13 = "DATABASE_1.SCHEMA_1.TABLE_1.AMBIGUOUS_IDENTIFIER"
-        db14 = 'DATABASE_1.SCHEMA_1."TABLE_1.AMBIGUOUS_IDENTIFIER"'
+        db13 = "DATABASE_1.SCHEMA_1.<TABLE>"
+        db14 = "DATABASE_1.1_LEADING_DIGIT.<TABLE>"
+        db15 = "DATABASE_1.SCHEMA_1.TABLE_1.AMBIGUOUS_IDENTIFIER"
+        db16 = 'DATABASE_1.SCHEMA_1."TABLE_1.AMBIGUOUS_IDENTIFIER"'
 
         assert SnowflakeConnector.snowflaky(db1) == "analytics.schema.table"
         assert SnowflakeConnector.snowflaky(db2) == '"1234raw".schema.table'
@@ -60,9 +62,15 @@ class TestSnowflakeConnector:
             == 'database_1.schema_1."Case_Sensitive_Table_Name"'
         )
 
+        assert SnowflakeConnector.snowflaky(db13) == "database_1.schema_1.<table>"
+
+        assert (
+            SnowflakeConnector.snowflaky(db14) == 'database_1."1_LEADING_DIGIT".<table>'
+        )
+
         with pytest.warns(SyntaxWarning):
-            SnowflakeConnector.snowflaky(db13)
-            SnowflakeConnector.snowflaky(db14)
+            SnowflakeConnector.snowflaky(db15)
+            SnowflakeConnector.snowflaky(db16)
 
     def test_uses_oauth_if_available(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")
