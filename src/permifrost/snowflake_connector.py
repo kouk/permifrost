@@ -145,9 +145,8 @@ class SnowflakeConnector:
 
         results = self.run_query(query).fetchall()
 
-        schema_identifier = f"{result['database_name']}.{result['name']}"
-
         for result in results:
+            schema_identifier = f"{result['database_name']}.{result['name']}"
             names.append(SnowflakeConnector.snowflaky(schema_identifier))
 
         return names
@@ -164,11 +163,10 @@ class SnowflakeConnector:
 
         results = self.run_query(query).fetchall()
 
-        table_identifier = f"{result['database_name'].lower()}"
-        +f".{result['schema_name'].lower()}"
-        +f".{result['name'].lower()}"
-
         for result in results:
+            table_identifier = (
+                f"{result['database_name']}.{result['schema_name']}.{result['name']}"
+            )
             names.append(SnowflakeConnector.snowflaky(table_identifier))
 
         return names
@@ -185,11 +183,10 @@ class SnowflakeConnector:
 
         results = self.run_query(query).fetchall()
 
-        view_identifier = f"{result['database_name'].lower()}"
-        +f".{result['schema_name'].lower()}"
-        +f".{result['name'].lower()}"
-
         for result in results:
+            view_identifier = (
+                f"{result['database_name']}.{result['schema_name']}.{result['name']}"
+            )
             names.append(SnowflakeConnector.snowflaky(view_identifier))
 
         return names
