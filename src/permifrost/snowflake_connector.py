@@ -1,9 +1,9 @@
 import logging
 import os
 import re
+import warnings
 from typing import Any, Dict, List, Union
 from urllib.parse import quote_plus
-import warnings
 
 import sqlalchemy
 
