@@ -22,11 +22,47 @@ class TestSnowflakeConnector:
         db2 = "1234raw.schema.table"
         db3 = '"123-with-quotes".schema.table'
         db4 = "1_db-9-RANDOM.schema.table"
+        db5 = "DATABASE_1.SCHEMA_1.TABLE_1"
+        db6 = "DATABASE_1.SCHEMA_1.TABLE$A"
+        db7 = 'DATABASE_1.SCHEMA_1."GROUP"'
+        db8 = "DATABASE_1.SCHEMA_1.1_LEADING_DIGIT"
+        db9 = 'DATABASE_1.SCHEMA_1."1_LEADING_DIGIT_IN_QUOTES"'
+        db10 = 'DATABASE_1.SCHEMA_1."QUOTED!TABLE%WITH^SPECIAL*CHARACTERS"'
+        db11 = "DATABASE_1.SCHEMA_1.TABLE%WITH^SPECIAL*CHARACTERS"
+        db12 = "DATABASE_1.SCHEMA_1.Case_Sensitive_Table_Name"
+        db13 = "DATABASE_1.SCHEMA_1.TABLE_1.AMBIGUOUS_IDENTIFIER"
+        db14 = 'DATABASE_1.SCHEMA_1."TABLE_1.AMBIGUOUS_IDENTIFIER"'
 
         assert SnowflakeConnector.snowflaky(db1) == "analytics.schema.table"
-        assert SnowflakeConnector.snowflaky(db2) == "1234raw.schema.table"
+        assert SnowflakeConnector.snowflaky(db2) == '"1234raw".schema.table'
         assert SnowflakeConnector.snowflaky(db3) == '"123-with-quotes".schema.table'
         assert SnowflakeConnector.snowflaky(db4) == '"1_db-9-RANDOM".schema.table'
+        assert SnowflakeConnector.snowflaky(db5) == "database_1.schema_1.table_1"
+        assert SnowflakeConnector.snowflaky(db6) == "database_1.schema_1.table$a"
+        assert SnowflakeConnector.snowflaky(db7) == 'database_1.schema_1."GROUP"'
+        assert (
+            SnowflakeConnector.snowflaky(db8) == 'database_1.schema_1."1_LEADING_DIGIT"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db9)
+            == 'database_1.schema_1."1_LEADING_DIGIT_IN_QUOTES"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db10)
+            == 'database_1.schema_1."QUOTED!TABLE%WITH^SPECIAL*CHARACTERS"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db11)
+            == 'database_1.schema_1."TABLE%WITH^SPECIAL*CHARACTERS"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db12)
+            == 'database_1.schema_1."Case_Sensitive_Table_Name"'
+        )
+
+        with pytest.warns(SyntaxWarning):
+            SnowflakeConnector.snowflaky(db13)
+            SnowflakeConnector.snowflaky(db14)
 
     def test_uses_oauth_if_available(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")
@@ -139,3 +175,78 @@ class TestSnowflakeConnector:
         conn.run_query.assert_has_calls([mocker.call("SHOW ROLES")])
         assert roles["test_role"] == "superadmin"
         assert roles["superadmin"] == "superadmin"
+
+    def test_show_grants_to_role(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": "DATABASE_1.SCHEMA_1.TABLE_1",
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": "DATABASE_1.SCHEMA_1.TABLE_2",
+                },
+            ],
+        )
+
+        grants = conn.show_grants_to_role("test_role")
+
+        conn.run_query.assert_has_calls([mocker.call("SHOW GRANTS TO ROLE test_role")])
+        assert grants == {
+            "select": {
+                "table": ["database_1.schema_1.table_1", "database_1.schema_1.table_2"]
+            }
+        }
+
+    def test_show_grants_to_role_quoted_name(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."GROUP"',
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."INTERSECT"',
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."Capitalized_Name"',
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."123_TABLE"',
+                },
+            ],
+        )
+
+        grants = conn.show_grants_to_role("test_role")
+
+        conn.run_query.assert_has_calls([mocker.call("SHOW GRANTS TO ROLE test_role")])
+        assert grants == {
+            "select": {
+                "table": [
+                    'database_1.schema_1."GROUP"',
+                    'database_1.schema_1."INTERSECT"',
+                    'database_1.schema_1."Capitalized_Name"',
+                    'database_1.schema_1."123_TABLE"',
+                ]
+            }
+        }

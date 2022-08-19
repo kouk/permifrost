@@ -3,6 +3,7 @@ import os
 import re
 from typing import Any, Dict, List, Union
 from urllib.parse import quote_plus
+import warnings
 
 import sqlalchemy
 
@@ -232,7 +233,7 @@ class SnowflakeConnector:
             granted_on = result["granted_on"].lower()
 
             grants.setdefault(privilege, {}).setdefault(granted_on, []).append(
-                result["name"].lower()
+                SnowflakeConnector.snowflaky(result["name"])
             )
 
         return grants
@@ -362,16 +363,32 @@ class SnowflakeConnector:
         Permission granted to use snowflaky as a verb.
         """
         name_parts = name.split(".")
+
+        # We do not currently support identifiers that include periods (i.e. db_1.schema_1."table.with.period")
+        if len(name_parts) > 3:
+            warnings.warn(
+                f"Unsupported object identifier: {name} contains addition periods within identifier.",
+                SyntaxWarning,
+            )
+
         new_name_parts = []
 
         for part in name_parts:
-            if (
-                re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
-                and re.match('^".*"$', part) is None  # Already quoted
+
+            # If already quoted, return as-is
+            if re.match('^".*"$', part) is not None:
+                new_name_parts.append(part)
+
+            # Else if meets requirements for delimited identifiers (but not already double-quoted), add double-quotes
+            elif (
+                re.match("^[a-z_][0-9a-z_$]*$", part) is None
+                and re.match("^[A-Z_][0-9A-Z_$]*$", part) is None
             ):
                 new_name_parts.append(f'"{part}"')
+
+            # Else identifier is unquoted/case-insensitive, return in lowercase
             else:
-                new_name_parts.append(part)
+                new_name_parts.append(part.lower())
 
         return ".".join(new_name_parts)
 
