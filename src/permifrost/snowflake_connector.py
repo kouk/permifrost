@@ -383,7 +383,8 @@ class SnowflakeConnector:
             if re.match('^".*"$', part) is not None:
                 new_name_parts.append(part)
 
-            # Else if meets requirements for delimited identifiers (but not already double-quoted), add double-quotes
+            # If does not meet requirements for unquoted object identifiers, add double-quotes
+            # See https://docs.snowflake.com/en/sql-reference/identifiers-syntax.html for what those requirements are
             elif (
                 re.match("^[a-z_][0-9a-z_$]*$", part) is None
                 and re.match("^[A-Z_][0-9A-Z_$]*$", part) is None
@@ -391,7 +392,7 @@ class SnowflakeConnector:
             ):
                 new_name_parts.append(f'"{part}"')
 
-            # Else identifier is unquoted/case-insensitive, return in lowercase
+            # Otherwise assume valid unquoted, case-insensitive object identifier and return in lowercase
             else:
                 new_name_parts.append(part.lower())
 
