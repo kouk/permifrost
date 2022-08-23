@@ -598,6 +598,7 @@ class TestSnowflakeSpecLoader:
             .build()
         )
         method = "show_tables"
+<<<<<<< HEAD
         return_value = ["database_1.schema_1.tableone"]
         expected_error = "Missing Entity Error: Table/View database_1.schema_1.TableOne"
         return [spec_file_data, method, return_value, expected_error]
@@ -641,6 +642,11 @@ class TestSnowflakeSpecLoader:
         return_value = ["database_1.schema_1.tableone"]
         expected_error = ""
         return [spec_file_data, method, return_value, expected_error]
+=======
+        return_value = ["database_1.schema_1.TableOne"]
+
+        return [spec_file_data, method, return_value]
+>>>>>>> bbffb880 (PascalCase specloader test)
 
     @pytest.mark.parametrize(
         "config",
@@ -657,10 +663,18 @@ class TestSnowflakeSpecLoader:
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
         mocker.patch.object(mock_connector, method, return_value=return_value)
+<<<<<<< HEAD
         with pytest.raises(SpecLoadingError) as context:
             SnowflakeSpecLoader("", mock_connector)
 
         assert expected_error in str(context.value)
+=======
+        mocker.patch(
+            "permifrost.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
+            return_value=return_value,
+        )
+        SnowflakeSpecLoader("", mock_connector)
+>>>>>>> bbffb880 (PascalCase specloader test)
 
     def test_remove_duplicate_queries(self):
 
