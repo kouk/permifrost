@@ -32,8 +32,9 @@ class TestSnowflakeConnector:
         db12 = "DATABASE_1.SCHEMA_1.Case_Sensitive_Table_Name"
         db13 = "DATABASE_1.SCHEMA_1.<TABLE>"
         db14 = "DATABASE_1.1_LEADING_DIGIT.<TABLE>"
-        db15 = "DATABASE_1.SCHEMA_1.TABLE_1.AMBIGUOUS_IDENTIFIER"
-        db16 = 'DATABASE_1.SCHEMA_1."TABLE_1.AMBIGUOUS_IDENTIFIER"'
+        db15 = "DATABASE_1.1_LEADING_DIGIT.<table>"
+        db16 = "DATABASE_1.SCHEMA_1.TABLE_1.AMBIGUOUS_IDENTIFIER"
+        db17 = 'DATABASE_1.SCHEMA_1."TABLE_1.AMBIGUOUS_IDENTIFIER"'
 
         assert SnowflakeConnector.snowflaky(db1) == "analytics.schema.table"
         assert SnowflakeConnector.snowflaky(db2) == '"1234raw".schema.table'
@@ -68,9 +69,13 @@ class TestSnowflakeConnector:
             SnowflakeConnector.snowflaky(db14) == 'database_1."1_LEADING_DIGIT".<table>'
         )
 
+        assert (
+            SnowflakeConnector.snowflaky(db15) == 'database_1."1_LEADING_DIGIT".<table>'
+        )
+
         with pytest.warns(SyntaxWarning):
-            SnowflakeConnector.snowflaky(db15)
             SnowflakeConnector.snowflaky(db16)
+            SnowflakeConnector.snowflaky(db17)
 
     def test_uses_oauth_if_available(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")

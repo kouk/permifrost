@@ -380,12 +380,14 @@ class SnowflakeConnector:
             if re.match('^".*"$', part) is not None:
                 new_name_parts.append(part)
 
+            elif re.match("<(table|view|schema)>", part, re.IGNORECASE) is not None:
+                new_name_parts.append(part.lower())
+
             # If does not meet requirements for unquoted object identifiers, add double-quotes
             # See https://docs.snowflake.com/en/sql-reference/identifiers-syntax.html for what those requirements are
             elif (
                 re.match("^[a-z_][0-9a-z_$]*$", part) is None
                 and re.match("^[A-Z_][0-9A-Z_$]*$", part) is None
-                and part not in ["<TABLE>", "<SCHEMA>", "<VIEW>"]
             ):
                 new_name_parts.append(f'"{part}"')
 
