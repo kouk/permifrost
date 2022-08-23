@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from permifrost.logger import GLOBAL_LOGGER as logger
