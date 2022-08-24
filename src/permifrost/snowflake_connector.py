@@ -380,6 +380,7 @@ class SnowflakeConnector:
             if re.match('^".*"$', part) is not None:
                 new_name_parts.append(part)
 
+            # If a future object, return in lower case - no need to quote
             elif re.match("<(table|view|schema)>", part, re.IGNORECASE) is not None:
                 new_name_parts.append(part.lower())
 
