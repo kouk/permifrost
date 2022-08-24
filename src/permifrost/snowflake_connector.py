@@ -368,7 +368,7 @@ class SnowflakeConnector:
         # We do not currently support identifiers that include periods (i.e. db_1.schema_1."table.with.period")
         if len(name_parts) > 3:
             warnings.warn(
-                f"Unsupported object identifier: {name} contains addition periods within identifier.",
+                f"Unsupported object identifier: {name} contains additional periods within identifier.",
                 SyntaxWarning,
             )
 
