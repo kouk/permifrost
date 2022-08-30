@@ -97,6 +97,22 @@ class SnowflakeSpecLoader:
             )
         return error_messages
 
+    def check_integration_entities(self, conn):
+        error_messages = []
+        if len(self.entities["integrations"]) > 0:
+            integrations = conn.show_integrations()
+            for integration in self.entities["integrations"]:
+                if integration not in integrations:
+                    error_messages.append(
+                        f"Missing Entity Error: Integration {integration} was not found on"
+                        " Snowflake Server. Please create it before continuing."
+                    )
+        else:
+            logger.debug(
+                "`integrations` not found in spec, skipping SHOW INTEGRATIONS call."
+            )
+        return error_messages
+
     def check_database_entities(self, conn):
         error_messages = []
         if len(self.entities["databases"]) > 0:
@@ -187,7 +203,7 @@ class SnowflakeSpecLoader:
         self, conn: SnowflakeConnector = None
     ) -> None:
         """
-        Make sure that all [warehouses, dbs, schemas, tables, users, roles]
+        Make sure that all [warehouses, integrations, dbs, schemas, tables, users, roles]
         referenced in the spec are defined in Snowflake.
 
         Raises a SpecLoadingError with all the errors found while checking
@@ -199,6 +215,7 @@ class SnowflakeSpecLoader:
             conn = SnowflakeConnector()
 
         error_messages.extend(self.check_warehouse_entities(conn))
+        error_messages.extend(self.check_integration_entities(conn))
         error_messages.extend(self.check_database_entities(conn))
         error_messages.extend(self.check_schema_ref_entities(conn))
         error_messages.extend(self.check_table_ref_entities(conn))
@@ -341,12 +358,13 @@ class SnowflakeSpecLoader:
     ) -> List[str]:
         """
         Filter out grants to databases that are not tracked in the configuration file
-        :param grant_on: entity to be granted on. e.g. GRANT SOMETHING ON {DATABASE|ACCOUNT|WAREHOUSE|FILE FORMAT}...
+        :param grant_on: entity to be granted on. e.g. GRANT SOMETHING ON {DATABASE|ACCOUNT|WAREHOUSE|INTEGRATION|FILE FORMAT}...
         :param filter_set: list of strings to filter
         :return: list of strings with entities referring to non-tracked databases removed.
         """
         database_refs = self.entities["database_refs"]
         warehouse_refs = self.entities["warehouse_refs"]
+        integration_refs = self.entities["integration_refs"]
 
         # Databases is the simple case. Just return items that are also in the database_refs list
         if grant_on == "database":
@@ -354,6 +372,9 @@ class SnowflakeSpecLoader:
         # Warehouses are also a simple case.
         elif grant_on == "warehouse":
             return [item for item in filter_set if item in warehouse_refs]
+        # Integrations are also a simple case.
+        elif grant_on == "integration":
+            return [item for item in filter_set if item in integration_refs]
         # Ignore account since currently account grants are not handled
         elif grant_on == "account":
             return filter_set
@@ -402,7 +423,13 @@ class SnowflakeSpecLoader:
         #  SQL command granting that permission
 
         for entity_type, entry in self.spec.items():
-            if entity_type in ["require-owner", "databases", "warehouses", "version"]:
+            if entity_type in [
+                "require-owner",
+                "databases",
+                "warehouses",
+                "integrations",
+                "version",
+            ]:
                 continue
 
             # Generate list of all entities (used for roles currently)

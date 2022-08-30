@@ -34,6 +34,7 @@ class OwnsSchema(TypedDict):
 
 class RoleSchemaBase(TypedDict):
     warehouses: List[str]
+    integrations: List[str]
     member_of: Union[MemberDictType, List[str]]
     privileges: PrivilegeSchema
     owns: OwnsSchema
@@ -60,11 +61,20 @@ class WarehouseSchema(WarehouseSchemaBase, total=False):
     owner: str
 
 
+class IntegrationSchemaBase(TypedDict):
+    category: str
+
+
+class IntegrationSchema(IntegrationSchemaBase, total=False):
+    owner: str
+
+
 class PermifrostSpecSchemaBase(TypedDict):
     databases: List[Dict[str, DatabaseSchema]]
     roles: List[Dict[str, RoleSchema]]
     users: List[Dict[str, UserSchema]]
     warehouses: List[Dict[str, WarehouseSchema]]
+    integrations: List[Dict[str, IntegrationSchema]]
 
 
 class PermifrostSpecSchema(PermifrostSpecSchemaBase, total=False):

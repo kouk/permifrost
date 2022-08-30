@@ -44,6 +44,8 @@ roles:
   - demo:
       warehouses:
         - demo
+      integrations:
+        - demo
       owns:
         schemas:
           - demodb.*
@@ -98,3 +100,7 @@ warehouses:
 
   - demo:
       size: x-small
+
+integrations:
+  - demo:
+      category: storage

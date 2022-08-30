@@ -155,6 +155,9 @@ key. There is optionally an `exclude` key that can be used if `include` is used.
 `"_"`will grant membership to all roles defined in the spec. Any roles defined
 in`exclude`will be removed from the list defined in`include`.
 
+Objects like warehouses and integrations that only have one permifrost permission type just 
+needs to be specified in the role (see below).
+
 A specification file has the following structure:
 
 ```bash
@@ -264,6 +267,16 @@ warehouses:
         size: x-small
     - warehouse_name:
         size: x-small
+        owner: role_name
+    ... ... ...
+
+# Integrations
+# Integration categories are informative and not altered by Permifrost to align with the spec file
+integrations:
+    - integration_name:
+        category: storage
+    - integration_name:
+        category: security
         owner: role_name
     ... ... ...
 ```
