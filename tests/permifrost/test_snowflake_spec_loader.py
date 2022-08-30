@@ -327,23 +327,6 @@ class TestSnowflakeSpecLoader:
 
         return [spec_file_data, method, return_value, expected_error]
 
-    def missing_table_case_one():
-        """
-        Table in spec missing on Snowflake
-        """
-        spec_file_data = (
-            SnowflakeSchemaBuilder()
-            .add_role(owner="user", member_of=["testrole"])
-            .build()
-        )
-        method = "show_roles"
-        return_value = {}
-        expected_error = (
-            "Missing Entity Error: Role testrole was not found on Snowflake Server"
-        )
-
-        return [spec_file_data, method, return_value, expected_error]
-
     @pytest.mark.parametrize(
         "config",
         [
@@ -628,7 +611,7 @@ class TestSnowflakeSpecLoader:
             SnowflakeSchemaBuilder()
             .add_db(name="database_1")
             .add_role(
-                tables=["database_1.schema_1.TableOne"],
+                tables=["database_1.schema_1.tableone"],
                 permission_set=["read", "write"],
                 member_of=["testrole"],
             )
@@ -636,12 +619,32 @@ class TestSnowflakeSpecLoader:
         )
         method = "show_tables"
         return_value = []
-        expected_error = "Missing Entity Error: Table/View database_1.schema_1.TableOne"
+        expected_error = "Missing Entity Error: Table/View database_1.schema_1.tableone"
+        return [spec_file_data, method, return_value, expected_error]
+
+    # non edge case for table entities that do exist
+    def load_spec_file_case_three():
+        """
+        Missing Table from snowflake server
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_db(name="database_1")
+            .add_role(
+                tables=["database_1.schema_1.tableone"],
+                permission_set=["read", "write"],
+                member_of=["testrole"],
+            )
+            .build()
+        )
+        method = "show_tables"
+        return_value = ["database_1.schema_1.tableone"]
+        expected_error = ""
         return [spec_file_data, method, return_value, expected_error]
 
     @pytest.mark.parametrize(
         "config",
-        [load_spec_file_case_one, load_spec_file_case_two],
+        [load_spec_file_case_one, load_spec_file_case_two, load_spec_file_case_three],
     )
     def test_load_spec_with_edge_case_tables(
         self,
