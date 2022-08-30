@@ -105,9 +105,9 @@ class SnowflakeSchemaBuilder:
                 spec_yaml.extend(["      privileges:", "        tables:"])
                 spec_yaml.extend(self._build_tables(role))
                 spec_yaml.extend(["        schemas:"])
-                spec_yaml.extend(self._build_schema_tables(role))
+                spec_yaml.extend(self._build_table_schemas(role))
                 spec_yaml.extend(["        databases:"])
-                spec_yaml.extend(self._build_schema_databases(role))
+                spec_yaml.extend(self._build_table_databases(role))
         return spec_yaml
 
     def _build_tables(self, role):

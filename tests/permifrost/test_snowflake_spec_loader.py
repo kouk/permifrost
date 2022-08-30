@@ -327,6 +327,23 @@ class TestSnowflakeSpecLoader:
 
         return [spec_file_data, method, return_value, expected_error]
 
+    def missing_table_case_one():
+        """
+        Table in spec missing on Snowflake
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_role(owner="user", member_of=["testrole"])
+            .build()
+        )
+        method = "show_roles"
+        return_value = {}
+        expected_error = (
+            "Missing Entity Error: Role testrole was not found on Snowflake Server"
+        )
+
+        return [spec_file_data, method, return_value, expected_error]
+
     @pytest.mark.parametrize(
         "config",
         [
@@ -582,6 +599,7 @@ class TestSnowflakeSpecLoader:
         }
         spec_loader.filter_to_database_refs(grant_on=grant_on, filter_set=filter_set)
 
+    # edge case for PascalCase table entities
     def load_spec_file_case_one():
         """
         Load a table with PascalCase from Snowflake
@@ -597,32 +615,49 @@ class TestSnowflakeSpecLoader:
             .build()
         )
         method = "show_tables"
-        return_value = ["database_1.schema_1.TableOne"]
-        return [spec_file_data, method, return_value]
+        return_value = ["database_1.schema_1.tableone"]
+        expected_error = "Missing Entity Error: Table/View database_1.schema_1.TableOne"
+        return [spec_file_data, method, return_value, expected_error]
 
-    # TODO: Develop functionality for PascalCase object names
+    # edge case for table entities that do not exist
+    def load_spec_file_case_two():
+        """
+        Missing Table from snowflake server
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_db(name="database_1")
+            .add_role(
+                tables=["database_1.schema_1.TableOne"],
+                permission_set=["read", "write"],
+                member_of=["testrole"],
+            )
+            .build()
+        )
+        method = "show_tables"
+        return_value = []
+        expected_error = "Missing Entity Error: Table/View database_1.schema_1.TableOne"
+        return [spec_file_data, method, return_value, expected_error]
+
     @pytest.mark.parametrize(
         "config",
-        [
-            load_spec_file_case_one,
-        ],
+        [load_spec_file_case_one, load_spec_file_case_two],
     )
-    def skip_load_spec_with_edge_case_tables(
+    def test_load_spec_with_edge_case_tables(
         self,
         config,
         mocker,
         mock_connector,
     ):
-        spec_file_data, method, return_value = config()
+        spec_file_data, method, return_value, expected_error = config()
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
         mocker.patch.object(mock_connector, method, return_value=return_value)
-        mocker.patch(
-            "permifrost.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
-            return_value=None,
-        )
-        SnowflakeSpecLoader("", mock_connector)
+        with pytest.raises(SpecLoadingError) as context:
+            SnowflakeSpecLoader("", mock_connector)
+
+        assert expected_error in str(context.value)
 
     def test_remove_duplicate_queries(self):
 
