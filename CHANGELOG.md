@@ -21,6 +21,9 @@ Adds support for integrations
 for `db.*.*` or `db.schema.*` in spec file.
 
 ### Fixes
+* [#126](https://gitlab.com/gitlab-data/permifrost/-/issues/126)
+Validate spec file table entiy per database instead per account
+
 * [#125](https://gitlab.com/gitlab-data/permifrost/-/issues/125)
 Skip generation of write privileges for already-granted <database_or_schema>.* privileges
 
