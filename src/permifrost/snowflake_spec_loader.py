@@ -145,14 +145,19 @@ class SnowflakeSpecLoader:
     def check_table_ref_entities(self, conn):
         error_messages = []
         if len(self.entities["table_refs"]) > 0:
-            tables = conn.show_tables()
             views = conn.show_views()
-            for table in self.entities["table_refs"]:
-                if "*" not in table and table not in tables and table not in views:
-                    error_messages.append(
-                        f"Missing Entity Error: Table/View {table} was not found on"
-                        " Snowflake Server. Please create it before continuing."
-                    )
+            for db, tables in self.entities["tables_by_database"].items():
+                existing_tables = conn.show_tables(database=db)
+                for table in tables:
+                    if (
+                        "*" not in table
+                        and table not in existing_tables
+                        and table not in views
+                    ):
+                        error_messages.append(
+                            f"Missing Entity Error: Table/View {table} was not found on"
+                            " Snowflake Server. Please create it before continuing."
+                        )
         else:
             logger.debug("`tables` not found in spec, skipping SHOW TABLES/VIEWS call.")
         return error_messages

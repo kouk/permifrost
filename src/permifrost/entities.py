@@ -11,6 +11,7 @@ class EntitySchema(TypedDict):
     shared_databases: Set[str]
     schema_refs: Set[str]
     table_refs: Set[str]
+    tables_by_database: Dict
     roles: Set[str]
     role_refs: Set[str]
     users: Set[str]
@@ -30,6 +31,7 @@ class EntityGenerator:
             "shared_databases": set(),
             "schema_refs": set(),
             "table_refs": set(),
+            "tables_by_database": dict(),
             "roles": set(),
             "role_refs": set(),
             "users": set(),
@@ -81,6 +83,16 @@ class EntityGenerator:
             return filtered_entities
         else:
             return filtered_entities[0]
+
+    def group_table_by_database(self):
+        tables_by_database = {}
+        for table in self.entities["table_refs"]:
+            db_name = table.split(".")[0]
+            if db_name not in tables_by_database:
+                tables_by_database[db_name] = [table]
+            else:
+                tables_by_database[db_name].extend(table)
+        self.entities["tables_by_database"] = tables_by_database
 
     @staticmethod
     def group_spec_by_type(spec: PermifrostSpecSchema) -> List[Tuple[str, Any]]:
@@ -151,6 +163,7 @@ class EntityGenerator:
 
         self.generate_implicit_refs_from_schemas()
         self.generate_implicit_refs_from_tables()
+        self.group_table_by_database()
         # Add implicit references to DBs and Schemas.
         #  e.g. RAW.MYSCHEMA.TABLE references also DB RAW and Schema MYSCHEMA
 
