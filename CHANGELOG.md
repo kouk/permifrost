@@ -27,6 +27,9 @@ Validate spec file table entiy per database instead per account
 * [#125](https://gitlab.com/gitlab-data/permifrost/-/issues/125)
 Skip generation of write privileges for already-granted <database_or_schema>.* privileges
 
+* [#119](https://gitlab.com/gitlab-data/permifrost/-/issues/119)
+Fix handling of delimited object identifiers
+
 * [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)
 Remove `information_schema` of fetched schemas in case of partial schema name input
 

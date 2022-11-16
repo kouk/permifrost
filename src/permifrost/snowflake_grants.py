@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from permifrost.logger import GLOBAL_LOGGER as logger
@@ -57,25 +56,19 @@ class SnowflakeGrantsGenerator:
     ) -> bool:
         """
         Check if <role> has been granted the privilege <privilege> on entity type
-        <entity_type> with name <entity_name>. First checks if it is a future grant
-        since snowflaky will format the future grants wrong - i.e. <table> is a part
-        of the fully qualified name for a future table grant.
+        <entity_type> with name <entity_name>.
 
         For example:
         is_granted_privilege('reporter', 'usage', 'database', 'analytics') -> True
         means that role reporter has been granted the privilege to use the
         Database ANALYTICS on the Snowflake server.
         """
-        future = True if re.search(r"<(table|view|schema)>", entity_name) else False
 
         grants = (
             self.grants_to_role.get(role, {}).get(privilege, {}).get(entity_type, [])
         )
 
-        if future and entity_name in grants:
-            return True
-
-        if not future and SnowflakeConnector.snowflaky(entity_name) in grants:
+        if SnowflakeConnector.snowflaky(entity_name) in grants:
             return True
 
         return False

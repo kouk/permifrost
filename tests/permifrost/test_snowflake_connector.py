@@ -22,11 +22,60 @@ class TestSnowflakeConnector:
         db2 = "1234raw.schema.table"
         db3 = '"123-with-quotes".schema.table'
         db4 = "1_db-9-RANDOM.schema.table"
+        db5 = "DATABASE_1.SCHEMA_1.TABLE_1"
+        db6 = "DATABASE_1.SCHEMA_1.TABLE$A"
+        db7 = 'DATABASE_1.SCHEMA_1."GROUP"'
+        db8 = "DATABASE_1.SCHEMA_1.1_LEADING_DIGIT"
+        db9 = 'DATABASE_1.SCHEMA_1."1_LEADING_DIGIT_IN_QUOTES"'
+        db10 = 'DATABASE_1.SCHEMA_1."QUOTED!TABLE%WITH^SPECIAL*CHARACTERS"'
+        db11 = "DATABASE_1.SCHEMA_1.TABLE%WITH^SPECIAL*CHARACTERS"
+        db12 = "DATABASE_1.SCHEMA_1.Case_Sensitive_Table_Name"
+        db13 = "DATABASE_1.SCHEMA_1.<TABLE>"
+        db14 = "DATABASE_1.1_LEADING_DIGIT.<TABLE>"
+        db15 = "DATABASE_1.1_LEADING_DIGIT.<table>"
+        db16 = "DATABASE_1.SCHEMA_1.TABLE_1.AMBIGUOUS_IDENTIFIER"
+        db17 = 'DATABASE_1.SCHEMA_1."TABLE_1.AMBIGUOUS_IDENTIFIER"'
 
         assert SnowflakeConnector.snowflaky(db1) == "analytics.schema.table"
-        assert SnowflakeConnector.snowflaky(db2) == "1234raw.schema.table"
+        assert SnowflakeConnector.snowflaky(db2) == '"1234raw".schema.table'
         assert SnowflakeConnector.snowflaky(db3) == '"123-with-quotes".schema.table'
         assert SnowflakeConnector.snowflaky(db4) == '"1_db-9-RANDOM".schema.table'
+        assert SnowflakeConnector.snowflaky(db5) == "database_1.schema_1.table_1"
+        assert SnowflakeConnector.snowflaky(db6) == "database_1.schema_1.table$a"
+        assert SnowflakeConnector.snowflaky(db7) == 'database_1.schema_1."GROUP"'
+        assert (
+            SnowflakeConnector.snowflaky(db8) == 'database_1.schema_1."1_LEADING_DIGIT"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db9)
+            == 'database_1.schema_1."1_LEADING_DIGIT_IN_QUOTES"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db10)
+            == 'database_1.schema_1."QUOTED!TABLE%WITH^SPECIAL*CHARACTERS"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db11)
+            == 'database_1.schema_1."TABLE%WITH^SPECIAL*CHARACTERS"'
+        )
+        assert (
+            SnowflakeConnector.snowflaky(db12)
+            == 'database_1.schema_1."Case_Sensitive_Table_Name"'
+        )
+
+        assert SnowflakeConnector.snowflaky(db13) == "database_1.schema_1.<table>"
+
+        assert (
+            SnowflakeConnector.snowflaky(db14) == 'database_1."1_LEADING_DIGIT".<table>'
+        )
+
+        assert (
+            SnowflakeConnector.snowflaky(db15) == 'database_1."1_LEADING_DIGIT".<table>'
+        )
+
+        with pytest.warns(SyntaxWarning):
+            SnowflakeConnector.snowflaky(db16)
+            SnowflakeConnector.snowflaky(db17)
 
     def test_uses_oauth_if_available(self, mocker, snowflake_connector_env):
         mocker.patch("sqlalchemy.create_engine")
@@ -121,6 +170,228 @@ class TestSnowflakeConnector:
         conn.run_query.assert_has_calls([mocker.call("SELECT CURRENT_ROLE() AS ROLE")])
         assert role == "test_role"
 
+    def test_show_schemas(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {"database_name": "DATABASE_1", "name": "SCHEMA_1"},
+                {"database_name": "DATABASE_1", "name": "45_SCHEMA"},
+                {"database_name": "DATABASE_1", "name": "CaseSensitiveSchema"},
+            ],
+        )
+
+        schemas = conn.show_schemas("database_1")
+
+        conn.run_query.assert_has_calls(
+            [mocker.call("SHOW TERSE SCHEMAS IN DATABASE database_1")]
+        )
+        assert schemas == [
+            "database_1.schema_1",
+            'database_1."45_SCHEMA"',
+            'database_1."CaseSensitiveSchema"',
+        ]
+
+    def test_show_tables(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "database_name": "DATABASE_1",
+                    "schema_name": "SCHEMA_1",
+                    "name": "TABLE_1",
+                },
+                {
+                    "database_name": "DATABASE_1",
+                    "schema_name": "SCHEMA_1",
+                    "name": "45_TABLE",
+                },
+                {
+                    "database_name": "DATABASE_1",
+                    "schema_name": "SCHEMA_1",
+                    "name": "CaseSensitiveTable",
+                },
+            ],
+        )
+
+        schemas = conn.show_tables("database_1", "schema_1")
+
+        conn.run_query.assert_has_calls(
+            [mocker.call("SHOW TERSE TABLES IN SCHEMA schema_1")]
+        )
+        assert schemas == [
+            "database_1.schema_1.table_1",
+            'database_1.schema_1."45_TABLE"',
+            'database_1.schema_1."CaseSensitiveTable"',
+        ]
+
+    def test_show_views(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "database_name": "DATABASE_1",
+                    "schema_name": "SCHEMA_1",
+                    "name": "VIEW_1",
+                },
+                {
+                    "database_name": "DATABASE_1",
+                    "schema_name": "SCHEMA_1",
+                    "name": "45_VIEW",
+                },
+                {
+                    "database_name": "DATABASE_1",
+                    "schema_name": "SCHEMA_1",
+                    "name": "CaseSensitiveView",
+                },
+            ],
+        )
+
+        schemas = conn.show_views("database_1", "schema_1")
+
+        conn.run_query.assert_has_calls(
+            [mocker.call("SHOW TERSE VIEWS IN SCHEMA schema_1")]
+        )
+        assert schemas == [
+            "database_1.schema_1.view_1",
+            'database_1.schema_1."45_VIEW"',
+            'database_1.schema_1."CaseSensitiveView"',
+        ]
+
+    def test_show_future_grants_in_schema(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "grant_to": "ROLE",
+                    "grantee_name": "ROLE_1",
+                    "privilege": "SELECT",
+                    "grant_on": "TABLE",
+                    "name": "DATABASE_1.SCHEMA_1.<TABLE>",
+                },
+                {
+                    "grant_to": "ROLE",
+                    "grantee_name": "ROLE_1",
+                    "privilege": "SELECT",
+                    "grant_on": "VIEW",
+                    "name": "DATABASE_1.SCHEMA_1.<VIEW>",
+                },
+            ],
+        )
+
+        future_grants = conn.show_future_grants("database_1", "database_1.schema_1")
+
+        conn.run_query.assert_has_calls(
+            [mocker.call("SHOW FUTURE GRANTS IN SCHEMA database_1.schema_1")]
+        )
+        assert future_grants == {
+            "role_1": {
+                "select": {
+                    "table": ["database_1.schema_1.<table>"],
+                    "view": ["database_1.schema_1.<view>"],
+                }
+            }
+        }
+
+    def test_show_future_grants_in_schema_case_sensitive(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "grant_to": "ROLE",
+                    "grantee_name": "ROLE_1",
+                    "privilege": "SELECT",
+                    "grant_on": "TABLE",
+                    "name": 'DATABASE_1."CaseSensitiveSchema".<TABLE>',
+                },
+                {
+                    "grant_to": "ROLE",
+                    "grantee_name": "ROLE_1",
+                    "privilege": "SELECT",
+                    "grant_on": "VIEW",
+                    "name": 'DATABASE_1."CaseSensitiveSchema".<VIEW>',
+                },
+            ],
+        )
+
+        future_grants = conn.show_future_grants(
+            "database_1", 'database_1."CaseSensitiveSchema"'
+        )
+
+        conn.run_query.assert_has_calls(
+            [
+                mocker.call(
+                    'SHOW FUTURE GRANTS IN SCHEMA database_1."CaseSensitiveSchema"'
+                )
+            ]
+        )
+        assert future_grants == {
+            "role_1": {
+                "select": {
+                    "table": ['database_1."CaseSensitiveSchema".<table>'],
+                    "view": ['database_1."CaseSensitiveSchema".<view>'],
+                }
+            }
+        }
+
+    def test_show_future_grants_in_database(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "grant_to": "ROLE",
+                    "grantee_name": "ROLE_1",
+                    "privilege": "SELECT",
+                    "grant_on": "TABLE",
+                    "name": "DATABASE_1.<TABLE>",
+                },
+                {
+                    "grant_to": "ROLE",
+                    "grantee_name": "ROLE_1",
+                    "privilege": "SELECT",
+                    "grant_on": "VIEW",
+                    "name": "DATABASE_1.<VIEW>",
+                },
+            ],
+        )
+
+        future_grants = conn.show_future_grants("database_1")
+
+        conn.run_query.assert_has_calls(
+            [mocker.call("SHOW FUTURE GRANTS IN DATABASE database_1")]
+        )
+        assert future_grants == {
+            "role_1": {
+                "select": {
+                    "table": ["database_1.<table>"],
+                    "view": ["database_1.<view>"],
+                }
+            }
+        }
+
     def test_show_roles(self, mocker):
         mocker.patch("sqlalchemy.create_engine")
         conn = SnowflakeConnector()
@@ -139,3 +410,78 @@ class TestSnowflakeConnector:
         conn.run_query.assert_has_calls([mocker.call("SHOW ROLES")])
         assert roles["test_role"] == "superadmin"
         assert roles["superadmin"] == "superadmin"
+
+    def test_show_grants_to_role(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": "DATABASE_1.SCHEMA_1.TABLE_1",
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": "DATABASE_1.SCHEMA_1.TABLE_2",
+                },
+            ],
+        )
+
+        grants = conn.show_grants_to_role("test_role")
+
+        conn.run_query.assert_has_calls([mocker.call("SHOW GRANTS TO ROLE test_role")])
+        assert grants == {
+            "select": {
+                "table": ["database_1.schema_1.table_1", "database_1.schema_1.table_2"]
+            }
+        }
+
+    def test_show_grants_to_role_quoted_name(self, mocker):
+        mocker.patch("sqlalchemy.create_engine")
+        conn = SnowflakeConnector()
+        conn.run_query = mocker.MagicMock()
+        mocker.patch.object(
+            conn.run_query(),
+            "fetchall",
+            return_value=[
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."GROUP"',
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."INTERSECT"',
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."Capitalized_Name"',
+                },
+                {
+                    "privilege": "SELECT",
+                    "granted_on": "TABLE",
+                    "name": 'DATABASE_1.SCHEMA_1."123_TABLE"',
+                },
+            ],
+        )
+
+        grants = conn.show_grants_to_role("test_role")
+
+        conn.run_query.assert_has_calls([mocker.call("SHOW GRANTS TO ROLE test_role")])
+        assert grants == {
+            "select": {
+                "table": [
+                    'database_1.schema_1."GROUP"',
+                    'database_1.schema_1."INTERSECT"',
+                    'database_1.schema_1."Capitalized_Name"',
+                    'database_1.schema_1."123_TABLE"',
+                ]
+            }
+        }

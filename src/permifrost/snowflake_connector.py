@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import warnings
 from typing import Any, Dict, List, Union
 from urllib.parse import quote_plus
 
@@ -145,7 +146,8 @@ class SnowflakeConnector:
         results = self.run_query(query).fetchall()
 
         for result in results:
-            names.append(f"{result['database_name'].lower()}.{result['name'].lower()}")
+            schema_identifier = f"{result['database_name']}.{result['name']}"
+            names.append(SnowflakeConnector.snowflaky(schema_identifier))
 
         return names
 
@@ -160,12 +162,12 @@ class SnowflakeConnector:
             query = "SHOW TERSE TABLES IN ACCOUNT"
 
         results = self.run_query(query).fetchall()
+
         for result in results:
-            names.append(
-                f"{result['database_name'].lower()}"
-                + f".{result['schema_name'].lower()}"
-                + f".{result['name'].lower()}"
+            table_identifier = (
+                f"{result['database_name']}.{result['schema_name']}.{result['name']}"
             )
+            names.append(SnowflakeConnector.snowflaky(table_identifier))
 
         return names
 
@@ -180,12 +182,12 @@ class SnowflakeConnector:
             query = "SHOW TERSE VIEWS IN ACCOUNT"
 
         results = self.run_query(query).fetchall()
+
         for result in results:
-            names.append(
-                f"{result['database_name'].lower()}"
-                + f".{result['schema_name'].lower()}"
-                + f".{result['name'].lower()}"
+            view_identifier = (
+                f"{result['database_name']}.{result['schema_name']}.{result['name']}"
             )
+            names.append(SnowflakeConnector.snowflaky(view_identifier))
 
         return names
 
@@ -211,7 +213,7 @@ class SnowflakeConnector:
 
                 future_grants.setdefault(role, {}).setdefault(privilege, {}).setdefault(
                     granted_on, []
-                ).append(result["name"].lower())
+                ).append(SnowflakeConnector.snowflaky(result["name"]))
 
             else:
                 continue
@@ -232,7 +234,7 @@ class SnowflakeConnector:
             granted_on = result["granted_on"].lower()
 
             grants.setdefault(privilege, {}).setdefault(granted_on, []).append(
-                result["name"].lower()
+                SnowflakeConnector.snowflaky(result["name"])
             )
 
         return grants
@@ -247,7 +249,7 @@ class SnowflakeConnector:
             privilege = result["privilege"].lower()
             granted_on = result["granted_on"].lower()
             grant_option = result["grant_option"].lower() == "true"
-            name = result["name"].lower()
+            name = SnowflakeConnector.snowflaky(result["name"])
 
             grants.setdefault(privilege, {}).setdefault(granted_on, {}).setdefault(
                 name, {}
@@ -362,16 +364,37 @@ class SnowflakeConnector:
         Permission granted to use snowflaky as a verb.
         """
         name_parts = name.split(".")
+
+        # We do not currently support identifiers that include periods (i.e. db_1.schema_1."table.with.period")
+        if len(name_parts) > 3:
+            warnings.warn(
+                f"Unsupported object identifier: {name} contains additional periods within identifier.",
+                SyntaxWarning,
+            )
+
         new_name_parts = []
 
         for part in name_parts:
-            if (
-                re.match("^[0-9a-zA-Z_]*$", part) is None  # Proper formatting
-                and re.match('^".*"$', part) is None  # Already quoted
+
+            # If already quoted, return as-is
+            if re.match('^".*"$', part) is not None:
+                new_name_parts.append(part)
+
+            # If a future object, return in lower case - no need to quote
+            elif re.match("<(table|view|schema)>", part, re.IGNORECASE) is not None:
+                new_name_parts.append(part.lower())
+
+            # If does not meet requirements for unquoted object identifiers, add double-quotes
+            # See https://docs.snowflake.com/en/sql-reference/identifiers-syntax.html for what those requirements are
+            elif (
+                re.match("^[a-z_][0-9a-z_$]*$", part) is None
+                and re.match("^[A-Z_][0-9A-Z_$]*$", part) is None
             ):
                 new_name_parts.append(f'"{part}"')
+
+            # Otherwise assume valid unquoted, case-insensitive object identifier and return in lowercase
             else:
-                new_name_parts.append(part)
+                new_name_parts.append(part.lower())
 
         return ".".join(new_name_parts)
 
