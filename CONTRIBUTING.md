@@ -58,6 +58,15 @@ for testing purposes, you can sign up for a demo Snowflake account for 30 days.
 Maintainers of this project also have access to a Snowflake testing account,
 contact the maintainers if you require access to it as well.
 
+Current project maintainers:
+
+| maintainer      | rotation |
+|-----------------|----------|
+| @rbacovic       | week 1   |
+| @jjstark        | week 2   |
+| @paul_armstrong | week 3   |
+| @blake-enyart   | week 4   |
+
 ### Design of Permifrost
 
 Permifrost is not perfect and there are many things that can be improved. We'd
