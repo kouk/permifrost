@@ -93,7 +93,7 @@ that make it easier for us to track down the cause of the bug.
 ### Suggesting Features
 
 Likewise, you can submit requests for enhancements and features by creating an
-issue and selecting the Feature Request template.
+issue and selecting the Feature Request template. You can also create issues by emailing `permifrost@gitlab.com`, though without a GitLab account you wont be notified of any updates.
 
 ### Code Contributions
 
