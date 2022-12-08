@@ -91,7 +91,7 @@ class EntityGenerator:
             if db_name not in tables_by_database:
                 tables_by_database[db_name] = [table]
             else:
-                tables_by_database[db_name].extend(table)
+                tables_by_database[db_name].append(table)
         self.entities["tables_by_database"] = tables_by_database
 
     @staticmethod
