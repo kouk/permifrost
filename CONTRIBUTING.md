@@ -58,6 +58,15 @@ for testing purposes, you can sign up for a demo Snowflake account for 30 days.
 Maintainers of this project also have access to a Snowflake testing account,
 contact the maintainers if you require access to it as well.
 
+Current project maintainers:
+
+| maintainer      | rotation |
+|-----------------|----------|
+| @rbacovic       | week 1   |
+| @jjstark        | week 2   |
+| @paul_armstrong | week 3   |
+| @blake-enyart   | week 4   |
+
 ### Design of Permifrost
 
 Permifrost is not perfect and there are many things that can be improved. We'd
@@ -84,7 +93,7 @@ that make it easier for us to track down the cause of the bug.
 ### Suggesting Features
 
 Likewise, you can submit requests for enhancements and features by creating an
-issue and selecting the Feature Request template.
+issue and selecting the Feature Request template. You can also create issues by emailing `permifrost@gitlab.com`, though without a GitLab account you wont be notified of any updates.
 
 ### Code Contributions
 
