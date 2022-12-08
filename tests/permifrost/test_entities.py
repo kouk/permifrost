@@ -79,13 +79,13 @@ class TestEntityGenerator:
         snowflake_spec_reference_roles.yml spec
         """
         expected = {
-            "demodb6": ["demodb6.demo_schema.demo_table"],
-            "demodb": ["demodb.*.*"],
-            "demodb5": [
-                "demodb5.demo_schema.demo_table",
+            "demodb6": {"demodb6.demo_schema.demo_table"},
+            "demodb": {"demodb.*.*"},
+            "demodb5": {
                 "demodb5.demo_schema.demo_table_2",
-            ],
-            "demodb2": ["demodb2.*.*"],
+                "demodb5.demo_schema.demo_table",
+            },
+            "demodb2": {"demodb2.*.*"},
         }
         assert entities["tables_by_database"] == expected
 
