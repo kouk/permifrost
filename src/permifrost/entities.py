@@ -88,10 +88,10 @@ class EntityGenerator:
         tables_by_database = {}
         for table in self.entities["table_refs"]:
             db_name = table.split(".")[0]
-            if db_name not in tables_by_database:
-                tables_by_database[db_name] = [table]
+            if db_name not in tables_by_database.keys():
+                tables_by_database[db_name] = {table}
             else:
-                tables_by_database[db_name].extend(table)
+                tables_by_database[db_name].add(table)
         self.entities["tables_by_database"] = tables_by_database
 
     @staticmethod
