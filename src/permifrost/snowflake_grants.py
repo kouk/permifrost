@@ -1350,7 +1350,7 @@ class SnowflakeGrantsGenerator:
             write_grant_tables_full.append(future_database_table)
 
             view_already_granted = self.is_granted_privilege(
-                role, write_privileges, "view", future_database_view
+                role, "select", "view", future_database_view
             )
             write_grant_views_full.append(future_database_view)
 
