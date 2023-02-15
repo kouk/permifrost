@@ -33,7 +33,7 @@ Usage: permifrost run [OPTIONS] SPEC
 
 Options:
   --dry        Do not actually run, just check.
-  --diff       Show full diff, both new and existing permissions.
+  --diff       Show full diff, both new and existing permissions, use with -v.
   --role TEXT  Run grants for specific roles. Usage: --role testrole --role
                testrole2.
 
@@ -124,12 +124,27 @@ functions, file formats, pipes, tasks, streams and procedures on that schema
 (as the owner, you should be able to manage those objects without further
 permissions).
 
+Please find below the links between Permifrost permissions and Snowflake grants.
+
+| Objects   | Permifrost permissions | Snowflake grants                                                                                                    |
+|-----------|------------------------|---------------------------------------------------------------------------------------------------------------------|
+| Databases | read                   | usage                                                                                                               |
+|           | write                  | monitor, create schema                                                                                              |
+| Schemas   | read                   | usage                                                                                                               |
+|           | write                  | monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe |
+| Table     | read                   | select                                                                                                              |
+|           | write                  | insert, update, delete, truncate, references                                                                        |
+
+
+Tables and views are listed under `tables` and handled properly behind the
+scenes.
+
 If `*` is provided as the parameter for tables the grant statement will use the
 `ALL <object_type>s in SCHEMA` syntax. It will also grant to future tables and
-views. See Snowflake documenation for [`ON
+views. See Snowflake documentation for [`ON
 FUTURE`](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html#optional-parameters)
 
-If a schema name includes an asterisk, such as `snowplow_*`, then all schemas
+If a schema name includes an asterisk (prefix or suffix), such as `snowplow_*` or `*_snowplow`, then all schemas
 that match this pattern will be included in the grant statement _unless it is
 for ownership_, in which case the asterisk is not supported. This can be coupled
 with the asterisk for table grants to grant permissions on all tables in all
@@ -146,6 +161,9 @@ Roles can accept "_" as a role name either alone or nested under the `include`
 key. There is optionally an `exclude` key that can be used if `include` is used.
 `"_"`will grant membership to all roles defined in the spec. Any roles defined
 in`exclude`will be removed from the list defined in`include`.
+
+Objects like warehouses and integrations that only have one permifrost permission type just
+needs to be specified in the role (see below).
 
 A specification file has the following structure:
 
@@ -195,23 +213,28 @@ roles:
                     - database_name.*
                     - database_name.schema_name
                     - database_name.schema_partial_*
+                    - database_name.*_schema_partial
+
                     ...
                 write:
                     - database_name.*
                     - database_name.schema_name
                     - database_name.schema_partial_*
+                    - database_name.*_schema_partial
                     ...
             tables:
                 read:
                     - database_name.*.*
                     - database_name.schema_name.*
                     - database_name.schema_partial_*.*
+                    - database_name.*_schema_partial.*
                     - database_name.schema_name.table_name
                     ...
                 write:
                     - database_name.*.*
                     - database_name.schema_name.*
                     - database_name.schema_partial_*.*
+                    - database_name.*_schema_partial.*
                     - database_name.schema_name.table_name
                     ...
 
@@ -245,6 +268,7 @@ users:
     ... ... ...
 
 # Warehouses
+# Warehouse sizes are informative and not altered by Permifrost to align with the spec file
 warehouses:
     - warehouse_name:
         size: x-small
@@ -252,11 +276,23 @@ warehouses:
         size: x-small
         owner: role_name
     ... ... ...
+
+# Integrations
+# Integration categories are informative and not altered by Permifrost to align with the spec file
+integrations:
+    - integration_name:
+        category: storage
+    - integration_name:
+        category: security
+        owner: role_name
+    ... ... ...
 ```
 
 For a working example, you can check [the Snowflake specification
 file](https://gitlab.com/gitlab-data/permifrost/blob/master/tests/permifrost/specs/snowflake_spec.yml)
 that we are using for testing `permifrost permissions`.
+
+Note: The spec file must all be in lowercase.
 
 ### Settings
 

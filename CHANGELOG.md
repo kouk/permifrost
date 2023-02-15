@@ -11,10 +11,34 @@ Changelog](http://keepachangelog.com/).
 Adds CREATE permissions on a schema for tasks, procedures and streams.
 
 ### New
+* [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)
+Adds support for suffix partial schema name
+
+* [#116](https://gitlab.com/gitlab-data/permifrost/-/issues/116)
+Adds support for integrations
 
 ### Changes
+[#112](https://gitlab.com/gitlab-data/permifrost/-/issues/112)  Add support for 'grant select on all tables in db/schema'
+for `db.*.*` or `db.schema.*` in spec file.
 
 ### Fixes
+* [#126](https://gitlab.com/gitlab-data/permifrost/-/issues/126)
+Fix bug in spec validation / missing entity checks
+
+* [#126](https://gitlab.com/gitlab-data/permifrost/-/issues/120)
+Validate spec file table entity per database instead per account
+
+* [#125](https://gitlab.com/gitlab-data/permifrost/-/issues/125)
+Skip generation of write privileges for already-granted <database_or_schema>.* privileges
+
+* [#119](https://gitlab.com/gitlab-data/permifrost/-/issues/119)
+Fix handling of delimited object identifiers
+
+* [#117](https://gitlab.com/gitlab-data/permifrost/-/issues/117)
+Remove `information_schema` of fetched schemas in case of partial schema name input
+
+* [#112](https://gitlab.com/gitlab-data/permifrost/-/issues/122)
+Explicitly mention the spec file must be lowercase
 
 ### Breaks
 

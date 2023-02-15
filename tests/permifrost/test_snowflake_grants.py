@@ -41,6 +41,7 @@ def test_role_config():
     config = {
         "functional_role": {
             "warehouses": ["warehouse_2", "warehouse_3"],
+            "integrations": ["integration_2", "integration_3"],
             "member_of": ["object_role_2", "object_role_3"],
             "owns": {
                 "databases": ["database_2", "database_3"],
@@ -62,6 +63,7 @@ def test_role_config():
         },
         "role_without_member_of": {
             "warehouses": ["warehouse_2", "warehouse_3"],
+            "integrations": ["integration_2", "integration_3"],
             "privileges": {
                 "databases": {
                     "read": ["database_2", "shared_database_2"],
@@ -101,6 +103,7 @@ def test_grants_to_role():
                 "database": ["database_1", "database_2", "shared_database_1"],
                 "role": ["object_role_1", "object_role_2"],
                 "warehouse": ["warehouse_1", "warehouse_2"],
+                "integration": ["integration_1", "integration_2"],
             },
             "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
             "monitor": {
@@ -114,10 +117,30 @@ def test_grants_to_role():
                 "database": ["database_1", "database_2", "shared_database_1"],
                 "role": ["object_role_1", "object_role_2"],
                 "warehouse": ["warehouse_1", "warehouse_2"],
+                "integration": ["integration_1", "integration_2"],
             },
             "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
             "monitor": {"database": ["database_1", "database_2"]},
             "create schema": {"database": ["database_1", "database_2"]},
+        },
+        "role_with_future_grants": {
+            "usage": {
+                "database": ["database_1", "database_2", "shared_database_1"],
+                "role": ["object_role_1", "object_role_2"],
+                "warehouse": ["warehouse_1", "warehouse_2"],
+            },
+            "operate": {"warehouse": ["warehouse_1", "warehouse_2"]},
+            "monitor": {"database": ["database_1", "database_2"]},
+            "create schema": {"database": ["database_1", "database_2"]},
+            "select": {
+                "table": ["database_1.schema_1.<table>"],
+                "view": ["database_1.schema_1.<view>"],
+            },
+            "insert": {"table": ["database_1.schema_1.<table>"]},
+            "update": {"table": ["database_1.schema_1.<table>"]},
+            "delete": {"table": ["database_1.schema_1.<table>"]},
+            "truncate": {"table": ["database_1.schema_1.<table>"]},
+            "references": {"table": ["database_1.schema_1.<table>"]},
         },
     }
 
@@ -191,6 +214,41 @@ class TestSnowflakeGrants:
         assert (
             "revoke monitor on warehouse warehouse_1 from role functional_role"
             in warehouse_lower_list
+        )
+
+    @pytest.mark.parametrize("ignore_memberships", [True, False])
+    def test_generate_integration_grants(
+        self,
+        test_grants_to_role,
+        test_roles_granted_to_user,
+        test_role_config,
+        ignore_memberships,
+    ):
+        generator = SnowflakeGrantsGenerator(
+            test_grants_to_role,
+            test_roles_granted_to_user,
+            ignore_memberships=ignore_memberships,
+        )
+
+        integration_command_list = generator.generate_integration_grants(
+            "functional_role", test_role_config["functional_role"]["integrations"]
+        )
+
+        integration_lower_list = [
+            cmd.get("sql", "").lower() for cmd in integration_command_list
+        ]
+
+        assert (
+            "grant usage on integration integration_2 to role functional_role"
+            in integration_lower_list
+        )
+        assert (
+            "grant usage on integration integration_3 to role functional_role"
+            in integration_lower_list
+        )
+        assert (
+            "revoke usage on integration integration_1 from role functional_role"
+            in integration_lower_list
         )
 
 
@@ -585,11 +643,13 @@ class TestGenerateTableAndViewGrants:
             "write": [],
         }
 
+        role = "functional_role"
+
         expected = [
             "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role"
         ]
 
-        return [mock_connector, config, expected]
+        return [mock_connector, config, role, expected]
 
     def single_table_w_config(mocker):
         """
@@ -610,12 +670,14 @@ class TestGenerateTableAndViewGrants:
             "write": ["database_1.schema_1.table_1"],
         }
 
+        role = "functional_role"
+
         # TODO: Enable the ability to provide writes without reads
         expected = [
             "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role"
         ]
 
-        return [mock_connector, config, expected]
+        return [mock_connector, config, role, expected]
 
     def single_table_rw_config(mocker):
         """
@@ -634,12 +696,14 @@ class TestGenerateTableAndViewGrants:
             "write": ["database_1.schema_1.table_1"],
         }
 
+        role = "functional_role"
+
         expected = [
             "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
         ]
 
-        return [MockSnowflakeConnector, config, expected]
+        return [MockSnowflakeConnector, config, role, expected]
 
     def single_table_rw_shared_db_config(mocker):
         """
@@ -657,8 +721,10 @@ class TestGenerateTableAndViewGrants:
             "write": ["shared_database_1.public.table_1"],
         }
 
+        role = "functional_role"
+
         expected = []
-        return [MockSnowflakeConnector, config, expected]
+        return [MockSnowflakeConnector, config, role, expected]
 
     def future_tables_r_single_schema_config(mocker):
         """
@@ -679,14 +745,16 @@ class TestGenerateTableAndViewGrants:
             "write": [],
         }
 
+        role = "functional_role"
+
         expected = [
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
-        return [MockSnowflakeConnector, config, expected]
+        return [MockSnowflakeConnector, config, role, expected]
 
     def future_tables_w_single_schema_config(mocker):
         """
@@ -707,14 +775,16 @@ class TestGenerateTableAndViewGrants:
             ],
         }
 
+        role = "functional_role"
+
         expected = [
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
-        return [MockSnowflakeConnector, config, expected]
+        return [MockSnowflakeConnector, config, role, expected]
 
     def future_tables_rw_single_schema_config(mocker):
         """
@@ -737,18 +807,20 @@ class TestGenerateTableAndViewGrants:
             ],
         }
 
+        role = "functional_role"
+
         expected = [
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
-        return [MockSnowflakeConnector, config, expected]
+        return [MockSnowflakeConnector, config, role, expected]
 
     def future_tables_views_rw_config(mocker):
         """
@@ -767,24 +839,28 @@ class TestGenerateTableAndViewGrants:
         )
 
         config = {
-            "read": ["database_1.schema_1.*"],
-            "write": ["database_1.schema_1.*"],
+            "read": [
+                "database_1.schema_1.*",
+            ],
+            "write": [
+                "database_1.schema_1.*",
+            ],
         }
 
+        role = "functional_role"
+
         expected = [
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
         ]
 
-        return [MockSnowflakeConnector, config, expected]
+        return [MockSnowflakeConnector, config, role, expected]
 
     def future_schemas_tables_views_config(mocker):
         """
@@ -824,38 +900,36 @@ class TestGenerateTableAndViewGrants:
             ],
         }
 
+        role = "functional_role"
+
         expected = [
+            "GRANT select ON ALL tables IN database database_1 TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database database_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database database_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema database_1.schema_2 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN database database_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema database_1.schema_2 TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN database database_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN database database_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_2 TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema database_1.schema_2 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_2.table_3 TO ROLE functional_role",
-            "GRANT select ON table database_1.schema_2.table_3 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
-            "GRANT select ON view database_1.schema_1.view_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN database database_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_2 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN database database_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_1 TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_2 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON FUTURE views IN database database_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_1.table_2 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_2.table_3 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table database_1.schema_2.table_3 TO ROLE functional_role",
         ]
 
-        return [mock_connector, config, expected]
+        return [mock_connector, config, role, expected]
 
     def partial_rw_future_schemas_tables_views_config(mocker):
         """
@@ -905,7 +979,16 @@ class TestGenerateTableAndViewGrants:
             ],
         }
 
+        role = "functional_role"
+
         expected = [
+            "GRANT select ON ALL tables IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public_1 TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN database raw TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema raw.public TO ROLE functional_role",
             "GRANT select ON FUTURE tables IN schema raw.public_1 TO ROLE functional_role",
@@ -913,18 +996,130 @@ class TestGenerateTableAndViewGrants:
             "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
             "GRANT select ON FUTURE views IN schema raw.public_1 TO ROLE functional_role",
-            "GRANT select ON table raw.public.table_1 TO ROLE functional_role",
-            "GRANT select ON table raw.public.table_2 TO ROLE functional_role",
-            "GRANT select ON table raw.public_1.table_3 TO ROLE functional_role",
-            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
-            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
-            "GRANT select ON view raw.public.view_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema raw.public TO ROLE functional_role",
             "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema raw.public TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_1 TO ROLE functional_role",
-            "GRANT select, insert, update, delete, truncate, references ON table raw.public.table_2 TO ROLE functional_role",
         ]
 
-        return [mock_connector, config, expected]
+        return [mock_connector, config, role, expected]
+
+    def table_partial_rw_future_schemas_tables_views_config(mocker):
+        """
+        Provides read on ALL|FUTURE schemas and ALL|FUTURE views|tables
+        in RAW database, but only write access on ALL|FUTURE tables
+        in PUBLIC schema and RAW database.
+        """
+        mock_connector = MockSnowflakeConnector()
+        # Need to account for different outputs in function
+        mocker.patch.object(
+            mock_connector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[["raw.public", "raw.public_1"], ["raw.public"]],
+        )
+        mocker.patch.object(
+            mock_connector,
+            "show_tables",
+            # show_tables called multiple times for read/write
+            # therefore, there is a need to have different
+            # results for each call where read comes before write
+            side_effect=[
+                [
+                    "raw.public.table_1",
+                    "raw.public.table_2",
+                ],
+                [
+                    "raw.public_1.table_3",
+                    "raw.public_1.table_4",
+                ],
+                [
+                    "raw.public.table_1",
+                    "raw.public.table_2",
+                ],
+                [
+                    "raw.public_1.table_3",
+                    "raw.public_1.table_4",
+                ],
+            ],
+        )
+        mocker.patch.object(
+            mock_connector, "show_views", return_value=["raw.public.view_1"]
+        )
+        mocker.patch(
+            "permifrost.snowflake_grants.SnowflakeConnector.show_schemas",
+            mock_connector.show_schemas,
+        )
+        config = {
+            "read": [
+                "raw.*.*",
+            ],
+            "write": [
+                "raw.public.*",
+                "raw.public_1.table_4",
+            ],
+        }
+
+        role = "functional_role"
+
+        expected = [
+            "GRANT select ON ALL tables IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL tables IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON ALL views IN database raw TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON ALL views IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON FUTURE tables IN database raw TO ROLE functional_role",
+            "GRANT select ON FUTURE tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE tables IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN database raw TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public TO ROLE functional_role",
+            "GRANT select ON FUTURE views IN schema raw.public_1 TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema raw.public TO ROLE functional_role",
+            "GRANT select, insert, update, delete, truncate, references ON TABLE raw.public_1.table_4 TO ROLE functional_role",
+        ]
+
+        return [mock_connector, config, role, expected]
+
+    def future_tables_w_multiple_schemas_existing_grants(mocker):
+        """
+        Provides write access on ALL|FUTURE tables|views in
+        database_1.schema_2 and SKIPS granting access on ALL|FUTURE tables|views in
+        database_1.schema_1 because they already have been granted.
+        """
+        mock_connector = MockSnowflakeConnector()
+
+        mocker.patch.object(
+            mock_connector,
+            "show_tables",
+            return_value=[
+                "database_1.schema_1.table_1",
+                "database_1.schema_1.table_2",
+                "database_1.schema_2.table_1",
+                "database_1.schema_2.table_2",
+            ],
+        )
+        mocker.patch.object(mock_connector, "show_views", return_value=[])
+
+        config = {
+            "read": [],
+            "write": [
+                "database_1.schema_1.*",
+                "database_1.schema_2.*",
+            ],
+        }
+
+        role = "role_with_future_grants"
+
+        expected = [
+            "GRANT select ON ALL views IN schema database_1.schema_2 TO ROLE role_with_future_grants",
+            "GRANT select ON FUTURE views IN schema database_1.schema_2 TO ROLE role_with_future_grants",
+            "GRANT select, insert, update, delete, truncate, references ON ALL tables IN schema database_1.schema_2 TO ROLE role_with_future_grants",
+            "GRANT select, insert, update, delete, truncate, references ON FUTURE tables IN schema database_1.schema_2 TO ROLE role_with_future_grants",
+        ]
+
+        return [mock_connector, config, role, expected]
 
     @pytest.mark.parametrize(
         "config",
@@ -939,6 +1134,7 @@ class TestGenerateTableAndViewGrants:
             future_tables_views_rw_config,
             future_schemas_tables_views_config,
             partial_rw_future_schemas_tables_views_config,
+            future_tables_w_multiple_schemas_existing_grants,
         ],
     )
     def test_generate_table_and_view_grants(
@@ -959,7 +1155,9 @@ class TestGenerateTableAndViewGrants:
             test_roles_granted_to_user,
         )
 
-        mock_connector, test_tables_config, expected = config(mocker)
+        mock_connector, test_tables_config, test_grants_to_role_role, expected = config(
+            mocker
+        )
 
         mocker.patch(
             "permifrost.snowflake_grants.SnowflakeConnector.show_tables",
@@ -972,7 +1170,7 @@ class TestGenerateTableAndViewGrants:
         )
 
         tables_and_views_list = generator.generate_table_and_view_grants(
-            "functional_role",
+            test_grants_to_role_role,
             test_tables_config,
             set(test_shared_dbs),
             set(test_spec_dbs),
@@ -980,9 +1178,8 @@ class TestGenerateTableAndViewGrants:
 
         tables_and_views_list_sql = []
         for sql_dict in tables_and_views_list:
-            for k, v in sql_dict.items():
-                if k == "sql":
-                    tables_and_views_list_sql.append(v)
+            if not sql_dict["already_granted"]:
+                tables_and_views_list_sql.append(sql_dict["sql"])
 
         # Sort list of SQL queries for readability
         tables_and_views_list_sql.sort()
@@ -1251,6 +1448,76 @@ class TestGenerateSchemaGrants:
         ]
         return [MockSnowflakeConnector, config, expected]
 
+    def partial_prefix_star_rw_schema_config(mocker):
+        """
+        Provides read/write access on SCHEMA_1, SCHEMA_2 in DATABASE_1
+        but not to EXCLUDE_SCHEMA_3 in DATABASE_1
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[
+                [
+                    "database_1.prefix_schema_1",
+                    "database_1.prefix_schema_2",
+                    "database_1.exclude_schema_3",
+                ],
+                [
+                    "database_1.prefix_schema_1",
+                    "database_1.prefix_schema_2",
+                    "database_1.exclude_schema_3",
+                ],
+            ],
+        )
+        config = {
+            "read": ["database_1.prefix_*"],
+            "write": ["database_1.prefix_*"],
+        }
+
+        expected = [
+            "GRANT usage ON schema database_1.prefix_schema_1 TO ROLE functional_role",
+            "GRANT usage ON schema database_1.prefix_schema_2 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.prefix_schema_1 TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.prefix_schema_2 TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
+    def partial_suffix_star_rw_schema_config(mocker):
+        """
+        Provides read/write access on SCHEMA_1, SCHEMA_2 in DATABASE_1
+        but not to EXCLUDE_SCHEMA_3 in DATABASE_1
+        """
+        mocker.patch.object(
+            MockSnowflakeConnector,
+            "show_schemas",
+            # show_schemas called by read before write function call
+            side_effect=[
+                [
+                    "database_1.schema_1_suffix",
+                    "database_1.schema_2_suffix",
+                    "database_1.exclude_schema_3",
+                ],
+                [
+                    "database_1.schema_1_suffix",
+                    "database_1.schema_2_suffix",
+                    "database_1.exclude_schema_3",
+                ],
+            ],
+        )
+        config = {
+            "read": ["database_1.*_suffix"],
+            "write": ["database_1.*_suffix"],
+        }
+
+        expected = [
+            "GRANT usage ON schema database_1.schema_1_suffix TO ROLE functional_role",
+            "GRANT usage ON schema database_1.schema_2_suffix TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_1_suffix TO ROLE functional_role",
+            "GRANT usage, monitor, create table, create view, create stage, create file format, create sequence, create function, create pipe ON schema database_1.schema_2_suffix TO ROLE functional_role",
+        ]
+        return [MockSnowflakeConnector, config, expected]
+
     @pytest.mark.parametrize(
         "config",
         [
@@ -1266,6 +1533,8 @@ class TestGenerateSchemaGrants:
             star_rw_schema_config,
             star_diff_rw_schema_config,
             multi_star_rw_schema_config,
+            partial_prefix_star_rw_schema_config,
+            partial_suffix_star_rw_schema_config,
         ],
     )
     def test_generate_schema_grants(

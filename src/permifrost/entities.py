@@ -11,11 +11,14 @@ class EntitySchema(TypedDict):
     shared_databases: Set[str]
     schema_refs: Set[str]
     table_refs: Set[str]
+    tables_by_database: Dict
     roles: Set[str]
     role_refs: Set[str]
     users: Set[str]
     warehouses: Set[str]
     warehouse_refs: Set[str]
+    integrations: Set[str]
+    integration_refs: Set[str]
     require_owner: bool
 
 
@@ -28,11 +31,14 @@ class EntityGenerator:
             "shared_databases": set(),
             "schema_refs": set(),
             "table_refs": set(),
+            "tables_by_database": dict(),
             "roles": set(),
             "role_refs": set(),
             "users": set(),
             "warehouses": set(),
             "warehouse_refs": set(),
+            "integrations": set(),
+            "integration_refs": set(),
             "require_owner": False,
         }
         self.error_messages: List[str] = []
@@ -77,6 +83,16 @@ class EntityGenerator:
             return filtered_entities
         else:
             return filtered_entities[0]
+
+    def group_table_by_database(self):
+        tables_by_database = {}
+        for table in self.entities["table_refs"]:
+            db_name = table.split(".")[0]
+            if db_name not in tables_by_database.keys():
+                tables_by_database[db_name] = {table}
+            else:
+                tables_by_database[db_name].add(table)
+        self.entities["tables_by_database"] = tables_by_database
 
     @staticmethod
     def group_spec_by_type(spec: PermifrostSpecSchema) -> List[Tuple[str, Any]]:
@@ -130,6 +146,9 @@ class EntityGenerator:
         self.generate_warehouses(
             self.filter_grouped_entities_by_type(entities_by_type, "warehouses")
         )
+        self.generate_integrations(
+            self.filter_grouped_entities_by_type(entities_by_type, "integrations")
+        )
         self.generate_users(
             self.filter_grouped_entities_by_type(entities_by_type, "users")
         )
@@ -144,6 +163,7 @@ class EntityGenerator:
 
         self.generate_implicit_refs_from_schemas()
         self.generate_implicit_refs_from_tables()
+        self.group_table_by_database()
         # Add implicit references to DBs and Schemas.
         #  e.g. RAW.MYSCHEMA.TABLE references also DB RAW and Schema MYSCHEMA
 
@@ -236,6 +256,13 @@ class EntityGenerator:
                     "in the spec but not defined"
                 )
 
+        for integration in entities["integration_refs"]:
+            if integration not in entities["integrations"]:
+                error_messages.append(
+                    f"Reference error: Integration {integration} is referenced "
+                    "in the spec but not defined"
+                )
+
         return error_messages
 
     def ensure_valid_spec_for_conditional_settings(
@@ -257,7 +284,9 @@ class EntityGenerator:
         entities_by_type = [
             (entity_type, entry)
             for entity_type, entry in self.spec.items()
-            if entry and entity_type in ["databases", "roles", "users", "warehouses"]
+            if entry
+            and entity_type
+            in ["databases", "roles", "users", "warehouses", "integrations"]
         ]
 
         for entity_type, entry in entities_by_type:
@@ -274,6 +303,11 @@ class EntityGenerator:
         for warehouse_entry in warehouse_list:
             for warehouse_name, _ in warehouse_entry.items():
                 self.entities["warehouses"].add(warehouse_name)
+
+    def generate_integrations(self, integration_list: List[Dict[str, Dict]]) -> None:
+        for integration_entry in integration_list:
+            for integration_name, _ in integration_entry.items():
+                self.entities["integrations"].add(integration_name)
 
     def generate_databases(self, db_list: List[Dict[str, Dict]]) -> None:
         for db_entry in db_list:
@@ -315,6 +349,17 @@ class EntityGenerator:
         except KeyError:
             logger.debug(
                 "`warehouses` not found for role {}, skipping Warehouse Reference generation.".format(
+                    role_name
+                )
+            )
+
+    def generate_integration_roles(self, config, role_name):
+        try:
+            for integration in config["integrations"]:
+                self.entities["integration_refs"].add(integration)
+        except KeyError:
+            logger.debug(
+                "`Integration` not found for role {}, skipping Integration Reference generation.".format(
                     role_name
                 )
             )
@@ -462,7 +507,7 @@ class EntityGenerator:
         """
         Generate all of the role entities.
         Also can populate the role_refs, database_refs,
-        schema_refs, table_refs & warehouse_refs
+        schema_refs, table_refs, warehouse_refs & integration_refs
         """
 
         for role_entry in role_list:
@@ -470,6 +515,7 @@ class EntityGenerator:
                 self.entities["roles"].add(role_name)
                 self.generate_member_of_roles(config, role_name)
                 self.generate_warehouse_roles(config, role_name)
+                self.generate_integration_roles(config, role_name)
                 self.generate_database_roles(config, role_name)
                 self.generate_schema_roles(config, role_name)
                 self.generate_table_roles(config, role_name)

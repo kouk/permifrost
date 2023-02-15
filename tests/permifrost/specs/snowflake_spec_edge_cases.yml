@@ -17,6 +17,8 @@ roles:
       owner: useradmin
       warehouses:
         - warehouse_1
+      integrations:
+        - integration_1
       owns:
         databases:
           - database_1
@@ -58,4 +60,10 @@ users:
 warehouses:
   - warehouse_1:
       size: x-small
+      owner: test_role
+
+# Integrations
+integrations:
+  - integration_1:
+      category: storage
       owner: test_role

@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from permifrost.logger import GLOBAL_LOGGER as logger
@@ -15,6 +14,8 @@ GRANT_PRIVILEGES_TEMPLATE = (
 REVOKE_PRIVILEGES_TEMPLATE = (
     "REVOKE {privileges} ON {resource_type} {resource_name} FROM ROLE {role}"
 )
+
+GRANT_ALL_PRIVILEGES_TEMPLATE = "GRANT {privileges} ON ALL {resource_type}s IN {grouping_type} {grouping_name} TO ROLE {role}"
 
 GRANT_FUTURE_PRIVILEGES_TEMPLATE = "GRANT {privileges} ON FUTURE {resource_type}s IN {grouping_type} {grouping_name} TO ROLE {role}"
 
@@ -55,25 +56,19 @@ class SnowflakeGrantsGenerator:
     ) -> bool:
         """
         Check if <role> has been granted the privilege <privilege> on entity type
-        <entity_type> with name <entity_name>. First checks if it is a future grant
-        since snowflaky will format the future grants wrong - i.e. <table> is a part
-        of the fully qualified name for a future table grant.
+        <entity_type> with name <entity_name>.
 
         For example:
         is_granted_privilege('reporter', 'usage', 'database', 'analytics') -> True
         means that role reporter has been granted the privilege to use the
         Database ANALYTICS on the Snowflake server.
         """
-        future = True if re.search(r"<(table|view|schema)>", entity_name) else False
 
         grants = (
             self.grants_to_role.get(role, {}).get(privilege, {}).get(entity_type, [])
         )
 
-        if future and entity_name in grants:
-            return True
-
-        if not future and SnowflakeConnector.snowflaky(entity_name) in grants:
+        if SnowflakeConnector.snowflaky(entity_name) in grants:
             return True
 
         return False
@@ -406,6 +401,20 @@ class SnowflakeGrantsGenerator:
                     role
                 )
             )
+
+        try:
+            integrations = config["integrations"]
+            new_commands = self.generate_integration_grants(
+                role=role, integrations=integrations
+            )
+            sql_commands.extend(new_commands)
+        except KeyError:
+            logger.debug(
+                "`integrations` not found for role {}, skipping generation of Integrations GRANT statements.".format(
+                    role
+                )
+            )
+
         database_commands = self._generate_database_commands(
             role, config, shared_dbs, spec_dbs
         )
@@ -453,7 +462,6 @@ class SnowflakeGrantsGenerator:
                         ),
                     }
                 )
-
         for priv in ["usage", "operate", "monitor"]:
             for granted_warehouse in (
                 self.grants_to_role.get(role, {}).get(priv, {}).get("warehouse", [])
@@ -472,6 +480,57 @@ class SnowflakeGrantsGenerator:
                             ),
                         }
                     )
+
+        return sql_commands
+
+    def generate_integration_grants(
+        self, role: str, integrations: list
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate the GRANT statements for Integrations usage.
+
+        role: the name of the role the privileges are GRANTed to
+        integrations: list of integrations for the specified role
+
+        Returns the SQL command generated
+        """
+        sql_commands: List[Dict] = []
+
+        for integration in integrations:
+
+            already_granted = self.is_granted_privilege(
+                role, "usage", "integration", integration
+            )
+
+            sql_commands.append(
+                {
+                    "already_granted": already_granted,
+                    "sql": GRANT_PRIVILEGES_TEMPLATE.format(
+                        privileges="usage",
+                        resource_type="integration",
+                        resource_name=SnowflakeConnector.snowflaky(integration),
+                        role=SnowflakeConnector.snowflaky_user_role(role),
+                    ),
+                }
+            )
+        print(self.grants_to_role.get(role, {}).get("usage", {}).get("integration", []))
+        for granted_integration in (
+            self.grants_to_role.get(role, {}).get("usage", {}).get("integration", [])
+        ):
+            if granted_integration not in integrations:
+                sql_commands.append(
+                    {
+                        "already_granted": False,
+                        "sql": REVOKE_PRIVILEGES_TEMPLATE.format(
+                            privileges="usage",
+                            resource_type="integration",
+                            resource_name=SnowflakeConnector.snowflaky(
+                                granted_integration
+                            ),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
+                        ),
+                    }
+                )
 
         return sql_commands
 
@@ -1026,13 +1085,23 @@ class SnowflakeGrantsGenerator:
 
             fetched_schemas = conn.full_schema_list(f"{database_name}.{schema_name}")
 
-            # For future grants at the database level for tables
+            # For grants at the database level for tables
             future_database_table = "{database}.<table>".format(database=database_name)
             table_already_granted = self.is_granted_privilege(
                 role, read_privileges, "table", future_database_table
             )
             read_grant_tables_full.append(future_database_table)
+
+            # For grants at the database level for views
+            future_database_view = "{database}.<view>".format(database=database_name)
+            view_already_granted = self.is_granted_privilege(
+                role, read_privileges, "view", future_database_view
+            )
+            read_grant_views_full.append(future_database_view)
+
             if schema_name == "*" and table_view_name == "*":
+
+                # Tables
                 sql_commands.append(
                     {
                         "already_granted": table_already_granted,
@@ -1046,17 +1115,37 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
-            # For future grants at the database level for views
-            future_database_view = "{database}.<view>".format(database=database_name)
-            view_already_granted = self.is_granted_privilege(
-                role, read_privileges, "view", future_database_view
-            )
-            read_grant_views_full.append(future_database_view)
-            if schema_name == "*" and table_view_name == "*":
+                sql_commands.append(
+                    {
+                        "already_granted": table_already_granted,
+                        "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
+                            privileges=read_privileges,
+                            resource_type="table",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
+                        ),
+                    }
+                )
+
+                # Views
                 sql_commands.append(
                     {
                         "already_granted": view_already_granted,
                         "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                            privileges=read_privileges,
+                            resource_type="view",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
+                        ),
+                    }
+                )
+
+                sql_commands.append(
+                    {
+                        "already_granted": view_already_granted,
+                        "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
                             privileges=read_privileges,
                             resource_type="view",
                             grouping_type="database",
@@ -1081,8 +1170,6 @@ class SnowflakeGrantsGenerator:
 
                 # If == * then append all tables to both
                 # the grant list AND the full grant list
-                read_grant_tables.extend(read_table_list)
-                read_grant_views.extend(read_view_list)
                 read_grant_tables_full.extend(read_table_list)
                 read_grant_views_full.extend(read_view_list)
 
@@ -1111,6 +1198,20 @@ class SnowflakeGrantsGenerator:
                         }
                     )
 
+                    # Grant select on all tables
+                    sql_commands.append(
+                        {
+                            "already_granted": table_already_granted,
+                            "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
+                                privileges=read_privileges,
+                                resource_type="table",
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
+                            ),
+                        }
+                    )
+
                     view_already_granted = self.is_granted_privilege(
                         role, read_privileges, "view", future_view
                     )
@@ -1120,6 +1221,20 @@ class SnowflakeGrantsGenerator:
                         {
                             "already_granted": view_already_granted,
                             "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                                privileges=read_privileges,
+                                resource_type="view",
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
+                            ),
+                        }
+                    )
+
+                    # Grant select on all views
+                    sql_commands.append(
+                        {
+                            "already_granted": view_already_granted,
+                            "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
                                 privileges=read_privileges,
                                 resource_type="view",
                                 grouping_type="schema",
@@ -1183,7 +1298,9 @@ class SnowflakeGrantsGenerator:
 
     #  TODO: This method remains complex, could use extra refactoring
     def _generate_table_write_grants(self, conn, tables, shared_dbs, role):  # noqa
-        sql_commands, write_grant_tables_full, write_grant_views_full = [], [], []
+        sql_commands = []
+        write_grant_tables_full = []
+        write_grant_views_full = []
 
         read_privileges = "select"
         write_partial_privileges = "insert, update, delete, truncate, references"
@@ -1213,21 +1330,27 @@ class SnowflakeGrantsGenerator:
 
             fetched_schemas = conn.full_schema_list(f"{database_name}.{name_parts[1]}")
 
-            # For future grants at the database level
+            # For grants at the database level
             future_database_table = "{database}.<table>".format(database=database_name)
             future_database_view = "{database}.<view>".format(database=database_name)
 
-            table_already_granted = False
-            view_already_granted = False
-
-            if self.is_granted_privilege(
-                role, write_privileges, "table", future_database_table
-            ):
-                table_already_granted = True
-
+            table_already_granted = True
+            for privilege in write_privileges_array:
+                # If any of the privileges are not granted, set already_granted to False
+                if not self.is_granted_privilege(
+                    role, privilege, "table", future_database_table
+                ):
+                    table_already_granted = False
             write_grant_tables_full.append(future_database_table)
 
+            view_already_granted = self.is_granted_privilege(
+                role, "select", "view", future_database_view
+            )
+            write_grant_views_full.append(future_database_view)
+
             if schema_name == "*" and table_view_name == "*":
+
+                # Tables
                 sql_commands.append(
                     {
                         "already_granted": table_already_granted,
@@ -1241,19 +1364,38 @@ class SnowflakeGrantsGenerator:
                     }
                 )
 
-            if self.is_granted_privilege(
-                role, write_privileges, "view", future_database_view
-            ):
-                view_already_granted = True
+                sql_commands.append(
+                    {
+                        "already_granted": table_already_granted,
+                        "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
+                            privileges=write_privileges,
+                            resource_type="table",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
+                        ),
+                    }
+                )
 
-            write_grant_views_full.append(future_database_view)
-
-            if schema_name == "*" and table_view_name == "*":
+                # Views
                 sql_commands.append(
                     {
                         "already_granted": view_already_granted,
                         "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
-                            privileges=write_privileges,
+                            privileges="select",
+                            resource_type="view",
+                            grouping_type="database",
+                            grouping_name=SnowflakeConnector.snowflaky(database_name),
+                            role=SnowflakeConnector.snowflaky_user_role(role),
+                        ),
+                    }
+                )
+
+                sql_commands.append(
+                    {
+                        "already_granted": view_already_granted,
+                        "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
+                            privileges="select",
                             resource_type="view",
                             grouping_type="database",
                             grouping_name=SnowflakeConnector.snowflaky(database_name),
@@ -1277,8 +1419,6 @@ class SnowflakeGrantsGenerator:
 
                 # If == * then append all tables to both
                 # the grant list AND the full grant list
-                write_grant_tables.extend(write_table_list)
-                write_grant_views.extend(write_view_list)
                 write_grant_tables_full.extend(write_table_list)
                 write_grant_views_full.extend(write_view_list)
 
@@ -1289,12 +1429,13 @@ class SnowflakeGrantsGenerator:
                     write_grant_tables_full.append(future_table)
                     write_grant_views_full.append(future_view)
 
+                    table_already_granted = True
                     for privilege in write_privileges_array:
                         # If any of the privileges are not granted, set already_granted to False
-                        table_already_granted = not self.is_granted_privilege(
+                        if not self.is_granted_privilege(
                             role, privilege, "table", future_table
-                        )
-
+                        ):
+                            table_already_granted = False
                     # Grant future on all tables
                     sql_commands.append(
                         {
@@ -1309,7 +1450,20 @@ class SnowflakeGrantsGenerator:
                         }
                     )
 
-                    view_already_granted = not self.is_granted_privilege(
+                    # Grant write on all tables
+                    sql_commands.append(
+                        {
+                            "already_granted": table_already_granted,
+                            "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
+                                privileges=write_privileges,
+                                resource_type="table",
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
+                            ),
+                        }
+                    )
+                    view_already_granted = self.is_granted_privilege(
                         role, "select", "view", future_view
                     )
 
@@ -1318,6 +1472,20 @@ class SnowflakeGrantsGenerator:
                         {
                             "already_granted": view_already_granted,
                             "sql": GRANT_FUTURE_PRIVILEGES_TEMPLATE.format(
+                                privileges="select",
+                                resource_type="view",
+                                grouping_type="schema",
+                                grouping_name=SnowflakeConnector.snowflaky(schema),
+                                role=SnowflakeConnector.snowflaky_user_role(role),
+                            ),
+                        }
+                    )
+
+                    # Grant privileges on all views. Select is only privilege
+                    sql_commands.append(
+                        {
+                            "already_granted": view_already_granted,
+                            "sql": GRANT_ALL_PRIVILEGES_TEMPLATE.format(
                                 privileges="select",
                                 resource_type="view",
                                 grouping_type="schema",

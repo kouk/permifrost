@@ -68,9 +68,26 @@ class TestEntityGenerator:
             "demodb6.demo_schema.demo_table",
             "demodb.*.*",
             "demodb5.demo_schema.demo_table",
+            "demodb5.demo_schema.demo_table_2",
             "demodb2.*.*",
         }
         assert entities["table_refs"] == expected
+
+    def test_tables_by_database(self, entities):
+        """
+        Expect all <database>.<schema>.<table> references from the roles section in
+        snowflake_spec_reference_roles.yml spec
+        """
+        expected = {
+            "demodb6": {"demodb6.demo_schema.demo_table"},
+            "demodb": {"demodb.*.*"},
+            "demodb5": {
+                "demodb5.demo_schema.demo_table_2",
+                "demodb5.demo_schema.demo_table",
+            },
+            "demodb2": {"demodb2.*.*"},
+        }
+        assert entities["tables_by_database"] == expected
 
     def test_entity_roles(self, entities):
         """
@@ -110,6 +127,14 @@ class TestEntityGenerator:
         """
         expected = {"demo", "loading", "transforming", "reporting"}
         assert entities["warehouses"] == expected
+
+    def test_entity_integrations(self, entities):
+        """
+        Expect all actionable <integrations> from the integrations section in
+        snowflake_spec_reference_roles.yml spec
+        """
+        expected = {"demo"}
+        assert entities["integrations"] == expected
 
 
 def test_filter_by_type(entities):

@@ -58,6 +58,15 @@ for testing purposes, you can sign up for a demo Snowflake account for 30 days.
 Maintainers of this project also have access to a Snowflake testing account,
 contact the maintainers if you require access to it as well.
 
+Current project maintainers:
+
+| maintainer      | rotation |
+|-----------------|----------|
+| @rbacovic       | week 1   |
+| @jjstark        | week 2   |
+| @paul_armstrong | week 3   |
+| @blake-enyart   | week 4   |
+
 ### Design of Permifrost
 
 Permifrost is not perfect and there are many things that can be improved. We'd
@@ -84,7 +93,7 @@ that make it easier for us to track down the cause of the bug.
 ### Suggesting Features
 
 Likewise, you can submit requests for enhancements and features by creating an
-issue and selecting the Feature Request template.
+issue and selecting the Feature Request template. You can also create issues by emailing `permifrost@gitlab.com`, though without a GitLab account you wont be notified of any updates.
 
 ### Code Contributions
 
@@ -93,6 +102,24 @@ the [Good First Issue](https://gitlab.com/gitlab-data/permifrost/-/issues?label_
 label.
 
 ## Getting started with development
+
+### Setting up the repository
+
+There are two general 'paths' for getting changes merged into the permifrost repo:
+
+#### Directly
+
+The first path is to reach out to the maintainers of Permifrost & request Developer access to the repository (preferably in the dbt Slack in the #tools-permifrost channel) which will avoid cluttering the repo with unnecessary issues for adding members.
+
+    Pros: Use GitLab Data teams CI/CD credits for the Permifrost repo, don't need to add a credit card
+    Cons: Blocks initial development by new contributors until they are added to the GitLab Data/Permifrost repo
+
+#### Forked
+
+Second option is to fork the repo and set the new repo variable to their organization (i.e. not GitLab Data)
+
+    Pros: Can start development immediately
+    Cons: Need to have a credit card on file with GitLab (which will not be charged for the first 400 CI/CD minutes each month), need to make sure to set the repo environment variable in their fork
 
 To work on permifrost you'll want installed, at a minimum:
 

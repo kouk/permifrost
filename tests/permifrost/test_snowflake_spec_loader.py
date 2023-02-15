@@ -41,6 +41,8 @@ def test_roles_spec_file():
         .add_db(owner="secondary", name="secondarydb")
         .add_warehouse(owner="primary", name="primarywarehouse")
         .add_warehouse(owner="secondary", name="secondarywarehouse")
+        .add_integration(owner="primary", name="primaryintegration")
+        .add_integration(owner="secondary", name="secondaryintegration")
         .add_role(member_of=["testrole"])
         .add_role(name="securityadmin", member_of=["testrole"])
         .add_role(name="primary", member_of=["testrole"])
@@ -62,6 +64,11 @@ def test_grants_roles_mock_connection(mocker, mock_method, return_value):
         mock_connector,
         "show_warehouses",
         return_value=["primarywarehouse", "secondarywarehouse"],
+    )
+    mocker.patch.object(
+        mock_connector,
+        "show_integrations",
+        return_value=["primaryintegration", "secondaryintegration"],
     )
     mocker.patch.object(
         mock_connector, "show_databases", return_value=["primarydb", "secondarydb"]
@@ -91,6 +98,11 @@ def test_roles_mock_connector(mocker):
         mock_connector,
         "show_warehouses",
         return_value=["primarywarehouse", "secondarywarehouse"],
+    )
+    mocker.patch.object(
+        mock_connector,
+        "show_integrations",
+        return_value=["primaryintegration", "secondaryintegration"],
     )
     mocker.patch.object(
         mock_connector, "show_databases", return_value=["primarydb", "secondarydb"]
@@ -407,12 +419,13 @@ class TestSnowflakeSpecLoader:
         assert expected_value == spec_loader.grants_to_role
 
     @pytest.mark.parametrize(
-        "database_refs,warehouse_refs,grant_on,filter_set,expected_value",
+        "database_refs,warehouse_refs, integration_refs,grant_on,filter_set,expected_value",
         [
             # database filter matches config
             (
                 ["db1", "db2", "db3"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "database",
                 ["db1", "db2", "db3"],
                 ["db1", "db2", "db3"],
@@ -421,6 +434,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["db1", "db2", "db3"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "database",
                 ["db1"],
                 ["db1"],
@@ -429,6 +443,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["db1"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "database",
                 ["db1", "db2", "db3"],
                 ["db1"],
@@ -437,6 +452,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["database_doesnt_matter"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "account",
                 ["account1", "account2"],
                 ["account1", "account2"],
@@ -445,6 +461,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["database_doesnt_matter"],
                 ["warehouse1", "warehouse2", "warehouse3"],
+                ["integration_doesnt_matter"],
                 "warehouse",
                 ["warehouse1", "warehouse2", "warehouse3"],
                 ["warehouse1", "warehouse2", "warehouse3"],
@@ -453,6 +470,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["database_doesnt_matter"],
                 ["warehouse1", "warehouse2", "warehouse3"],
+                ["integration_doesnt_matter"],
                 "warehouse",
                 ["warehouse1"],
                 ["warehouse1"],
@@ -461,9 +479,37 @@ class TestSnowflakeSpecLoader:
             (
                 ["database_doesnt_matter"],
                 ["warehouse1"],
+                ["integration_doesnt_matter"],
                 "warehouse",
                 ["warehouse1", "warehouse2", "warehouse3"],
                 ["warehouse1"],
+            ),
+            # integration filter matches config
+            (
+                ["database_doesnt_matter"],
+                ["warehouse_doesnt_matter"],
+                ["integration1", "integration2", "integration3"],
+                "integration",
+                ["integration1", "integration2", "integration3"],
+                ["integration1", "integration2", "integration3"],
+            ),
+            # integration filter less than config
+            (
+                ["database_doesnt_matter"],
+                ["warehouse_doesnt_matter"],
+                ["integration1", "integration2", "integration3"],
+                "integration",
+                ["integration1"],
+                ["integration1"],
+            ),
+            # integration filter more than config
+            (
+                ["database_doesnt_matter"],
+                ["warehouse_doesnt_matter"],
+                ["integration1"],
+                "integration",
+                ["integration1", "integration2", "integration3"],
+                ["integration1"],
             ),
             ###
             # everything else with single config db
@@ -472,6 +518,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["db1"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "not_really_relevant",
                 ["item1", "item2", "item3"],
                 ["item1", "item2", "item3"],
@@ -480,6 +527,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["db1"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "not_really_relevant",
                 ["db1.some_item", "db1.some_item2", "db2.some_item"],
                 ["db1.some_item", "db1.some_item2"],
@@ -488,6 +536,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["db1"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "not_really_relevant",
                 [
                     "db1.some_item.sub_item.sub_sub_item",
@@ -503,6 +552,7 @@ class TestSnowflakeSpecLoader:
             (
                 ["db1"],
                 ["warehouse_doesnt_matter"],
+                ["integration_doesnt_matter"],
                 "not_really_relevant",
                 [
                     "db2.some_item.sub_item.sub_sub_item",
@@ -518,6 +568,7 @@ class TestSnowflakeSpecLoader:
         mocker,
         database_refs,
         warehouse_refs,
+        integration_refs,
         grant_on,
         filter_set,
         expected_value,
@@ -527,9 +578,11 @@ class TestSnowflakeSpecLoader:
         spec_loader.entities = {
             "database_refs": database_refs,
             "warehouse_refs": warehouse_refs,
+            "integration_refs": integration_refs,
         }
         spec_loader.filter_to_database_refs(grant_on=grant_on, filter_set=filter_set)
 
+    # edge case for PascalCase table entities
     def load_spec_file_case_one():
         """
         Load a table with PascalCase from Snowflake
@@ -545,32 +598,69 @@ class TestSnowflakeSpecLoader:
             .build()
         )
         method = "show_tables"
-        return_value = ["database_1.schema_1.TableOne"]
-        return [spec_file_data, method, return_value]
+        return_value = ["database_1.schema_1.tableone"]
+        expected_error = "Missing Entity Error: Table/View database_1.schema_1.TableOne"
+        return [spec_file_data, method, return_value, expected_error]
 
-    # TODO: Develop functionality for PascalCase object names
+    # edge case for table entities that do not exist
+    def load_spec_file_case_two():
+        """
+        Missing Table from snowflake server
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_db(name="database_1")
+            .add_role(
+                tables=["database_1.schema_1.tableone"],
+                permission_set=["read", "write"],
+                member_of=["testrole"],
+            )
+            .build()
+        )
+        method = "show_tables"
+        return_value = []
+        expected_error = "Missing Entity Error: Table/View database_1.schema_1.tableone"
+        return [spec_file_data, method, return_value, expected_error]
+
+    # non edge case for table entities that do exist
+    def load_spec_file_case_three():
+        """
+        Missing Table from snowflake server
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .add_db(name="database_1")
+            .add_role(
+                tables=["database_1.schema_1.tableone"],
+                permission_set=["read", "write"],
+                member_of=["testrole"],
+            )
+            .build()
+        )
+        method = "show_tables"
+        return_value = ["database_1.schema_1.tableone"]
+        expected_error = ""
+        return [spec_file_data, method, return_value, expected_error]
+
     @pytest.mark.parametrize(
         "config",
-        [
-            load_spec_file_case_one,
-        ],
+        [load_spec_file_case_one, load_spec_file_case_two, load_spec_file_case_three],
     )
-    def skip_load_spec_with_edge_case_tables(
+    def test_load_spec_with_edge_case_tables(
         self,
         config,
         mocker,
         mock_connector,
     ):
-        spec_file_data, method, return_value = config()
+        spec_file_data, method, return_value, expected_error = config()
         print("Spec file is: ")
         print(spec_file_data)
         mocker.patch("builtins.open", mocker.mock_open(read_data=spec_file_data))
         mocker.patch.object(mock_connector, method, return_value=return_value)
-        mocker.patch(
-            "permifrost.snowflake_spec_loader.SnowflakeSpecLoader.check_entities_on_snowflake_server",
-            return_value=None,
-        )
-        SnowflakeSpecLoader("", mock_connector)
+        with pytest.raises(SpecLoadingError) as context:
+            SnowflakeSpecLoader("", mock_connector)
+
+        assert expected_error in str(context.value)
 
     def test_remove_duplicate_queries(self):
 
@@ -697,6 +787,35 @@ class TestSnowflakeSpecLoaderWithOwner:
 
         return [spec_file_data, method, return_value]
 
+    def load_spec_with_owner_case_nine():
+        """
+        SnowflakeSpecLoader loads without error for integration with owner
+        """
+        print("spec_file_data")
+
+        spec_file_data = SnowflakeSchemaBuilder().add_integration(owner="user").build()
+        print(spec_file_data)
+        method = "show_integrations"
+        return_value = ["testintegration"]
+
+        return [spec_file_data, method, return_value]
+
+    def load_spec_with_owner_case_ten():
+        """
+        SnowflakeSpecLoader loads without error for integration with owner
+        and require-owner: True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder()
+            .require_owner()
+            .add_integration(owner="user")
+            .build()
+        )
+        method = "show_integrations"
+        return_value = ["testintegration"]
+
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
         "config",
         [
@@ -708,6 +827,8 @@ class TestSnowflakeSpecLoaderWithOwner:
             load_spec_with_owner_case_six,
             load_spec_with_owner_case_seven,
             load_spec_with_owner_case_eight,
+            load_spec_with_owner_case_nine,
+            load_spec_with_owner_case_ten,
         ],
     )
     def test_load_spec_with_owner(
@@ -774,6 +895,19 @@ class TestSnowflakeSpecLoaderWithOwner:
         return_value = ["testwarehouse"]
         return [spec_file_data, method, return_value]
 
+    # test_load_spec_owner_required_with_no_owner
+    def load_spec_file_error_case_five():
+        """
+        Raise 'Owner not defined' error on show_integrations
+        with no owner and require-owner = True
+        """
+        spec_file_data = (
+            SnowflakeSchemaBuilder().require_owner().add_integration().build()
+        )
+        method = "show_integrations"
+        return_value = ["testintegration"]
+        return [spec_file_data, method, return_value]
+
     @pytest.mark.parametrize(
         "config",
         [
@@ -781,6 +915,7 @@ class TestSnowflakeSpecLoaderWithOwner:
             load_spec_file_error_case_two,
             load_spec_file_error_case_three,
             load_spec_file_error_case_four,
+            load_spec_file_error_case_five,
         ],
     )
     def test_load_spec_owner_required_with_no_owner(
@@ -1190,6 +1325,15 @@ class TestSpecFileLoading:
         )
         mock_connector.show_warehouses.assert_not_called()
 
+    def test_check_entities_on_snowflake_server_no_integrations(
+        self, test_dir, mocker, mock_connector
+    ):
+        mocker.patch.object(mock_connector, "show_integrations")
+        SnowflakeSpecLoader(
+            os.path.join(test_dir, "specs", "snowflake_spec_blank.yml"), mock_connector
+        )
+        mock_connector.show_integrations.assert_not_called()
+
     def test_check_entities_on_snowflake_server_no_databases(
         self, test_dir, mocker, mock_connector
     ):
@@ -1309,6 +1453,7 @@ class TestSpecFileLoading:
             "GRANT monitor ON warehouse warehouse_1 TO ROLE test_role",
             "GRANT operate ON warehouse warehouse_1 TO ROLE test_role",
             "GRANT usage ON database database_1 TO ROLE test_role",
+            "GRANT usage ON integration integration_1 TO ROLE test_role",
             "GRANT usage ON schema database_1.read_only_schema TO ROLE test_role",
             "GRANT usage ON schema database_1.write_schema TO ROLE test_role",
             "GRANT usage ON warehouse warehouse_1 TO ROLE test_role",
